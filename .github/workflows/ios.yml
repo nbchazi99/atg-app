@@ -14,7 +14,7 @@ on:
 jobs:
   build-ios:
     name: Build unsigned iOS app
-    runs-on: macos-14
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
