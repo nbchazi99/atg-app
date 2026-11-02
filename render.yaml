@@ -7,7 +7,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
-    healthCheckPath: /api/market/ping
+    healthCheckPath: /api/markets/ping
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
