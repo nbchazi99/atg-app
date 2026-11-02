@@ -1,0 +1,49 @@
+name: Distribute Android to App Distribution
+
+# Builds a debug APK and uploads it to Firebase App Distribution so testers
+# can install it straight from an invitation email. Debug-signed APKs are
+# supported by App Distribution; no release keystore needed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - mobile/**
+      - .github/workflows/distribute-android.yml
+
+jobs:
+  distribute:
+    name: Build and distribute Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.9
+          channel: stable
+          cache: true
+
+      - name: Build debug APK
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter build apk --debug
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Upload to Firebase App Distribution
+        working-directory: mobile
+        run: |
+          npm install -g firebase-tools
+          firebase appdistribution:distribute build/app/outputs/flutter-apk/app-debug.apk \
+            --app "1:517768547113:android:bce29643d35c5d81bb4538" \
+            --testers "nbchazi@gmail.com" \
+            --release-notes "Debug build from ${{ github.sha }}"
