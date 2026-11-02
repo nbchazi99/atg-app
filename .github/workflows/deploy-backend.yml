@@ -38,6 +38,11 @@ jobs:
       - name: Extract runtime service account email
         run: echo "SA_EMAIL=$(jq -r .client_email <<< '${{ secrets.GCP_SA_KEY }}')" >> "$GITHUB_ENV"
 
+      - name: Enable required GCP APIs
+        run: |
+          gcloud services enable artifactregistry.googleapis.com run.googleapis.com \
+            --project=$PROJECT_ID
+
       - name: Ensure Artifact Registry repo exists
         run: |
           gcloud artifacts repositories create atg \
