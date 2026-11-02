@@ -18,6 +18,5 @@ services:
       - key: JAVA_TOOL_OPTIONS
         value: "-Xmx320m -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=48m"
       - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: /etc/secrets/firebase-adminsdk.json
         sync: false
       # ATG_BASE_URL defaults to RENDER_EXTERNAL_URL in application-prod.properties.
