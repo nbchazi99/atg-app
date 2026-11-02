@@ -5,7 +5,6 @@ import com.atg.api.repo.*;
 import com.atg.api.web.Dtos;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -43,7 +42,6 @@ public class WalletService {
         return settingsRepo.findById(1L).orElseGet(() -> settingsRepo.save(new AppSettings()));
     }
 
-    @Transactional
     public AppSettings updateSettings(Dtos.SettingsReq req) {
         AppSettings s = settings();
         if (req.adminFeePct() != null) s.setAdminFeePct(req.adminFeePct());

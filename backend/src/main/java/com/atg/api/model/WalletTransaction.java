@@ -1,26 +1,19 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "wallet_transactions")
 public class WalletTransaction {
 
     public enum Type { DEPOSIT, WITHDRAWAL, PURCHASE, REFERRAL }
     public enum Status { PENDING, COMPLETED, REJECTED }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
-    @Enumerated(EnumType.STRING)
     private Type type;
     private String description;
     private BigDecimal amount = BigDecimal.ZERO;
-    @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
     private LocalDateTime createdAt = LocalDateTime.now();
 

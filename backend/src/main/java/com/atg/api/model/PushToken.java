@@ -1,23 +1,15 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "push_tokens")
 public class PushToken {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 512)
     private String token;
 
-    @Column(nullable = false)
     private String platform;
 
     private LocalDateTime createdAt = LocalDateTime.now();

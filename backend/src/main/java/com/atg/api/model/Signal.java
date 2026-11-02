@@ -1,27 +1,20 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "signals")
 public class Signal {
 
     public enum Side { BUY, SELL }
     public enum Status { LIVE, OPEN, INNER, CLOSED }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
     private String subtitle;
     private String symbol;
 
-    @Enumerated(EnumType.STRING)
     private Side side = Side.BUY;
 
-    @Enumerated(EnumType.STRING)
     private Status status = Status.LIVE;
 
     private String roomLabel;

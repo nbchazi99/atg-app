@@ -1,21 +1,16 @@
 package com.atg.api.service;
 
 import com.atg.api.repo.PushTokenRepository;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.Notification;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -23,38 +18,12 @@ public class PushService {
 
     private static final Logger log = LoggerFactory.getLogger(PushService.class);
 
-    @Value("${app.firebase.service-account:}")
-    private String serviceAccountPath;
-
     private final PushTokenRepository tokens;
+    private final FirebaseMessaging messaging;
 
-    private FirebaseMessaging messaging;
-
-    public PushService(PushTokenRepository tokens) {
+    public PushService(FirebaseApp firebaseApp, PushTokenRepository tokens) {
         this.tokens = tokens;
-    }
-
-    @PostConstruct
-    public void init() {
-        if (serviceAccountPath == null || serviceAccountPath.isBlank()) {
-            log.warn("app.firebase.service-account is not set; push sending is disabled");
-            return;
-        }
-        try {
-            FirebaseApp app;
-            if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(new FileInputStream(serviceAccountPath)))
-                        .build();
-                app = FirebaseApp.initializeApp(options);
-            } else {
-                app = FirebaseApp.getInstance();
-            }
-            messaging = FirebaseMessaging.getInstance(app);
-            log.info("Firebase Messaging initialized from {}", serviceAccountPath);
-        } catch (IOException e) {
-            log.error("Failed to initialize Firebase Messaging", e);
-        }
+        this.messaging = FirebaseMessaging.getInstance(firebaseApp);
     }
 
     public boolean isEnabled() {
@@ -75,11 +44,11 @@ public class PushService {
                         .build());
                 sent++;
             } catch (FirebaseMessagingException e) {
-                if ("registration-token-not-registered".equals(e.getErrorCode())
-                        || "invalid-registration-token".equals(e.getErrorCode())) {
+                if (MessagingErrorCode.INVALID_ARGUMENT.equals(e.getMessagingErrorCode())
+                        || MessagingErrorCode.UNREGISTERED.equals(e.getMessagingErrorCode())) {
                     tokens.deleteByToken(token);
                 }
-                log.warn("Push send failed for a token: {}", e.getMessage());
+                log.warn("Push send failed for a token: {} ({})", e.getMessage(), e.getMessagingErrorCode());
             } catch (Exception e) {
                 log.warn("Push send failed for a token", e);
             }

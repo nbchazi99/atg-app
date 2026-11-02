@@ -1,34 +1,25 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "purchase_requests")
 public class PurchaseRequest {
 
     public enum Type { COURSE, VIP_DERIV, VIP_WELTRADE }
     public enum Status { PENDING, APPROVED, REJECTED }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
-    @Enumerated(EnumType.STRING)
     private Type type;
     private Long courseId;
     private BigDecimal amount = BigDecimal.ZERO;
-    @Column(length = 500)
     private String proofUrl;
 
-    @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
 
     private Long transactionId;
 
-    @Column(length = 500)
     private String adminNote;
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime reviewedAt;

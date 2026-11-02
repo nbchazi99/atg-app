@@ -1,17 +1,12 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "deposit_requests")
 public class DepositRequest {
 
     public enum Status { PENDING, APPROVED, REJECTED }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
@@ -24,12 +19,10 @@ public class DepositRequest {
     private String wallet;
     private String mobile;
 
-    @Enumerated(EnumType.STRING)
     private Status status = Status.PENDING;
 
     private Long transactionId;
 
-    @Column(length = 500)
     private String adminNote;
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime reviewedAt;

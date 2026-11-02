@@ -1,13 +1,9 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 
-@Entity
-@Table(name = "app_settings")
 public class AppSettings {
 
-    @Id
     private Long id = 1L;
 
     private BigDecimal adminFeePct = BigDecimal.valueOf(10);

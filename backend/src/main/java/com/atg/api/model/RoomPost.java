@@ -1,20 +1,14 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "room_posts")
 public class RoomPost {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long roomId;
     private String badge;
     private String title;
-    @Enumerated(EnumType.STRING)
     private Signal.Side side = Signal.Side.BUY;
     private String preview;
     private int participants = 0;

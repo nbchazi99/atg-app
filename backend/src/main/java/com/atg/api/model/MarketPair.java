@@ -1,24 +1,17 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "market_pairs")
 public class MarketPair {
 
     public enum AssetClass { FOREX, METALS, CRYPTO }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
     private String symbol;
     private String name;
 
-    @Enumerated(EnumType.STRING)
     private AssetClass assetClass = AssetClass.FOREX;
 
     private BigDecimal price = BigDecimal.ZERO;

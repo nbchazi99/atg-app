@@ -1,20 +1,14 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "courses")
 public class Course {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
     private String subtitle;
-    @Column(length = 2000)
     private String description;
     private BigDecimal price = BigDecimal.ZERO;
     private String level = "Beginner";

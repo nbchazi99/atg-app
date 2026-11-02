@@ -1,30 +1,21 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "users")
 public class User {
 
     public enum Role { USER, ADMIN }
     public enum Membership { NONE, DERIV_VIP, WELTRADE_VIP }
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
-    @Column(unique = true, nullable = false)
     private String email;
     private String phone;
-    @Column(nullable = false)
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
     private Role role = Role.USER;
 
-    @Enumerated(EnumType.STRING)
     private Membership membership = Membership.NONE;
 
     private int points = 0;

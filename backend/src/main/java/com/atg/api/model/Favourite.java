@@ -1,13 +1,8 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 
-@Entity
-@Table(name = "favourites", uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "symbol"}))
 public class Favourite {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;

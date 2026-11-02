@@ -1,20 +1,14 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "enrollments", uniqueConstraints = @UniqueConstraint(columnNames = {"userId", "courseId"}))
 public class Enrollment {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long userId;
     private Long courseId;
     /** Comma separated lesson ids, e.g. ",3,4," */
-    @Column(length = 1000)
     private String completedLessonIds = "";
     private LocalDateTime enrolledAt = LocalDateTime.now();
 

@@ -1,19 +1,13 @@
 package com.atg.api.model;
 
-import jakarta.persistence.*;
 
-@Entity
-@Table(name = "lessons")
 public class Lesson {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private Long courseId;
     private String title;
     private int durationMin = 10;
-    @Column(length = 8000)
     private String content;
     private String videoUrl;
     private int orderIndex = 0;
