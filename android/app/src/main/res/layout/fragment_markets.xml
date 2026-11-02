@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeMarkets"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:orientation="vertical">
+
+        <include layout="@layout/view_app_header" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/screen_pad"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="@dimen/screen_pad"
+            android:background="@drawable/bg_chat_input"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="Search"
+                android:src="@drawable/ic_search" />
+
+            <EditText
+                android:id="@+id/etSearch"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Search pairs"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:textColor="@color/ink"
+                android:textColorHint="@color/muted"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingEnd="@dimen/screen_pad"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatFav"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Favourites" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatForex"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Forex" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatMetals"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Metals" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatCrypto"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="Crypto" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <TextView
+            android:id="@+id/tvPairsLabel"
+            style="@style/TextAppearance.ATG.Section"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_pad"
+            android:layout_marginTop="16dp"
+            android:text="FOREX" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_pad"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="@dimen/screen_pad"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="13dp">
+
+            <TextView
+                android:id="@+id/tvMarketNotice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Prices are not updating right now. The last figures shown are the most recent we received."
+                android:textColor="@color/ink_soft"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMarkets"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/screen_pad"
+                android:paddingTop="6dp"
+                android:paddingEnd="@dimen/screen_pad"
+                android:paddingBottom="90dp" />
+
+            <LinearLayout
+                android:id="@+id/marketsEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No pairs here"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:text="Try another category, or star a pair to keep it close."
+                    android:textColor="@color/muted"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

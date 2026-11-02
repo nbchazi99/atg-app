@@ -1,0 +1,37 @@
+workflows:
+  ios-unsigned:
+    name: ATG iOS (unsigned)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: 3.47.9
+      xcode: latest
+    scripts:
+      - name: Install packages
+        script: |
+          cd mobile
+          flutter pub get
+      - name: Analyze and test
+        script: |
+          cd mobile
+          flutter analyze
+          flutter test
+      - name: Build iOS without signing
+        script: |
+          cd mobile
+          flutter build ios --release --no-codesign
+      - name: Package unsigned IPA
+        script: |
+          cd mobile
+          mkdir -p build/ios/ipa-unsigned/Payload
+          cp -R build/ios/iphoneos/Runner.app build/ios/ipa-unsigned/Payload/
+          cd build/ios/ipa-unsigned
+          zip -qry Runner-unsigned.ipa Payload
+          ls -lh Runner-unsigned.ipa
+    artifacts:
+      - mobile/build/ios/ipa-unsigned/Runner-unsigned.ipa
+      - mobile/build/ios/iphoneos/Runner.app
+    # To ship through TestFlight instead: connect your App Store Connect API key under
+    # Codemagic -> Teams -> Integrations, enable Apple code signing for this app, replace the
+    # last script with `flutter build ipa --release` and add an `app_store_connect` publishing
+    # block. That path requires a paid Apple Developer Program membership.

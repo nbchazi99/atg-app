@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#F5F4EE</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_alt">#FBFAF5</color>
+    <color name="ink">#111111</color>
+    <color name="ink_soft">#383833</color>
+    <color name="muted">#6F6E67</color>
+    <color name="gold">#8A6A1F</color>
+    <color name="gold_dark">#6E5418</color>
+    <color name="primary">#F4A81D</color>
+    <color name="primary_dark">#D98F0F</color>
+    <color name="primary_soft">#FCEBCB</color>
+    <color name="stroke">#E5E4DB</color>
+    <color name="stroke_soft">#EFEEE7</color>
+    <color name="green_bg">#DCF3E3</color>
+    <color name="green_text">#1B7A3D</color>
+    <color name="red_bg">#FBE3E1</color>
+    <color name="red_text">#B3261E</color>
+    <color name="grey_chip">#EFEEE8</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="scrim">#33000000</color>
+</resources>

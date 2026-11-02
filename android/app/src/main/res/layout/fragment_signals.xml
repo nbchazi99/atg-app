@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/swipeSignals"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:orientation="vertical">
+
+        <include layout="@layout/view_app_header" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvSignalTickers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingTop="2dp"
+            android:paddingEnd="@dimen/screen_pad"
+            android:paddingBottom="12dp" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingEnd="@dimen/screen_pad"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterLive"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Live" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterOpen"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Open" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterInner"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="6dp"
+                    android:text="Inner" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFilterClosed"
+                    style="@style/Widget.ATG.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="Closed" />
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSignals"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingStart="@dimen/screen_pad"
+                android:paddingTop="12dp"
+                android:paddingEnd="@dimen/screen_pad"
+                android:paddingBottom="90dp" />
+
+            <LinearLayout
+                android:id="@+id/signalsEmpty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:contentDescription="@string/signals"
+                    android:src="@drawable/ic_signals" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="Nothing here yet"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center"
+                    android:text="Calls appear here as soon as the floor posts them."
+                    android:textColor="@color/muted"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

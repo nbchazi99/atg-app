@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_header" />
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/screen_pad"
+        android:paddingEnd="@dimen/screen_pad"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabRequests"
+                style="@style/Widget.ATG.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:text="Requests" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabUsers"
+                style="@style/Widget.ATG.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:text="Users" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabSignals"
+                style="@style/Widget.ATG.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:text="Signals" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabCourses"
+                style="@style/Widget.ATG.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginEnd="6dp"
+                android:text="Courses" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTabSettings"
+                style="@style/Widget.ATG.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="Settings" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <LinearLayout
+        android:id="@+id/adminActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_pad"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="@dimen/screen_pad"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddSignal"
+            style="@style/Widget.ATG.Button.Small"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_weight="1"
+            android:text="+ New signal"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddCourse"
+            style="@style/Widget.ATG.Button.Small"
+            android:layout_width="0dp"
+            android:layout_height="42dp"
+            android:layout_weight="1"
+            android:text="+ New course"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvAdmin"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingTop="10dp"
+            android:paddingEnd="@dimen/screen_pad"
+            android:paddingBottom="24dp" />
+
+        <ScrollView
+            android:id="@+id/settingsForm"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingEnd="@dimen/screen_pad"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="28dp">
+
+                <TextView
+                    style="@style/TextAppearance.ATG.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MONEY SETTINGS" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilAdminFee"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Deposit admin fee (%)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAdminFee"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilWithdrawFee"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Withdrawal fee (%)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWithdrawFee"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilMinDeposit"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Minimum deposit (USD)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMinDeposit"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilMaxDeposit"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Maximum deposit (USD)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMaxDeposit"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilMinWithdraw"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Minimum withdrawal (USD)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMinWithdraw"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    style="@style/TextAppearance.ATG.Section"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:text="HOME CONTENT" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilFact"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Today's fact">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etFact"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPromoTitle"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Promotion title">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPromoTitle"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPromoBody"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Promotion body">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPromoBody"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:minLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveSettings"
+                    style="@style/Widget.ATG.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/button_height"
+                    android:layout_marginTop="18dp"
+                    android:text="Save settings" />
+            </LinearLayout>
+        </ScrollView>
+    </FrameLayout>
+</LinearLayout>

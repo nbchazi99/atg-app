@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_header" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/screen_pad"
+            android:paddingTop="4dp"
+            android:paddingEnd="@dimen/screen_pad"
+            android:paddingBottom="28dp">
+
+            <TextView
+                style="@style/TextAppearance.ATG.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="A pip is the standard unit a pair moves. Work out what one pip is worth so position size stops being a guess." />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPipPair"
+                style="@style/Widget.ATG.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:hint="Pair (for example EURUSD)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPipPair"
+                    style="@style/Widget.ATG.InputEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapCharacters" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPipLots"
+                style="@style/Widget.ATG.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Lot size (1 = standard lot)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPipLots"
+                    style="@style/Widget.ATG.InputEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilPipPrice"
+                style="@style/Widget.ATG.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Current price (needed for JPY pairs)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPipPrice"
+                    style="@style/Widget.ATG.InputEdit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCalculate"
+                style="@style/Widget.ATG.Button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="18dp"
+                android:text="Calculate pip value" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_card_outline_gold"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.14"
+                    android:text="PIP VALUE"
+                    android:textColor="@color/gold"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:id="@+id/tvPipValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="$0.00"
+                    android:textColor="@color/ink"
+                    android:textSize="30sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvPipDetail"
+                    style="@style/TextAppearance.ATG.Meta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Enter a pair and lot size to see the value of one pip." />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvPipNote"
+                style="@style/TextAppearance.ATG.Small"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Assumes a USD account. Gold uses 100oz lots, crypto uses 1 coin lots. Your broker's contract size always wins." />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

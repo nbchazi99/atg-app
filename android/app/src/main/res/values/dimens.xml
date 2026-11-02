@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_pad">16dp</dimen>
+    <dimen name="card_pad">16dp</dimen>
+    <dimen name="card_gap">12dp</dimen>
+    <dimen name="radius">18dp</dimen>
+    <dimen name="radius_small">14dp</dimen>
+    <dimen name="button_height">54dp</dimen>
+    <dimen name="icon">22dp</dimen>
+    <dimen name="avatar">38dp</dimen>
+    <dimen name="list_item_gap">10dp</dimen>
+</resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="@dimen/screen_pad"
+    android:paddingEnd="@dimen/screen_pad"
+    android:paddingTop="12dp"
+    android:paddingBottom="10dp">
+
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/back"
+        android:padding="8dp"
+        android:src="@drawable/ic_back"
+        app:tint="@color/ink" />
+
+    <TextView
+        android:id="@+id/tvHeaderTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="6dp"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="@color/ink" />
+
+    <ImageButton
+        android:id="@+id/btnBell"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Notifications"
+        android:padding="9dp"
+        android:src="@drawable/ic_bell"
+        app:tint="@color/ink_soft" />
+
+    <TextView
+        android:id="@+id/tvHeaderAvatar"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/bg_avatar"
+        android:gravity="center"
+        android:text="BN"
+        android:textColor="@color/ink"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ATG</string>
+    <string name="brand_name">ACCURATE TRADING GROUP</string>
+    <string name="tagline">Best Trading Experience</string>
+    <string name="back">Back</string>
+    <string name="deposit">Deposit</string>
+    <string name="withdraw">Withdraw</string>
+    <string name="wallet">Wallet</string>
+    <string name="home">Home</string>
+    <string name="signals">Signals</string>
+    <string name="markets">Markets</string>
+    <string name="rooms">Rooms</string>
+    <string name="profile">Profile</string>
+    <string name="server_settings">Server address</string>
+</resources>

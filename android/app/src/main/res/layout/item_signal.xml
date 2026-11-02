@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="@dimen/card_pad"
+    android:layout_marginBottom="@dimen/card_gap"
+    android:background="@drawable/bg_card">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvSignalTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:textColor="@color/ink" />
+
+        <TextView
+            android:id="@+id/tvSignalSide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_chip_green"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:text="BUY"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/green_text" />
+
+        <TextView
+            android:id="@+id/tvSignalLive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/bg_chip_green"
+            android:drawableStart="@drawable/ic_dot"
+            android:drawablePadding="4dp"
+            android:paddingStart="7dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:gravity="center_vertical"
+            android:text="LIVE"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/green_text" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvSignalRoom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip_grey"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="OPEN FLOOR"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/muted" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvSignalSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textSize="13sp"
+        android:textColor="@color/muted" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.14"
+                android:text="ENTRY"
+                android:textSize="10sp"
+                android:textColor="@color/gold" />
+
+            <TextView
+                android:id="@+id/tvSignalEntry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="At market, now"
+                android:textSize="13sp"
+                android:textColor="@color/ink" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="12dp"
+            android:background="@color/stroke_soft" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.14"
+                android:text="STOP"
+                android:textSize="10sp"
+                android:textColor="@color/gold" />
+
+            <TextView
+                android:id="@+id/tvSignalStop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="Not given"
+                android:textSize="13sp"
+                android:textColor="@color/ink" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="12dp"
+            android:background="@color/stroke_soft" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.14"
+                android:text="TARGETS"
+                android:textSize="10sp"
+                android:textColor="@color/gold" />
+
+            <TextView
+                android:id="@+id/tvSignalTargets"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="Not given"
+                android:textSize="13sp"
+                android:textColor="@color/ink" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvSignalRule"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="M10 rule"
+            android:textSize="12sp"
+            android:textColor="@color/muted" />
+
+        <TextView
+            android:id="@+id/tvSignalParticipants"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip_amber"
+            android:drawableStart="@drawable/ic_person_small"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:paddingStart="7dp"
+            android:paddingEnd="7dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:text="1"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/gold" />
+
+        <TextView
+            android:id="@+id/tvSignalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="just now"
+            android:textSize="12sp"
+            android:textColor="@color/muted" />
+    </LinearLayout>
+</LinearLayout>
