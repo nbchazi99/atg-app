@@ -1,0 +1,20 @@
+# Render blueprint: hosts the ATG Spring Boot API on the free tier.
+# Database (Firestore), push (FCM) and app distribution stay on Firebase.
+services:
+  - type: web
+    name: atg-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/market/ping
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SERVER_PORT
+        value: 10000
+      - key: ATG_JWT_SECRET
+        generateValue: true
+      - key: JAVA_TOOL_OPTIONS
+        value: "-Xmx320m -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=48m"
+      # ATG_BASE_URL defaults to RENDER_EXTERNAL_URL in application-prod.properties.
