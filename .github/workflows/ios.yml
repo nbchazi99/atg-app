@@ -25,6 +25,11 @@ jobs:
           channel: stable
           cache: true
 
+      # firebase-ios-sdk 11.15.0 uses Swift 6 syntax (sending, internal import),
+      # so it needs Xcode 16.2 even though macos-14's default is Xcode 15.4.
+      - name: Select Xcode 16.2
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+
       - name: Install packages
         working-directory: mobile
         run: |
