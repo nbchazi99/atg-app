@@ -29,3 +29,6 @@ backend/.gradle/
 backend/data/
 backend/uploads/
 backend/*.log
+
+# Firebase service account key (never commit)
+backend/keys/
