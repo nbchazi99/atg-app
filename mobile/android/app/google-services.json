@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "517768547113",
+    "project_id": "atg-app-6908e",
+    "storage_bucket": "atg-app-6908e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:517768547113:android:bce29643d35c5d81bb4538",
+        "android_client_info": {
+          "package_name": "com.atg.atg_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBq0gd9ZS0hlolLz5VCuj6kWA8tVOqhtzU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

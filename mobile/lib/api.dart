@@ -429,4 +429,17 @@ class Api {
     final data = await _send('PUT', 'api/admin/settings', body: values);
     return Settings.fromJson((data as Map).cast<String, dynamic>());
   }
+
+  Future<void> registerPushToken(String token) async {
+    await _send(
+      'POST',
+      'api/push/register',
+      body: {
+        'token': token,
+        'platform': defaultTargetPlatform == TargetPlatform.iOS
+            ? 'ios'
+            : 'android',
+      },
+    );
+  }
 }

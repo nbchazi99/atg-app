@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'api.dart';
 import 'app_state.dart' as state;
+import 'push.dart';
 import 'realtime.dart';
 import 'screens/auth_screen.dart';
 import 'screens/shell.dart';
@@ -14,6 +16,11 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (error) {
+    debugPrint('ATG firebase init failed: $error');
+  }
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -49,7 +56,10 @@ class _AtgAppState extends State<AtgApp> {
   void initState() {
     super.initState();
     state.session.addListener(_sessionChanged);
-    if (_loggedIn) _refreshSession();
+    if (_loggedIn) {
+      _refreshSession();
+      PushService.start(state.session, state.api);
+    }
     _splashTimer = Timer(const Duration(milliseconds: 2200), () {
       if (mounted) setState(() => _splash = false);
     });
@@ -75,6 +85,9 @@ class _AtgAppState extends State<AtgApp> {
     final loggedIn = state.session.isLoggedIn;
     if (loggedIn != _loggedIn) {
       setState(() => _loggedIn = loggedIn);
+      if (loggedIn) {
+        PushService.start(state.session, state.api);
+      }
     }
   }
 
