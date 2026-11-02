@@ -34,12 +34,15 @@ class PushService {
     });
 
     await _tokenRefreshSub?.cancel();
-    _tokenRefreshSub = messaging.onRegistered.listen(_register);
+    _tokenRefreshSub = messaging.onTokenRefresh.listen(_register);
 
     try {
-      await messaging.register();
+      final token = await messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _register(token);
+      }
     } catch (error) {
-      debugPrint('ATG push registration failed: $error');
+      debugPrint('ATG push token lookup failed: $error');
     }
   }
 
