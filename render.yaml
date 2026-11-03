@@ -19,4 +19,10 @@ services:
         value: "-Xmx320m -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=48m"
       - key: GOOGLE_APPLICATION_CREDENTIALS
         sync: false
+      # Bootstrap admin for an empty database only; set the values in the Render
+      # dashboard so no credential lands in this public repository.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       # ATG_BASE_URL defaults to RENDER_EXTERNAL_URL in application-prod.properties.

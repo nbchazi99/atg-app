@@ -1620,64 +1620,6 @@ Future<bool> confirmAction(
   return result ?? false;
 }
 
-Future<void> showServerDialog(BuildContext context) async {
-  final controller = TextEditingController(text: session.server);
-  final saved = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: AtgColors.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('ATG server address', style: AtgText.h1),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Use 10.0.2.2 on the Android emulator, 127.0.0.1 on the iOS simulator, or your computer\'s LAN IP on a real phone.',
-            style: AtgText.small,
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: controller,
-            keyboardType: TextInputType.url,
-            autocorrect: false,
-            style: const TextStyle(fontSize: 14),
-            decoration: atgInputDecoration(hint: 'http://192.168.1.10:8080/'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(
-              color: AtgColors.muted,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text(
-            'Save',
-            style: TextStyle(
-              color: AtgColors.gold,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-  if (saved == true) {
-    await session.setServer(controller.text);
-    if (context.mounted) showToast(context, 'Server set to ${session.server}');
-  }
-  controller.dispose();
-}
-
 void notifyAllCaughtUp(BuildContext context) {
   showMessage(
     context,

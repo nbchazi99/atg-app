@@ -100,12 +100,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _fillDemo({required bool admin}) {
-    _setMode(false);
-    _email.text = admin ? 'admin@atg.app' : 'blessed@atg.app';
-    _password.text = admin ? 'Admin@123' : 'User@123';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -210,80 +204,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     onPressed: _submit,
                   ),
                   const SizedBox(height: 24),
-                  SurfaceCard(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SectionLabel('DEMO ACCOUNTS'),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Learner: blessed@atg.app / User@123\nAdministrator: admin@atg.app / Admin@123',
-                          style: AtgText.small.copyWith(
-                            color: AtgColors.inkSoft,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () => _fillDemo(admin: false),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 36),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Fill learner details',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AtgColors.gold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            TextButton(
-                              onPressed: () => _fillDemo(admin: true),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(0, 36),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Fill admin details',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AtgColors.gold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: TextButton(
-                      onPressed: () async {
-                        await showServerDialog(context);
-                        if (mounted) setState(() {});
-                      },
-                      child: Text(
-                        'Server: ${session.server}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AtgColors.gold,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   const Center(
                     child: Text(
                       'Trading involves risk. ATG is an education and signals platform, not a broker.',

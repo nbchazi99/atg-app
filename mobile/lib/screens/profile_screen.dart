@@ -127,11 +127,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _editServer() async {
-    await showServerDialog(context);
-    if (mounted) setState(() {});
-  }
-
   Future<void> _logout() async {
     final confirmed = await confirmAction(
       context,
@@ -260,56 +255,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     const SizedBox(height: 22),
-                    SurfaceCard(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.dns_outlined,
-                                size: 18,
-                                color: AtgColors.muted,
-                              ),
-                              const SizedBox(width: 8),
-                              const Expanded(
-                                child: Text(
-                                  'Server address',
-                                  style: AtgText.h3,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _editServer,
-                                child: const Text(
-                                  'Change',
-                                  style: TextStyle(
-                                    color: AtgColors.gold,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            session.server,
-                            style: AtgText.small.copyWith(fontSize: 11.5),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            '10.0.2.2 for the Android emulator, 127.0.0.1 for the iOS simulator, or your computer\'s '
-                            'LAN IP on a real phone.',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              color: AtgColors.muted,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
                     OutlineButton(
                       label: 'Sign out',
                       icon: Icons.logout_rounded,

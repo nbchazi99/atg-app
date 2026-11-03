@@ -28,17 +28,11 @@ flutter run -d emulator-5554    # a specific Android emulator
 flutter run -d ios              # on a Mac, with the iOS simulator
 ```
 
-Server address defaults and can be changed inside the app (Home → server row → *Profile → Server address*):
+The API base URL is pinned in `lib/session.dart` to the hosted production server,
+`https://atg-api-5de3.onrender.com/`. There is no in-app server editor; to point the app somewhere
+else, change that constant and rebuild.
 
-| Platform        | Default API base URL      |
-| --------------- | ------------------------- |
-| Android emulator| `http://10.0.2.2:8080/`   |
-| iOS simulator   | `http://127.0.0.1:8080/`  |
-| Physical phone  | `http://<LAN-IP>:8080/`   |
-
-Cleartext HTTP is allowed in development (`usesCleartextTraffic` on Android,
-`NSAllowsArbitraryLoads` in `ios/Runner/Info.plist`). Switch the backend to HTTPS and remove both
-flags before shipping.
+Traffic is HTTPS only — Android has no `usesCleartextTraffic` flag and iOS has no ATS exception.
 
 ## Build
 

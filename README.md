@@ -103,11 +103,9 @@ flutter build ipa --release       # iOS IPA (macOS + Xcode only)
 
 Server address:
 
-- Android emulator: `http://10.0.2.2:8080/` (default).
-- iOS simulator: `http://127.0.0.1:8080/` (default).
-- Physical phone on the same Wi-Fi: use the computer's LAN address, e.g. `http://192.168.1.20:8080/`.
-- Change it from the **Server:** link on the sign-in screen, or from **Profile → Server address**.
-  Changes take effect immediately; no rebuild needed.
+- The app is pinned to the hosted API, `https://atg-api-5de3.onrender.com/`, in
+  `mobile/lib/session.dart`. There is no in-app editor; changing the host means a rebuild.
+- To run the API locally for development, point that constant at your machine and rebuild.
 
 Cleartext HTTP is enabled for local development (`usesCleartextTraffic="true"` on Android, an ATS
 exception in `mobile/ios/Runner/Info.plist`). Use HTTPS and a real JWT secret before shipping.
@@ -147,12 +145,11 @@ Open `android/` in Android Studio and press Run, or `cd android && gradle assemb
 
 ## Accounts
 
-| Role  | Email             | Password  |
-|-------|-------------------|-----------|
-| Admin | `admin@atg.app`   | `Admin@123` |
-| User  | `blessed@atg.app` | `User@123`  |
-
-The sign-in screen has a demo button that fills the user account.
+There are no demo accounts. Traders register from the sign-in screen against the hosted production
+API. On an empty database the server creates the administrator from the `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` environment variables (set in the Render dashboard, never committed); if they are
+unset it starts with no admin and logs a warning. An admin replaces their own login from
+**Admin → Account**, which writes to the database and keeps the session signed in.
 
 ## Business rules
 
@@ -289,6 +286,5 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - The original Java client builds with `gradle assembleDebug`.
 - VIP room gating is also enforced server-side: locked rooms are flagged in `GET /rooms`, their posts
   are filtered from the feed, and messages return `403`.
-- The dev database now holds the smoke-test records above (`DEP-1`, `W-1`, `P-1`, `RT-1`, `RT-2`,
-  a "Realtime check" and a "Live push check from the desk" room message, blessed@atg.app set to
-  Weltrade VIP). Delete `backend/data/atg.mv.db` and restart the API for a clean reseed.
+- The production database starts empty: no seeded signals, courses, rooms or demo traders. Content
+  appears only when an admin publishes it.

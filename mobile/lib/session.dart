@@ -18,16 +18,7 @@ class Session extends ChangeNotifier {
     return 'https://atg-api-5de3.onrender.com/';
   }
 
-  String get server => _prefs.getString('server') ?? defaultServer;
-
-  Future<void> setServer(String value) async {
-    var v = value.trim();
-    if (v.isEmpty) return;
-    if (!v.startsWith('http')) v = 'http://$v';
-    if (!v.endsWith('/')) v = '$v/';
-    await _prefs.setString('server', v);
-    notifyListeners();
-  }
+  String get server => defaultServer;
 
   String? get token => _prefs.getString('token');
 
