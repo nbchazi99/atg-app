@@ -55,9 +55,10 @@ class Api {
 
     http.Response response;
     try {
+      // 90s: Render free tier needs ~50s to wake a spun-down instance.
       final streamed = await _client
           .send(request)
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 90));
       response = await http.Response.fromStream(streamed);
     } on ApiException {
       rethrow;
@@ -271,7 +272,7 @@ class Api {
         ),
       );
       final streamed = await request.send().timeout(
-        const Duration(seconds: 60),
+        const Duration(seconds: 90),
       );
       final response = await http.Response.fromStream(streamed);
       dynamic decoded;
