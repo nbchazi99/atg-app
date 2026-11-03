@@ -21,6 +21,11 @@ public final class Dtos {
 
     public record LoginReq(@Email @NotBlank String email, @NotBlank String password) {}
 
+    public record AdminAccountReq(
+            @NotBlank String currentPassword,
+            @Email String email,
+            @Size(min = 6, message = "Password must be at least 6 characters") String password) {}
+
     public record UserView(Long id, String name, String email, String phone, String role,
                            int points, String membership, String createdAt) {
         public static UserView of(User u) {

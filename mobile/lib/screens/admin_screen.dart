@@ -24,6 +24,7 @@ class _AdminScreenState extends State<AdminScreen> {
     'Signals',
     'Courses',
     'Settings',
+    'Account',
   ];
 
   final _adminFee = TextEditingController();
@@ -34,6 +35,10 @@ class _AdminScreenState extends State<AdminScreen> {
   final _fact = TextEditingController();
   final _promoTitle = TextEditingController();
   final _promoBody = TextEditingController();
+  final _currentPassword = TextEditingController();
+  final _newEmail = TextEditingController();
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
 
   int _tab = 0;
   bool _loading = true;
@@ -42,6 +47,7 @@ class _AdminScreenState extends State<AdminScreen> {
   List<Signal> _signals = const [];
   List<Course> _courses = const [];
   bool _savingSettings = false;
+  bool _savingAccount = false;
   VoidCallback? _unbind;
 
   @override
@@ -51,7 +57,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _unbind = realtime.bind(
       {AtgScope.requests, AtgScope.users, AtgScope.signals, AtgScope.courses},
       () {
-        if (!mounted || _savingSettings || _tab == 4) return;
+        if (!mounted || _savingSettings || _tab == 4 || _tab == 5) return;
         _loadTab();
       },
     );
@@ -68,6 +74,10 @@ class _AdminScreenState extends State<AdminScreen> {
     _fact.dispose();
     _promoTitle.dispose();
     _promoBody.dispose();
+    _currentPassword.dispose();
+    _newEmail.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -109,6 +119,10 @@ class _AdminScreenState extends State<AdminScreen> {
           final settings = await api.adminSettings();
           if (!mounted) return;
           _fillSettings(settings);
+          setState(() => _loading = false);
+          break;
+        case 5:
+          if (!mounted) return;
           setState(() => _loading = false);
           break;
         default:
@@ -459,6 +473,52 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  Future<void> _saveAccount() async {
+    if (_savingAccount) return;
+    final current = _currentPassword.text;
+    if (current.isEmpty) {
+      showToast(context, 'Enter your current password');
+      return;
+    }
+    final newEmail = _newEmail.text.trim();
+    final newPass = _newPassword.text;
+    if (newEmail.isNotEmpty && !newEmail.contains('@')) {
+      showToast(context, 'That does not look like an email');
+      return;
+    }
+    if (newPass.isNotEmpty && newPass.length < 6) {
+      showToast(context, 'New password must be at least 6 characters');
+      return;
+    }
+    if (newPass != _confirmPassword.text) {
+      showToast(context, 'New password and confirmation do not match');
+      return;
+    }
+    setState(() => _savingAccount = true);
+    try {
+      final result = await api.updateAdminAccount(
+        currentPassword: current,
+        email: newEmail,
+        password: newPass,
+      );
+      if (!mounted) return;
+      await session.saveAuth(result.token, result.user);
+      if (!mounted) return;
+      setState(() {
+        _savingAccount = false;
+        _currentPassword.clear();
+        _newEmail.clear();
+        _newPassword.clear();
+        _confirmPassword.clear();
+      });
+      showToast(context, 'Login credentials updated');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _savingAccount = false);
+      showMessage(context, 'Could not update the credentials', e.message);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -500,6 +560,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         2 => _signalsView(),
                         3 => _coursesView(),
                         4 => _settingsView(),
+                        5 => _accountView(),
                         _ => _requestsView(),
                       },
               ),
@@ -1020,6 +1081,91 @@ class _AdminScreenState extends State<AdminScreen> {
           label: 'Save settings',
           loading: _savingSettings,
           onPressed: _saveSettings,
+        ),
+      ],
+    );
+  }
+
+  Widget _accountView() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      children: [
+        const SectionLabel('SIGNED IN AS'),
+        const SizedBox(height: 10),
+        SurfaceCard(
+          padding: const EdgeInsets.all(13),
+          child: Row(
+            children: [
+              AvatarCircle(text: initials(session.name), size: 40),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AtgText.h3,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      session.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AtgText.small.copyWith(fontSize: 11.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const AtgPill(
+                text: 'ADMIN',
+                background: AtgColors.primarySoft,
+                foreground: AtgColors.gold,
+                fontSize: 9,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        const SectionLabel('CHANGE LOGIN CREDENTIALS'),
+        const SizedBox(height: 10),
+        AtgField(
+          controller: _currentPassword,
+          label: 'Current password',
+          obscureText: true,
+          autofillHints: const [AutofillHints.password],
+        ),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _newEmail,
+          label: 'New email (blank keeps current)',
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _newPassword,
+          label: 'New password (blank keeps current)',
+          obscureText: true,
+          autofillHints: const [AutofillHints.newPassword],
+        ),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _confirmPassword,
+          label: 'Confirm new password',
+          obscureText: true,
+        ),
+        const SizedBox(height: 18),
+        PrimaryButton(
+          label: 'Save credentials',
+          loading: _savingAccount,
+          onPressed: _saveAccount,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'You stay signed in. Use the new email and password next time you log in.',
+          style: AtgText.small,
         ),
       ],
     );

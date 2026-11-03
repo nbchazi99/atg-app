@@ -1,10 +1,13 @@
 package com.atg.api.web;
 
+import com.atg.api.config.JwtService;
 import com.atg.api.model.*;
 import com.atg.api.realtime.RealtimeHub;
 import com.atg.api.repo.*;
 import com.atg.api.service.WalletService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,12 +30,14 @@ public class AdminController extends BaseController {
     private final CourseRepository courses;
     private final LessonRepository lessons;
     private final RealtimeHub realtime;
+    private final JwtService jwt;
+    private final PasswordEncoder encoder;
 
     public AdminController(UserRepository users, WalletService wallet,
                            WalletTransactionRepository transactions, DepositRequestRepository deposits,
                            WithdrawalRequestRepository withdrawals, PurchaseRequestRepository purchases,
                            SignalRepository signals, CourseRepository courses, LessonRepository lessons,
-                           RealtimeHub realtime) {
+                           RealtimeHub realtime, JwtService jwt, PasswordEncoder encoder) {
         super(users);
         this.wallet = wallet;
         this.transactions = transactions;
@@ -43,6 +48,29 @@ public class AdminController extends BaseController {
         this.courses = courses;
         this.lessons = lessons;
         this.realtime = realtime;
+        this.jwt = jwt;
+        this.encoder = encoder;
+    }
+
+    @PutMapping("/account")
+    public Dtos.AuthRes updateAccount(@Valid @RequestBody Dtos.AdminAccountReq req) {
+        User admin = me();
+        if (!encoder.matches(req.currentPassword(), admin.getPasswordHash())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Current password is incorrect");
+        }
+        String email = req.email() == null || req.email().isBlank() ? null : req.email().trim().toLowerCase();
+        if (email != null && !email.equalsIgnoreCase(admin.getEmail())) {
+            if (users.existsByEmailIgnoreCase(email)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
+            }
+            admin.setEmail(email);
+        }
+        if (req.password() != null && !req.password().isBlank()) {
+            admin.setPasswordHash(encoder.encode(req.password()));
+        }
+        users.save(admin);
+        return new Dtos.AuthRes(jwt.generate(admin.getEmail(), admin.getRole().name()),
+                Dtos.UserView.of(admin));
     }
 
     @GetMapping("/users")

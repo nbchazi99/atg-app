@@ -431,6 +431,24 @@ class Api {
     return Settings.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  Future<AuthResult> updateAdminAccount({
+    required String currentPassword,
+    String? email,
+    String? password,
+  }) async {
+    final trimmedEmail = (email ?? '').trim();
+    final data = await _send(
+      'PUT',
+      'api/admin/account',
+      body: {
+        'currentPassword': currentPassword,
+        if (trimmedEmail.isNotEmpty) 'email': trimmedEmail,
+        if ((password ?? '').isNotEmpty) 'password': password,
+      },
+    );
+    return AuthResult.fromJson((data as Map).cast<String, dynamic>());
+  }
+
   Future<void> registerPushToken(String token) async {
     await _send(
       'POST',
