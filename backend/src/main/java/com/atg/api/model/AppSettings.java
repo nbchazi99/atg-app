@@ -11,9 +11,9 @@ public class AppSettings {
     private BigDecimal minDeposit = BigDecimal.valueOf(12.50);
     private BigDecimal maxDeposit = BigDecimal.valueOf(454.54);
     private BigDecimal minWithdraw = BigDecimal.valueOf(12.50);
-    private String fact = "Black Monday";
-    private String promotionTitle = "MWR Strategy Course Promotion";
-    private String promotionBody = "MWR STRATEGY COURSE — FLASH PROMO. Enrol before the window closes.";
+    private String fact = "";
+    private String promotionTitle = "";
+    private String promotionBody = "";
     private int pointsPerReferral = 5;
 
     public Long getId() { return id; }
