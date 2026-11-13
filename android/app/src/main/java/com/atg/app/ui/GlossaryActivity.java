@@ -55,7 +55,7 @@ public class GlossaryActivity extends AppCompatActivity {
                 new Adapters.GlossaryTerm("Equity", "Your account balance plus or minus the profit and loss on open trades."),
                 new Adapters.GlossaryTerm("Position sizing", "Choosing how many lots to trade so one loss cannot hurt the account."),
                 new Adapters.GlossaryTerm("ATR", "Average True Range. A measure of how much a pair typically moves."),
-                new Adapters.GlossaryTerm("Wella", "An ATG trader who trades on Weltrade, the broker the desk posts calls against.")
+                new Adapters.GlossaryTerm("Wella", "An ATG trader who trades on Weltrade, the broker the desk posts signals against.")
         ));
 
         EditText search = findViewById(R.id.etGlossarySearch);

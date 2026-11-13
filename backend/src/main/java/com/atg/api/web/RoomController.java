@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +44,8 @@ public class RoomController extends BaseController {
             m.put("preview", r.getPreview());
             m.put("unreadCount", r.getUnreadCount());
             m.put("lastActivityAt", r.getLastActivityAt());
-            m.put("locked", !canAccess(user, r));
-            m.put("requiredMembership", requiredMembership(r));
+            m.put("locked", !MembershipAccess.canAccess(user, MembershipAccess.requiredForRoom(r)));
+            m.put("requiredMembership", MembershipAccess.requiredForRoom(r));
             return m;
         }).toList();
     }
@@ -58,7 +59,9 @@ public class RoomController extends BaseController {
         else rows = posts.findAllByOrderByCreatedAtDesc();
 
         return rows.stream()
-                .filter(p -> rooms.findById(p.getRoomId()).map(r -> canAccess(user, r)).orElse(false))
+                .filter(p -> rooms.findById(p.getRoomId())
+                        .map(r -> MembershipAccess.canAccess(user, MembershipAccess.requiredForRoom(r)))
+                        .orElse(false))
                 .map(p -> {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("id", p.getId());
@@ -79,7 +82,7 @@ public class RoomController extends BaseController {
     public List<RoomMessage> messages(@PathVariable Long id) {
         Room room = rooms.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
-        requireAccess(me(), room);
+        MembershipAccess.requireAccess(me(), MembershipAccess.requiredForRoom(room), room.getName());
         return messages.findByRoomIdOrderByCreatedAtAsc(id);
     }
 
@@ -88,39 +91,19 @@ public class RoomController extends BaseController {
         Room room = rooms.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
         User user = me();
-        requireAccess(user, room);
+        MembershipAccess.requireAccess(user, MembershipAccess.requiredForRoom(room), room.getName());
         RoomMessage m = new RoomMessage();
         m.setRoomId(id);
         m.setAuthor(user.getName());
         m.setText(req.text().trim());
-        m.setCreatedAt(LocalDateTime.now());
+        m.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
         messages.save(m);
         room.setPreview(req.text().trim());
-        room.setLastActivityAt(LocalDateTime.now());
+        room.setLastActivityAt(LocalDateTime.now(ZoneOffset.UTC));
         rooms.save(room);
         realtime.publish(RealtimeHub.ROOMS, Map.of("roomId", id, "kind", "message"));
         realtime.publish(RealtimeHub.roomScope(id), Map.of("roomId", id, "kind", "message"));
         return m;
     }
 
-    private static String requiredMembership(Room room) {
-        if (room.getName() == null) return null;
-        if (room.getName().contains("Deriv VIP")) return "DERIV_VIP";
-        if (room.getName().contains("Weltrade VIP")) return "WELTRADE_VIP";
-        return null;
-    }
-
-    private static boolean canAccess(User user, Room room) {
-        String required = requiredMembership(room);
-        if (required == null) return true;
-        if (user.getRole() == User.Role.ADMIN) return true;
-        return user.getMembership() != null && required.equals(user.getMembership().name());
-    }
-
-    private static void requireAccess(User user, Room room) {
-        if (!canAccess(user, room)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    room.getName() + " is for members. Join from your profile to unlock it.");
-        }
-    }
 }

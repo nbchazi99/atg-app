@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../app_state.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../responsive.dart';
 import '../theme.dart';
@@ -55,10 +55,7 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _watchVideo() async {
     final url = widget.lesson.videoUrl.trim();
     if (url.isEmpty) return;
-    final ok = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    );
+    final ok = await openWebLink(url);
     if (!ok && mounted) showToast(context, 'No app can open that video link');
   }
 
@@ -123,7 +120,7 @@ class _LessonScreenState extends State<LessonScreen> {
                     Text(lesson.title, style: AtgText.pageTitle),
                     const SizedBox(height: 16),
                     SurfaceCard(
-                      child: Text(
+                      child: LinkedText(
                         lesson.content.trim().isEmpty
                             ? 'The desk has not added notes for this lesson yet.'
                             : lesson.content,

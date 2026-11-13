@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class Enrollment {
 
@@ -10,7 +11,7 @@ public class Enrollment {
     private Long courseId;
     /** Comma separated lesson ids, e.g. ",3,4," */
     private String completedLessonIds = "";
-    private LocalDateTime enrolledAt = LocalDateTime.now();
+    private LocalDateTime enrolledAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

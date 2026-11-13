@@ -1,6 +1,8 @@
 package com.atg.app.ui;
 
 import android.content.Context;
+import android.text.util.Linkify;
+import android.text.method.LinkMovementMethod;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -11,8 +13,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
@@ -49,17 +53,17 @@ public final class Ui {
 
     public static String timeAgo(String iso) {
         if (iso == null || iso.isBlank()) return "";
-        LocalDateTime time;
+        Instant time;
         try {
-            time = LocalDateTime.parse(iso);
+            time = OffsetDateTime.parse(iso).toInstant();
         } catch (DateTimeParseException e) {
             try {
-                time = OffsetDateTime.parse(iso).toLocalDateTime();
+                time = LocalDateTime.parse(iso).toInstant(ZoneOffset.UTC);
             } catch (DateTimeParseException ignored) {
                 return "";
             }
         }
-        long minutes = Duration.between(time, LocalDateTime.now()).toMinutes();
+        long minutes = Duration.between(time, Instant.now()).toMinutes();
         if (minutes < 1) return "just now";
         if (minutes < 60) return minutes + "m ago";
         long hours = minutes / 60;
@@ -71,6 +75,11 @@ public final class Ui {
 
     public static void toast(Context context, String message) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+    }
+
+    public static void enableWebLinks(TextView view) {
+        Linkify.addLinks(view, Linkify.WEB_URLS);
+        view.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
     public static void alert(Context context, String title, String message) {

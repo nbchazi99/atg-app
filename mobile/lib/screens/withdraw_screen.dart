@@ -31,7 +31,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       tag: 'No fee',
       logo: 'assets/images/wallets/smilecash.png',
     ),
-    OptionTile(title: 'Cash', subtitle: 'Collect at the office', badge: 'CA'),
   ];
 
   static const _sources = [
@@ -41,12 +40,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'W',
       badgeColor: AtgColors.greenText,
       tag: 'Common',
-    ),
-    OptionTile(
-      title: 'Deriv withdrawal',
-      subtitle: 'You withdrew to the ATG agent on Deriv.',
-      badge: 'D',
-      badgeColor: AtgColors.redText,
     ),
     OptionTile(
       title: 'Crypto withdrawal',
@@ -109,7 +102,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   double get _fee => (_enteredAmount * _feePct).round() / 100;
   double get _receive => ((_enteredAmount - _fee) * 100).round() / 100;
   String get _pctLabel => trimNumber(_feePct);
-  bool get _cashPayout => _payout == 2;
 
   void _goTo(int step) {
     setState(() => _step = step);
@@ -123,7 +115,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   bool _validatePayout() {
-    if (!_cashPayout && _payoutMobile.text.trim().isEmpty) {
+    if (_payoutMobile.text.trim().isEmpty) {
       showToast(context, 'Enter the mobile money number');
       return false;
     }
@@ -232,29 +224,22 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   String get _clientLabel => switch (_source) {
-    1 => 'Deriv nickname',
-    2 => 'USDT wallet address you sent from',
+    1 => 'USDT wallet address you sent from',
     _ => 'Weltrade Client ID',
   };
 
   String get _clientHint => switch (_source) {
-    1 => 'The nickname on your Deriv account, not your email.',
-    2 => 'The address the USDT left. Double-check every character.',
+    1 => 'The address the USDT left. Double-check every character.',
     _ => 'In your Weltrade cabinet, under your name. It is not your MT5 login.',
   };
 
   String get _instructionTitle => switch (_source) {
-    1 => 'Withdrawing through Deriv',
-    2 => 'Withdrawing through crypto',
+    1 => 'Withdrawing through crypto',
     _ => 'Withdrawing through Weltrade',
   };
 
   String get _instructionBody => switch (_source) {
     1 =>
-      '1. In Deriv, start a withdrawal to the ATG agent.\n\n'
-          '2. When it completes, screenshot the confirmation.\n\n'
-          '3. Attach that screenshot and enter your Deriv nickname.',
-    2 =>
       '1. Send USDT to the ATG wallet address the desk gives you.\n\n'
           '2. When the transfer confirms, screenshot it.\n\n'
           '3. Attach that screenshot and paste the sending wallet address.',
@@ -323,28 +308,17 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         selected: _payout,
         onSelected: (index) => setState(() => _payout = index),
       ),
-      if (!_cashPayout) ...[
-        const SizedBox(height: 16),
-        AtgField(
-          controller: _payoutMobile,
-          label: 'Mobile money number',
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'The number that receives the payout. It can differ from your sign-in number.',
-          style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
-        ),
-      ] else ...[
-        const SizedBox(height: 16),
-        const SurfaceCard(
-          padding: EdgeInsets.all(14),
-          child: Text(
-            'Collect at the ATG office with your ID. The administrator will call you when the cash is ready.',
-            style: AtgText.bodySmall,
-          ),
-        ),
-      ],
+      const SizedBox(height: 16),
+      AtgField(
+        controller: _payoutMobile,
+        label: 'Mobile money number',
+        keyboardType: TextInputType.phone,
+      ),
+      const SizedBox(height: 6),
+      const Text(
+        'The number that receives the payout. It can differ from your sign-in number.',
+        style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
+      ),
       const SizedBox(height: 22),
       PrimaryButton(
         label: 'Continue',

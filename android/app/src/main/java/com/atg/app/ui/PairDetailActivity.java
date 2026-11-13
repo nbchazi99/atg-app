@@ -31,7 +31,7 @@ public class PairDetailActivity extends AppCompatActivity {
     private static final String EXTRA_SYMBOL = "symbol";
 
     private String symbol;
-    private TextView tvBigPrice, tvBigChange, tvHigh, tvLow, tvPrevClose, tvCallsHeading, tvCallsEmpty;
+    private TextView tvBigPrice, tvHigh, tvLow, tvPrevClose, tvCallsHeading, tvCallsEmpty;
     private MaterialButton btnFavourite;
     private SignalsAdapter adapter;
     private boolean favourite;
@@ -56,7 +56,6 @@ public class PairDetailActivity extends AppCompatActivity {
         findViewById(R.id.tvHeaderAvatar).setVisibility(View.GONE);
 
         tvBigPrice = findViewById(R.id.tvBigPrice);
-        tvBigChange = findViewById(R.id.tvBigChange);
         tvHigh = findViewById(R.id.tvHigh);
         tvLow = findViewById(R.id.tvLow);
         tvPrevClose = findViewById(R.id.tvPrevClose);
@@ -64,7 +63,7 @@ public class PairDetailActivity extends AppCompatActivity {
         tvCallsEmpty = findViewById(R.id.tvCallsEmpty);
         btnFavourite = findViewById(R.id.btnFavouritePair);
 
-        tvCallsHeading.setText("ATG calls on " + display(symbol));
+        tvCallsHeading.setText("ATG signals on " + display(symbol));
 
         RecyclerView calls = findViewById(R.id.rvPairCalls);
         adapter = new SignalsAdapter(signal -> SignalDetailActivity.start(this, signal));
@@ -87,9 +86,6 @@ public class PairDetailActivity extends AppCompatActivity {
                 Models.MarketPair p = res.pair;
                 ((TextView) findViewById(R.id.tvPairSubtitle)).setText(p.name);
                 tvBigPrice.setText(Ui.price(p.price));
-                boolean up = p.changePct >= 0;
-                tvBigChange.setText(Ui.pct(p.changePct) + " today");
-                tvBigChange.setTextColor(getColor(up ? R.color.green_text : R.color.red_text));
                 tvHigh.setText(Ui.price(p.high));
                 tvLow.setText(Ui.price(p.low));
                 tvPrevClose.setText(Ui.price(p.prevClose));

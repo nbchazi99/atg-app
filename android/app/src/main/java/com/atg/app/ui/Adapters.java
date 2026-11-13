@@ -210,6 +210,7 @@ public class Adapters {
             Context c = h.itemView.getContext();
             h.title.setText(s.title);
             h.subtitle.setText(s.subtitle);
+            Ui.enableWebLinks(h.subtitle);
             h.side.setText(s.side);
             boolean buy = "BUY".equals(s.side);
             h.side.setBackgroundResource(buy ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
@@ -288,14 +289,9 @@ public class Adapters {
         @Override
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Models.MarketPair p = items.get(position);
-            Context c = h.itemView.getContext();
             h.symbol.setText(p.symbol);
             h.name.setText(p.name);
             h.price.setText(Ui.price(p.price));
-            boolean up = p.changePct >= 0;
-            h.change.setText(Ui.pct(p.changePct));
-            h.change.setBackgroundResource(up ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
-            h.change.setTextColor(ContextCompat.getColor(c, up ? R.color.green_text : R.color.red_text));
             h.updated.setText(Ui.timeAgo(p.updatedAt));
             h.fav.setImageResource(favourites.contains(p.symbol) ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
             h.itemView.setOnClickListener(v -> {
@@ -312,7 +308,7 @@ public class Adapters {
         }
 
         static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, name, price, change, updated;
+            final TextView symbol, name, price, updated;
             final ImageButton fav;
 
             Holder(View v) {
@@ -320,7 +316,6 @@ public class Adapters {
                 symbol = v.findViewById(R.id.tvPairSymbol);
                 name = v.findViewById(R.id.tvPairName);
                 price = v.findViewById(R.id.tvPairPrice);
-                change = v.findViewById(R.id.tvPairChange);
                 updated = v.findViewById(R.id.tvPairUpdated);
                 fav = v.findViewById(R.id.btnFavourite);
             }
@@ -361,6 +356,7 @@ public class Adapters {
             h.side.setBackgroundResource(buy ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
             h.side.setTextColor(ContextCompat.getColor(c, buy ? R.color.green_text : R.color.red_text));
             h.preview.setText(f.preview);
+            Ui.enableWebLinks(h.preview);
             h.time.setText(Ui.timeAgo(f.createdAt));
             if (f.participants > 0) {
                 h.count.setVisibility(View.VISIBLE);
@@ -425,6 +421,7 @@ public class Adapters {
             boolean own = m.author != null && m.author.equalsIgnoreCase(selfName);
             h.author.setText(m.author);
             h.text.setText(m.text);
+            Ui.enableWebLinks(h.text);
             h.time.setText(Ui.timeAgo(m.createdAt));
             h.bubble.setBackgroundResource(own ? R.drawable.bg_bubble_out : R.drawable.bg_bubble_in);
             LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) h.bubble.getLayoutParams();
@@ -973,12 +970,8 @@ public class Adapters {
         @Override
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Models.MarketPair p = items.get(position);
-            boolean up = p.changePct >= 0;
             h.symbol.setText(p.symbol);
             h.price.setText(Ui.price(p.price));
-            h.change.setText(Ui.pct(p.changePct));
-            h.change.setTextColor(ContextCompat.getColor(h.itemView.getContext(),
-                    up ? R.color.green_text : R.color.red_text));
         }
 
         @Override
@@ -987,13 +980,12 @@ public class Adapters {
         }
 
         static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, price, change;
+            final TextView symbol, price;
 
             Holder(View v) {
                 super(v);
                 symbol = v.findViewById(R.id.tvTickerSymbol);
                 price = v.findViewById(R.id.tvTickerPrice);
-                change = v.findViewById(R.id.tvTickerChange);
             }
         }
     }

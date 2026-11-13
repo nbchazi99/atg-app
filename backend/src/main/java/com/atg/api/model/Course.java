@@ -2,6 +2,7 @@ package com.atg.api.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class Course {
 
@@ -14,7 +15,7 @@ public class Course {
     private String level = "Beginner";
     private String imageUrl;
     private int lessonsCount = 0;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

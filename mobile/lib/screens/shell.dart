@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../realtime.dart';
 import '../theme.dart';
+import 'academy_screen.dart';
 import 'home_screen.dart';
-import 'markets_screen.dart';
 import 'rooms_screen.dart';
 import 'signals_screen.dart';
 import 'wallet_screen.dart';
@@ -50,7 +50,7 @@ class _AppShellState extends State<AppShell> {
     final pages = <Widget>[
       HomeScreen(onOpenTab: _select),
       const SignalsScreen(),
-      const MarketsScreen(),
+      const AcademyScreen(),
       const RoomsScreen(),
       const WalletScreen(),
     ];
@@ -99,7 +99,7 @@ class _BottomBar extends StatelessWidget {
   static const _icons = <IconData>[
     Icons.home_outlined,
     Icons.bolt_outlined,
-    Icons.show_chart_rounded,
+    Icons.school_outlined,
     Icons.forum_outlined,
     Icons.account_balance_wallet_outlined,
   ];
@@ -107,12 +107,12 @@ class _BottomBar extends StatelessWidget {
   static const _selectedIcons = <IconData>[
     Icons.home_rounded,
     Icons.bolt_rounded,
-    Icons.insert_chart_rounded,
+    Icons.school_rounded,
     Icons.forum_rounded,
     Icons.account_balance_wallet_rounded,
   ];
 
-  static const _labels = ['Home', 'Signals', 'Markets', 'Community', 'Wallet'];
+  static const _labels = ['Home', 'Signals', 'Academy', 'Community', 'Wallet'];
 
   @override
   Widget build(BuildContext context) {

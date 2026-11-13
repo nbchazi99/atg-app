@@ -122,13 +122,13 @@ class _PairDetailScreenState extends State<PairDetailScreen> {
                             _buildFavouriteButton(detail),
                             const SizedBox(height: 20),
                             SectionLabel(
-                              'ATG CALLS ON ${displaySymbol(widget.symbol)}',
+                              'ATG SIGNALS ON ${displaySymbol(widget.symbol)}',
                             ),
                             const SizedBox(height: 10),
                             if (detail.calls.isEmpty)
                               const EmptyState(
-                                title: 'No calls yet',
-                                message: 'When the desk posts a call on this pair it appears here.',
+                                title: 'No signals yet',
+                                message: 'When the desk posts a signal on this pair it appears here.',
                                 icon: Icons.bolt_outlined,
                               )
                             else
@@ -155,7 +155,6 @@ class _PairDetailScreenState extends State<PairDetailScreen> {
 
   Widget _buildPriceCard(PairDetail detail) {
     final pair = detail.pair;
-    final up = pair.changePct >= 0;
     return SurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,14 +173,6 @@ class _PairDetailScreenState extends State<PairDetailScreen> {
           const SizedBox(height: 6),
           Row(
             children: [
-              AtgPill(
-                text: pct(pair.changePct),
-                background: up ? AtgColors.greenBg : AtgColors.redBg,
-                foreground: up ? AtgColors.greenText : AtgColors.redText,
-                fontSize: 11,
-              ),
-              const SizedBox(width: 6),
-              const Text('today', style: AtgText.small),
               const Spacer(),
               if (pair.updatedAt != null && pair.updatedAt!.isNotEmpty)
                 Text('Updated ${timeAgo(pair.updatedAt)}', style: AtgText.tiny),

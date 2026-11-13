@@ -27,6 +27,7 @@ public class AdminController extends BaseController {
     private final WithdrawalRequestRepository withdrawals;
     private final PurchaseRequestRepository purchases;
     private final SignalRepository signals;
+    private final RoomRepository rooms;
     private final CourseRepository courses;
     private final LessonRepository lessons;
     private final RealtimeHub realtime;
@@ -36,7 +37,8 @@ public class AdminController extends BaseController {
     public AdminController(UserRepository users, WalletService wallet,
                            WalletTransactionRepository transactions, DepositRequestRepository deposits,
                            WithdrawalRequestRepository withdrawals, PurchaseRequestRepository purchases,
-                           SignalRepository signals, CourseRepository courses, LessonRepository lessons,
+                           SignalRepository signals, RoomRepository rooms,
+                           CourseRepository courses, LessonRepository lessons,
                            RealtimeHub realtime, JwtService jwt, PasswordEncoder encoder) {
         super(users);
         this.wallet = wallet;
@@ -45,6 +47,7 @@ public class AdminController extends BaseController {
         this.withdrawals = withdrawals;
         this.purchases = purchases;
         this.signals = signals;
+        this.rooms = rooms;
         this.courses = courses;
         this.lessons = lessons;
         this.realtime = realtime;
@@ -129,6 +132,17 @@ public class AdminController extends BaseController {
         return signals.findAllByOrderByCreatedAtDesc();
     }
 
+    @PostMapping("/rooms")
+    public Room createRoom(@Valid @RequestBody Dtos.RoomReq req) {
+        Room room = new Room();
+        room.setName(req.name().trim());
+        room.setDescription(req.description() == null ? "" : req.description().trim());
+        room.setPreview("");
+        Room saved = rooms.save(room);
+        realtime.publish(RealtimeHub.ROOMS, Map.of("roomId", saved.getId(), "kind", "created"));
+        return saved;
+    }
+
     @PostMapping("/signals")
     public Signal createSignal(@RequestBody Dtos.SignalReq req) {
         Signal s = new Signal();
@@ -174,6 +188,9 @@ public class AdminController extends BaseController {
 
     @PostMapping("/courses")
     public Course createCourse(@RequestBody Dtos.CourseReq req) {
+        if (req.price() != null && req.price().signum() < 0) {
+            throw bad("Course price cannot be negative");
+        }
         Course c = new Course();
         c.setTitle(req.title());
         c.setSubtitle(req.subtitle());

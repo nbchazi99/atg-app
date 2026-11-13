@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class RoomPost {
 
@@ -13,7 +14,7 @@ public class RoomPost {
     private String preview;
     private int participants = 0;
     private boolean open = true;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

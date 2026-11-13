@@ -42,16 +42,6 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvBigChange"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="-0.00% today"
-                android:textColor="@color/red_text"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
                 android:id="@+id/tvPairNotice"
                 style="@style/TextAppearance.ATG.Small"
                 android:layout_width="match_parent"
@@ -172,7 +162,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="26dp"
-                android:text="ATG calls on this pair"
+                android:text="ATG signals on this pair"
                 android:textColor="@color/ink"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -183,7 +173,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Nothing on this pair in your feed. When ATG calls it, it lands here." />
+                android:text="Nothing on this pair in your feed. When ATG posts a signal, it lands here." />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPairCalls"

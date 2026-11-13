@@ -4,6 +4,8 @@ import com.atg.app.ui.Adapters.*;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -36,6 +38,14 @@ public class RoomDetailActivity extends AppCompatActivity {
     private EditText input;
     private MaterialButton send;
     private boolean sending;
+    private final Handler refreshHandler = new Handler(Looper.getMainLooper());
+    private final Runnable refreshMessages = new Runnable() {
+        @Override
+        public void run() {
+            load(true);
+            refreshHandler.postDelayed(this, 5000);
+        }
+    };
 
     public static void start(Context context, long roomId, String name) {
         Intent intent = new Intent(context, RoomDetailActivity.class);
@@ -69,23 +79,44 @@ public class RoomDetailActivity extends AppCompatActivity {
         send = findViewById(R.id.btnSend);
         send.setOnClickListener(v -> sendMessage());
 
-        load();
+        load(false);
     }
 
-    private void load() {
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshHandler.postDelayed(refreshMessages, 5000);
+    }
+
+    @Override
+    protected void onPause() {
+        refreshHandler.removeCallbacks(refreshMessages);
+        super.onPause();
+    }
+
+    private void load(boolean silent) {
         ApiClient.api().messages(roomId).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<List<Models.RoomMessage>> call,
                                    @NonNull Response<List<Models.RoomMessage>> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    int oldCount = adapter.getItemCount();
+                    LinearLayoutManager layout = (LinearLayoutManager) list.getLayoutManager();
+                    boolean wasAtBottom = oldCount == 0
+                            || layout.findLastVisibleItemPosition() >= oldCount - 1;
                     adapter.setItems(response.body());
-                    if (!response.body().isEmpty()) list.scrollToPosition(response.body().size() - 1);
+                    if (!response.body().isEmpty()
+                            && (oldCount == 0 || (wasAtBottom && response.body().size() > oldCount))) {
+                        list.scrollToPosition(response.body().size() - 1);
+                    }
+                } else if (!silent) {
+                    Ui.toast(RoomDetailActivity.this, ApiClient.errorMessage(response));
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<List<Models.RoomMessage>> call, @NonNull Throwable t) {
-                Ui.toast(RoomDetailActivity.this, ApiClient.connectionMessage(t));
+                if (!silent) Ui.toast(RoomDetailActivity.this, ApiClient.connectionMessage(t));
             }
         });
     }

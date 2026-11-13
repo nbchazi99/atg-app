@@ -110,6 +110,7 @@ public class CourseDetailActivity extends AppCompatActivity {
                 lessons.setText(course.lessonsCount + " lessons");
                 price.setText(Ui.money(course.price));
                 desc.setText(course.description);
+                Ui.enableWebLinks(desc);
 
                 adapter.setItems(detail.lessons, detail.completedLessonIds);
                 int total = course.lessonsCount;

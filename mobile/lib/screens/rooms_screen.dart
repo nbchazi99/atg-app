@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../realtime.dart';
 import '../responsive.dart';
@@ -28,8 +29,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
   bool _loading = true;
   int _request = 0;
   VoidCallback? _unbind;
-
-  Room? get _mainRoom => _rooms.isEmpty ? null : _rooms.first;
 
   @override
   void initState() {
@@ -83,7 +82,9 @@ class _RoomsScreenState extends State<RoomsScreen> {
   }
 
   void _openFeedItem(FeedItem item) {
-    final roomId = item.roomId > 0 ? item.roomId : (_mainRoom?.id ?? 0);
+    final roomId = item.roomId > 0
+        ? item.roomId
+        : (_rooms.isEmpty ? 0 : _rooms.first.id);
     if (roomId <= 0) return;
     Room? room;
     for (final r in _rooms) {
@@ -108,8 +109,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final mainRoom = _mainRoom;
-
     return SafeArea(
       bottom: false,
       child: PageBody(
@@ -124,58 +123,84 @@ class _RoomsScreenState extends State<RoomsScreen> {
                 context,
               ).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
             ),
-            if (mainRoom != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+            if (_rooms.isEmpty)
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 2, 16, 0),
                 child: SurfaceCard(
-                  padding: const EdgeInsets.all(14),
-                  onTap: () => _openRoom(mainRoom),
+                  padding: EdgeInsets.all(14),
                   child: Row(
                     children: [
-                      const AtgLogo(size: 44),
-                      const SizedBox(width: 12),
+                      AtgLogo(size: 40),
+                      SizedBox(width: 12),
                       Expanded(
+                        child: Text(
+                          'Chat rooms are not available yet.',
+                          style: AtgText.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 94,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _rooms.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final room = _rooms[index];
+                    return SizedBox(
+                      width: 250,
+                      child: SurfaceCard(
+                        padding: const EdgeInsets.all(12),
+                        onTap: () => _openRoom(room),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              mainRoom.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AtgText.h2,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    room.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AtgText.h3,
+                                  ),
+                                ),
+                                if (room.locked)
+                                  const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 15,
+                                    color: AtgColors.gold,
+                                  )
+                                else
+                                  Text(
+                                    timeAgo(room.lastActivityAt),
+                                    style: AtgText.tiny,
+                                  ),
+                              ],
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              mainRoom.preview.isEmpty
-                                  ? 'Tap to open the room'
-                                  : mainRoom.preview,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AtgText.small,
+                            const SizedBox(height: 5),
+                            Expanded(
+                              child: LinkedText(
+                                room.preview.isNotEmpty
+                                    ? room.preview
+                                    : room.description.isNotEmpty
+                                    ? room.description
+                                    : 'Tap to start chatting',
+                                style: AtgText.small,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            timeAgo(mainRoom.lastActivityAt),
-                            style: AtgText.tiny,
-                          ),
-                          const SizedBox(height: 6),
-                          AtgPill(
-                            text: mainRoom.unreadCount >= 99
-                                ? '99+'
-                                : '${mainRoom.unreadCount}',
-                            background: AtgColors.primarySoft,
-                            foreground: AtgColors.gold,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             Padding(

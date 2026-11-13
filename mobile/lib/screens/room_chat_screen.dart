@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../realtime.dart';
 import '../responsive.dart';
@@ -32,7 +35,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   bool _loading = true;
   bool _sending = false;
   bool _fetching = false;
+  bool _reloadPending = false;
   String? _error;
+  bool _forbidden = false;
   VoidCallback? _unbind;
 
   @override
@@ -55,7 +60,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   }
 
   Future<void> _load({bool silent = false}) async {
-    if (_fetching) return;
+    if (_fetching) {
+      _reloadPending = true;
+      return;
+    }
     _fetching = true;
     try {
       final messages = await api.messages(widget.roomId);
@@ -75,17 +83,39 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       if (!mounted) return;
       if (e.status == 403) {
         _unbind?.call();
+      }
+      if (!silent || _messages.isEmpty || e.status == 403) {
         setState(() {
           _error = e.message;
+          _forbidden = e.status == 403;
           _loading = false;
         });
-      } else if (!silent) {
-        setState(() => _loading = false);
-        showToast(context, e.message);
       }
+    } catch (error, stackTrace) {
+      debugPrint('Could not load room messages: $error\n$stackTrace');
+      if (!mounted || (silent && _messages.isNotEmpty)) return;
+      setState(() {
+        _error =
+            'Could not load messages. Check your connection and try again.';
+        _forbidden = false;
+        _loading = false;
+      });
     } finally {
       _fetching = false;
+      if (_reloadPending && mounted) {
+        _reloadPending = false;
+        unawaited(_load(silent: true));
+      }
     }
+  }
+
+  Future<void> _retryLoad() async {
+    setState(() {
+      _error = null;
+      _forbidden = false;
+      _loading = true;
+    });
+    await _load();
   }
 
   void _scrollToEnd() {
@@ -109,14 +139,17 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       _input.clear();
       setState(() {
         _messages = [..._messages, message];
-        _sending = false;
       });
       _scrollToEnd();
       _focus.requestFocus();
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _sending = false);
       showToast(context, e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not send room message: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not send message. Try again.');
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
   }
 
@@ -139,15 +172,24 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                 child: _loading
                     ? const LoadingBlock()
                     : _error != null
-                    ? Center(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24),
-                          child: EmptyState(
-                            title: 'Members only',
+                    ? ListView(
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          EmptyState(
+                            title: _forbidden
+                                ? 'Members only'
+                                : 'Could not load chat',
                             message: _error!,
-                            icon: Icons.lock_outline_rounded,
+                            icon: _forbidden
+                                ? Icons.lock_outline_rounded
+                                : Icons.cloud_off_outlined,
                           ),
-                        ),
+                          if (!_forbidden)
+                            OutlineButton(
+                              label: 'Try again',
+                              onPressed: _retryLoad,
+                            ),
+                        ],
                       )
                     : _messages.isEmpty
                     ? ListView(
@@ -293,7 +335,7 @@ class _Bubble extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 3),
-            Text(
+            LinkedText(
               message.text,
               style: const TextStyle(
                 fontSize: 14,

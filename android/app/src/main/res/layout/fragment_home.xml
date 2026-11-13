@@ -116,7 +116,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="0 calls are live."
+                    android:text="0 signals are live."
                     android:textColor="@color/ink_soft"
                     android:textSize="19sp" />
             </LinearLayout>
@@ -238,7 +238,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="No live calls right now"
+                    android:text="No live signals right now"
                     android:textColor="@color/ink"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -247,7 +247,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="The floor is quiet. New calls show up here the moment they are posted."
+                    android:text="The floor is quiet. New signals show up here the moment they are posted."
                     android:textColor="@color/muted"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -404,7 +404,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="7dp"
-                        android:text="Calls"
+                        android:text="Signals"
                         android:textColor="@color/ink"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -526,16 +526,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHomeTickers"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/screen_pad"
-                android:layout_marginTop="14dp"
-                android:layout_marginEnd="@dimen/screen_pad"
-                android:clipToPadding="false"
-                android:orientation="horizontal" />
-
             <LinearLayout
                 android:id="@+id/cardFact"
                 android:layout_width="match_parent"
@@ -617,7 +607,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="A Wella trades on Weltrade. It is the broker ATG funds, withdraws from, and posts every call against."
+                    android:text="A Wella trades on Weltrade. It is the broker ATG funds, withdraws from, and posts every signal against."
                     android:textColor="@color/ink_soft"
                     android:textSize="13sp" />
 

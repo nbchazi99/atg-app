@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../responsive.dart';
 import '../theme.dart';
@@ -113,7 +114,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                           ),
                           if (signal.subtitle.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Text(signal.subtitle, style: AtgText.body),
+                            LinkedText(signal.subtitle, style: AtgText.body),
                           ],
                           const SizedBox(height: 16),
                           const Divider(),
@@ -211,7 +212,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SectionLabel('HOW TO TRADE THIS CALL'),
+                          const SectionLabel('HOW TO TRADE THIS SIGNAL'),
                           const SizedBox(height: 8),
                           Text(
                             signal.isBuy
@@ -219,7 +220,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                                       'your account. Move the stop to break-even when the first target prints, and do not '
                                       'add to a losing position.'
                                 : 'Sell only after price rejects the level on the close. Risk no more than 1% of your '
-                                      'account, trail the stop behind structure, and take the call off the table if the rule '
+                                      'account, trail the stop behind structure, and take the signal off the table if the rule '
                                       'invalidates.',
                             style: AtgText.bodySmall,
                           ),

@@ -70,7 +70,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Sign in to your ATG account. Your courses, calls and wallet live here." />
+            android:text="Sign in to your ATG account. Your courses, signals and wallet live here." />
 
         <LinearLayout
             android:layout_width="match_parent"

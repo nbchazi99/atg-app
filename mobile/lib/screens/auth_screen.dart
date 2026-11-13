@@ -152,8 +152,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 6),
                   Text(
                     _register
-                        ? 'Create your ATG account to track courses, calls and payment requests.'
-                        : 'Sign in to your ATG account. Your courses, calls and wallet live here.',
+                        ? 'Create your ATG account to track courses, signals and payment requests.'
+                        : 'Sign in to your ATG account. Your courses, signals and wallet live here.',
                     style: AtgText.bodySmall.copyWith(color: AtgColors.muted),
                   ),
                   const SizedBox(height: 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'format.dart';
+import 'linked_text.dart';
 import 'models.dart';
 import 'theme.dart';
 
@@ -24,7 +25,7 @@ class LiveDot extends StatelessWidget {
             onTap: () => showToast(
               context,
               connected
-                  ? 'Live updates are on. New messages, approvals and calls appear without refreshing.'
+                  ? 'Live updates are on. New messages, approvals and signals appear without refreshing.'
                   : 'Live updates are reconnecting. Pull down to refresh in the meantime.',
             ),
             child: Padding(
@@ -905,7 +906,9 @@ class SignalCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: Text(signal.subtitle, style: AtgText.small)),
+              Expanded(
+                child: LinkedText(signal.subtitle, style: AtgText.small),
+              ),
               if (signal.roomLabel.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 AtgPill(text: signal.roomLabel.toUpperCase()),
@@ -1009,7 +1012,6 @@ class TickerStrip extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final pair = tickers[index];
-          final up = pair.changePct >= 0;
           return InkWell(
             onTap: onTap == null ? null : () => onTap!(pair),
             borderRadius: BorderRadius.circular(14),
@@ -1036,15 +1038,6 @@ class TickerStrip extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AtgColors.inkSoft,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    pct(pair.changePct),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: up ? AtgColors.greenText : AtgColors.redText,
                     ),
                   ),
                 ],
@@ -1104,7 +1097,6 @@ class MarketRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final up = pair.changePct >= 0;
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -1160,13 +1152,6 @@ class MarketRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                AtgPill(
-                  text: pct(pair.changePct),
-                  background: up ? AtgColors.greenBg : AtgColors.redBg,
-                  foreground: up ? AtgColors.greenText : AtgColors.redText,
-                  fontSize: 11,
-                ),
-                const SizedBox(height: 3),
                 Text(timeAgo(pair.updatedAt), style: AtgText.tiny),
               ],
             ),
@@ -1320,11 +1305,11 @@ class FeedRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LinkedText(
                   item.preview,
+                  style: AtgText.small,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AtgText.small,
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -1624,6 +1609,6 @@ void notifyAllCaughtUp(BuildContext context) {
   showMessage(
     context,
     'Notifications',
-    'You are all caught up. New calls and payment decisions appear here.',
+    'You are all caught up. New signals and payment decisions appear here.',
   );
 }

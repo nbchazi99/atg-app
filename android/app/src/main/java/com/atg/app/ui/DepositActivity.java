@@ -35,8 +35,8 @@ public class DepositActivity extends AppCompatActivity {
     private OptionsAdapter brokerAdapter;
     private OptionsAdapter walletAdapter;
 
-    private TextInputLayout tilClientId, tilAmount, tilMobile, tilPayingFrom;
-    private EditText etClientId, etAmount, etMobile, etPayingFrom;
+    private TextInputLayout tilClientId, tilAmount, tilMobile;
+    private EditText etClientId, etAmount, etMobile;
     private TextView tvClientHint, tvAmountHint, tvDepositAmount, tvFeeLabel, tvFee, tvTotal, tvTotalNote;
     private MaterialButton btnPay;
     private ProgressBar progress;
@@ -57,11 +57,9 @@ public class DepositActivity extends AppCompatActivity {
         tilClientId = findViewById(R.id.tilClientId);
         tilAmount = findViewById(R.id.tilAmount);
         tilMobile = findViewById(R.id.tilMobile);
-        tilPayingFrom = findViewById(R.id.tilPayingFrom);
         etClientId = findViewById(R.id.etClientId);
         etAmount = findViewById(R.id.etAmount);
         etMobile = findViewById(R.id.etMobile);
-        etPayingFrom = findViewById(R.id.etPayingFrom);
         tvClientHint = findViewById(R.id.tvClientHint);
         tvAmountHint = findViewById(R.id.tvAmountHint);
         tvDepositAmount = findViewById(R.id.tvDepositAmount);
@@ -73,16 +71,11 @@ public class DepositActivity extends AppCompatActivity {
         progress = findViewById(R.id.pbDeposit);
 
         etMobile.setText(ApiClient.session().phone());
-        etPayingFrom.setText(ApiClient.session().phone());
 
-        brokers.add(new Adapters.Option("Weltrade", "The broker ATG trades and posts every call against", "W").color("#1B7A3D"));
-        brokers.add(new Adapters.Option("Deriv", "Funded by the nickname on your Deriv account", "D").color("#B3261E"));
-        brokers.add(new Adapters.Option("Other", "Any other broker. Paid out to a USDT wallet you give us", "O"));
+        brokers.add(new Adapters.Option("Weltrade", "The broker ATG funds and posts every signal against", "W").color("#1B7A3D"));
 
         wallets.add(new Adapters.Option("EcoCash", "Mobile money · Econet", "EC"));
-        wallets.add(new Adapters.Option("Omari", "Mobile money · OneMoney", "OM"));
-        wallets.add(new Adapters.Option("InnBucks", "Mobile wallet", "IB"));
-        wallets.add(new Adapters.Option("OneMoney", "Mobile money · NetOne", "1M"));
+        wallets.add(new Adapters.Option("Cash", "Cash payment", "$"));
         wallets.add(new Adapters.Option("SmileCash", "ZB Wallet, confirmed by code", "SC"));
 
         brokerAdapter = new OptionsAdapter(index -> updateBroker());
@@ -137,23 +130,14 @@ public class DepositActivity extends AppCompatActivity {
     }
 
     private void updateBroker() {
-        int index = brokerAdapter.selectedIndex();
-        if (index == 1) {
-            tilClientId.setHint("Deriv nickname");
-            tvClientHint.setText("The nickname shown on your Deriv account, not your email.");
-        } else if (index == 2) {
-            tilClientId.setHint("USDT wallet address");
-            tvClientHint.setText("The wallet that should receive your funds. Double-check every character.");
-        } else {
-            tilClientId.setHint("Weltrade Client ID");
-            tvClientHint.setText("In your Weltrade cabinet, under your name. It is not your MT5 login.");
-        }
+        tilClientId.setHint("Weltrade Client ID");
+        tvClientHint.setText("In your Weltrade cabinet, under your name. It is not your MT5 login.");
     }
 
     private void updateSummary() {
         double amount = Ui.parseAmount(text(etAmount), 0);
         double pct = settings == null ? 12 : settings.adminFeePct;
-        double min = settings == null ? 12.50 : settings.minDeposit;
+        double min = settings == null ? 5 : settings.minDeposit;
         double max = settings == null ? 454.54 : settings.maxDeposit;
         double fee = Math.round(amount * pct) / 100.0;
         double total = Math.round((amount + fee) * 100.0) / 100.0;
@@ -173,11 +157,10 @@ public class DepositActivity extends AppCompatActivity {
         tilAmount.setError(null);
         tilClientId.setError(null);
         tilMobile.setError(null);
-        tilPayingFrom.setError(null);
         if (submitting) return;
 
         double amount = Ui.parseAmount(text(etAmount), 0);
-        double min = settings == null ? 12.50 : settings.minDeposit;
+        double min = settings == null ? 5 : settings.minDeposit;
         double max = settings == null ? 454.54 : settings.maxDeposit;
         if (amount <= 0) {
             tilAmount.setError("Enter the amount you want to deposit");
@@ -201,11 +184,6 @@ public class DepositActivity extends AppCompatActivity {
             tilMobile.setError("Enter the number ATG can reach you on");
             return;
         }
-        if (text(etPayingFrom).isEmpty()) {
-            tilPayingFrom.setError("Enter the number the money leaves from");
-            return;
-        }
-
         Adapters.Option broker = brokerAdapter.selectedOption();
         Adapters.Option wallet = walletAdapter.selectedOption();
         if (broker == null || wallet == null) return;

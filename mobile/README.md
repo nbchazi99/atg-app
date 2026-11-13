@@ -104,7 +104,7 @@ Both platforms share one database, and the client keeps itself current:
 - The server only sends invalidation scopes (`rooms`, `room:<id>`, `signals`, `courses`, `settings`,
   `users`, `requests`, `wallet:<userId>`, `home:<userId>`); screens then refetch through the normal
   API, so authorization and VIP gating stay server-side.
-- Screens subscribe with `realtime.bind({...scopes}, reload)`: home, signals, markets' ticker data,
+- Screens subscribe with `realtime.bind({...scopes}, reload)`: home, signals,
   rooms, room chat (the old 6-second polling timer is gone), wallet, profile, academy, course detail
   and every admin tab.
 - Reconnect uses exponential backoff (1 s → 30 s), a 20 s heartbeat keeps intermediaries from closing
@@ -122,9 +122,9 @@ mouse and trackpad drags (`AtgScrollBehavior`).
 
 There is no emulator or phone on this machine, so the UI was walked in a browser against the live API
 using the same Dart code (`flutter build web --release`, served locally — `web/` exists for that
-purpose and is not a shipping target). Covered: both roles' sign-in, home, signals and detail, markets
-with favourites, room chat posting, rooms feed, wallet, deposit, 4-step withdrawal with proof upload,
-VIP purchase, and every admin tab. Approving the test records changed the account to Weltrade VIP and
+purpose and is not a shipping target). Covered: both roles' sign-in, home, signals and detail, room
+chat posting, rooms feed, wallet, deposit, 4-step withdrawal with proof upload, VIP purchase, and every
+admin tab. Approving the test records changed the account to Weltrade VIP and
 the room list reflected it (`Weltrade VIP` unlocked, `Deriv VIP` locked). The release and debug APKs
 include the same code; still, run the app once on a real device before shipping.
 
@@ -137,9 +137,10 @@ showed up as a pending card in the admin's Requests tab, approving it flipped th
 from `PENDING` to `COMPLETED` on screen, and a desk message appeared in an open chat — all without a
 manual refresh. A Node script also asserted the raw socket behaviour, including `1008` for a bad JWT.
 
-The bottom of Home carries the Weltrade registration card (three steps, the affiliate link opened with
-`url_launcher` in the system browser, and the "Accurate Trading Group. Trading carries risk." notice),
-and that tab is now labelled **Community** rather than Rooms.
+The bottom of Home carries the Weltrade registration card (three steps and the affiliate link opened
+with `url_launcher` in the system browser),
+the bottom navigation now uses **Academy** in place of Markets, and the chat tab is labelled
+**Community** rather than Rooms.
 
 The splash was checked in the same harness: on reload the black brand screen appears, the gold bull
 rolls in (a full turn, easing out), the wordmark and green tagline fade up, then the app fades in
@@ -154,7 +155,7 @@ lib/
   screens/
     splash_screen.dart, auth_screen.dart, shell.dart, home_screen.dart
     signals_screen.dart, signal_detail_screen.dart
-    markets_screen.dart, pair_detail_screen.dart
+    markets_screen.dart, pair_detail_screen.dart # retained but not routed in the shipping app
     rooms_screen.dart, room_chat_screen.dart
     wallet_screen.dart, deposit_screen.dart, withdraw_screen.dart
     academy_screen.dart, course_detail_screen.dart, lesson_screen.dart

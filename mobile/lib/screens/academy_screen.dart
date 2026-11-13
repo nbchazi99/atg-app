@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../realtime.dart';
 import '../responsive.dart';
@@ -153,7 +154,7 @@ class _CourseCard extends StatelessWidget {
                 )
               else
                 Text(
-                  money(course.price),
+                  course.price <= 0 ? 'Free' : money(course.price),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
@@ -166,11 +167,11 @@ class _CourseCard extends StatelessWidget {
           Text(course.title, style: AtgText.h1),
           if (course.subtitle.isNotEmpty) ...[
             const SizedBox(height: 3),
-            Text(
+            LinkedText(
               course.subtitle,
+              style: AtgText.small,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: AtgText.small,
             ),
           ],
           if (row.enrolled) ...[
@@ -196,7 +197,9 @@ class _CourseCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  'Buy to unlock every lesson',
+                  course.price <= 0
+                      ? 'Start this free course'
+                      : 'Buy to unlock every lesson',
                   style: AtgText.small.copyWith(color: AtgColors.gold),
                 ),
                 const Spacer(),

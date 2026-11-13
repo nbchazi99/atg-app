@@ -184,7 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   Text('Admin dashboard', style: AtgText.h3),
                                   SizedBox(height: 2),
                                   Text(
-                                    'Review requests, users, calls, courses and settings.',
+                                    'Review requests, users, signals, courses and settings.',
                                     style: AtgText.small,
                                   ),
                                 ],

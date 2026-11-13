@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -36,6 +37,7 @@ public class RoomsFragment extends Fragment {
     private SwipeRefreshLayout swipe;
     private View empty;
     private TextView roomName, roomPreview, roomTime, roomBadge;
+    private LinearLayout roomChoices;
     private MaterialButton chipOpen, chipClosed, chipAll;
     private String filter = "open";
     private long mainRoomId = -1;
@@ -63,6 +65,7 @@ public class RoomsFragment extends Fragment {
         roomPreview = view.findViewById(R.id.tvMainRoomPreview);
         roomTime = view.findViewById(R.id.tvMainRoomTime);
         roomBadge = view.findViewById(R.id.tvMainRoomBadge);
+        roomChoices = view.findViewById(R.id.roomChoices);
 
         chipOpen = view.findViewById(R.id.btnFeedOpen);
         chipClosed = view.findViewById(R.id.btnFeedClosed);
@@ -120,8 +123,29 @@ public class RoomsFragment extends Fragment {
             public void onResponse(@NonNull Call<List<Models.Room>> call, @NonNull Response<List<Models.Room>> response) {
                 if (!isAdded() || response.body() == null || response.body().isEmpty()) return;
                 roomById.clear();
-                for (Models.Room r : response.body()) roomById.put(r.id, r);
-                Models.Room room = response.body().get(0);
+                roomChoices.removeAllViews();
+                for (Models.Room r : response.body()) {
+                    roomById.put(r.id, r);
+                    TextView choice = new TextView(requireContext());
+                    choice.setText(r.name + (r.locked ? " · Locked" : ""));
+                    choice.setTextColor(requireContext().getColor(r.locked ? R.color.muted : R.color.ink));
+                    choice.setTextSize(13);
+                    choice.setPadding(dp(14), dp(9), dp(14), dp(9));
+                    choice.setBackgroundResource(r.locked ? R.drawable.bg_chip_grey : R.drawable.bg_card);
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    params.setMarginEnd(dp(8));
+                    choice.setLayoutParams(params);
+                    choice.setOnClickListener(v -> openRoom(r.id, r.name));
+                    roomChoices.addView(choice);
+                }
+                Models.Room room = response.body().stream()
+                        .filter(r -> "Community".equalsIgnoreCase(r.name))
+                        .findFirst()
+                        .orElseGet(() -> response.body().stream()
+                                .filter(r -> !r.locked)
+                                .findFirst()
+                                .orElse(response.body().get(0)));
                 mainRoomId = room.id;
                 mainRoomName = room.name;
                 roomName.setText(room.name);
@@ -132,6 +156,7 @@ public class RoomsFragment extends Fragment {
 
             @Override
             public void onFailure(@NonNull Call<List<Models.Room>> call, @NonNull Throwable t) {
+                if (isAdded()) Ui.toast(requireContext(), ApiClient.connectionMessage(t));
             }
         });
 
@@ -158,5 +183,9 @@ public class RoomsFragment extends Fragment {
                 Ui.toast(requireContext(), ApiClient.connectionMessage(t));
             }
         });
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 }

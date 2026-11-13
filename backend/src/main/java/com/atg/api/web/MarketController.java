@@ -3,6 +3,7 @@ package com.atg.api.web;
 import com.atg.api.model.Favourite;
 import com.atg.api.model.MarketPair;
 import com.atg.api.model.Signal;
+import com.atg.api.model.User;
 import com.atg.api.repo.FavouriteRepository;
 import com.atg.api.repo.MarketPairRepository;
 import com.atg.api.repo.SignalRepository;
@@ -56,12 +57,16 @@ public class MarketController extends BaseController {
 
     @GetMapping("/{symbol}")
     public Map<String, Object> one(@PathVariable String symbol) {
+        User user = me();
         MarketPair pair = markets.findBySymbolIgnoreCase(symbol)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pair not found"));
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("pair", pair);
-        res.put("calls", signals.findBySymbolOrderByCreatedAtDesc(pair.getSymbol()));
-        res.put("favourite", favourites.findByUserIdAndSymbol(me().getId(), pair.getSymbol()).isPresent());
+        res.put("calls", signals.findBySymbolOrderByCreatedAtDesc(pair.getSymbol()).stream()
+                .filter(signal -> MembershipAccess.canAccess(
+                        user, MembershipAccess.requiredForSignal(signal)))
+                .toList());
+        res.put("favourite", favourites.findByUserIdAndSymbol(user.getId(), pair.getSymbol()).isPresent());
         return res;
     }
 

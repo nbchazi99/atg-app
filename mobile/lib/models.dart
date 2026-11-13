@@ -133,7 +133,7 @@ class Signal {
 
   factory Signal.fromJson(Map<String, dynamic> json) => Signal(
     id: _i(json['id']),
-    title: _s(json['title']) ?? 'Call',
+    title: _s(json['title']) ?? 'Signal',
     subtitle: _s(json['subtitle']) ?? '',
     symbol: _s(json['symbol']) ?? '',
     side: _s(json['side']) ?? 'BUY',

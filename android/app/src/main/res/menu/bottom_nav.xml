@@ -9,9 +9,9 @@
         android:icon="@drawable/ic_signals"
         android:title="@string/signals" />
     <item
-        android:id="@+id/nav_markets"
-        android:icon="@drawable/ic_markets"
-        android:title="@string/markets" />
+        android:id="@+id/nav_academy"
+        android:icon="@drawable/ic_academy"
+        android:title="@string/academy" />
     <item
         android:id="@+id/nav_rooms"
         android:icon="@drawable/ic_rooms"

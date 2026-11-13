@@ -33,12 +33,11 @@ import retrofit2.Response;
 public class HomeFragment extends Fragment {
 
     private TextView tvPoints, tvToday, tvGreeting, tvLiveLine, tvPromoTitle, tvPromoBody, tvFact;
-    private RecyclerView rvSignals, rvTickers;
+    private RecyclerView rvSignals;
     private View signalEmpty;
     private SwipeRefreshLayout swipe;
     private final SignalsAdapter signalsAdapter = new SignalsAdapter(signal ->
             SignalDetailActivity.start(requireContext(), signal));
-    private final TickerAdapter tickerAdapter = new TickerAdapter();
     private String fact = "Black Monday";
 
     @Nullable
@@ -58,21 +57,18 @@ public class HomeFragment extends Fragment {
         tvPromoBody = view.findViewById(R.id.tvPromoBody);
         tvFact = view.findViewById(R.id.tvFact);
         rvSignals = view.findViewById(R.id.rvHomeSignals);
-        rvTickers = view.findViewById(R.id.rvHomeTickers);
         signalEmpty = view.findViewById(R.id.homeSignalEmpty);
         swipe = view.findViewById(R.id.swipeHome);
 
         rvSignals.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvSignals.setAdapter(signalsAdapter);
-        rvTickers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        rvTickers.setAdapter(tickerAdapter);
 
         TextView avatar = view.findViewById(R.id.tvHomeAvatar);
         avatar.setText(ApiClient.session().initials());
         avatar.setOnClickListener(v -> startActivity(new Intent(requireContext(), ProfileActivity.class)));
 
         view.findViewById(R.id.btnHomeBell).setOnClickListener(v ->
-                Ui.alert(requireContext(), "Notifications", "You are all caught up. New calls and payment decisions appear here."));
+                Ui.alert(requireContext(), "Notifications", "You are all caught up. New signals and payment decisions appear here."));
 
         view.findViewById(R.id.actDeposit).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), DepositActivity.class)));
@@ -105,7 +101,7 @@ public class HomeFragment extends Fragment {
         view.findViewById(R.id.btnWellaYes).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProfileActivity.class)));
         view.findViewById(R.id.btnWellaNo).setOnClickListener(v ->
-                Ui.toast(requireContext(), "Weltrade is the broker ATG posts every call against. Membership unlocks the VIP rooms."));
+                Ui.toast(requireContext(), "Weltrade is the broker ATG posts every signal against. Membership unlocks the VIP rooms."));
 
         swipe.setColorSchemeResources(R.color.primary);
         swipe.setOnRefreshListener(this::load);
@@ -136,7 +132,7 @@ public class HomeFragment extends Fragment {
                 Models.HomeRes home = response.body();
                 if (!response.isSuccessful() || home == null) return;
                 tvPoints.setText(String.valueOf(home.points));
-                tvLiveLine.setText(home.liveCount == 1 ? "1 call is live." : home.liveCount + " calls are live.");
+                tvLiveLine.setText(home.liveCount == 1 ? "1 signal is live." : home.liveCount + " signals are live.");
                 if (home.promotionTitle != null && !home.promotionTitle.isBlank()) {
                     tvPromoTitle.setText(home.promotionTitle);
                     tvPromoBody.setText(home.promotionBody == null ? "" : home.promotionBody);
@@ -145,7 +141,6 @@ public class HomeFragment extends Fragment {
                     fact = home.fact;
                     tvFact.setText(home.fact);
                 }
-                tickerAdapter.setItems(home.tickers);
                 ApiClient.session().savePoints(home.points);
             }
 

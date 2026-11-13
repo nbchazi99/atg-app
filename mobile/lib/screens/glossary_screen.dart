@@ -84,7 +84,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
     ),
     (
       'Wella',
-      'An ATG trader who trades on Weltrade, the broker the desk posts calls against.',
+      'An ATG trader who trades on Weltrade, the broker the desk posts signals against.',
     ),
   ];
 

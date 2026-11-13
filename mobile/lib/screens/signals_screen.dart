@@ -7,7 +7,6 @@ import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
-import 'pair_detail_screen.dart';
 import 'profile_screen.dart';
 import 'signal_detail_screen.dart';
 
@@ -24,7 +23,6 @@ class _SignalsScreenState extends State<SignalsScreen> {
 
   int _filter = 0;
   List<Signal> _items = const [];
-  List<MarketPair> _tickers = const [];
   String _subtitle = 'Loading the floor…';
   bool _loading = true;
   int _request = 0;
@@ -34,30 +32,17 @@ class _SignalsScreenState extends State<SignalsScreen> {
   void initState() {
     super.initState();
     _load();
-    _loadTickers();
-    _unbind = realtime.bind(
-      {AtgScope.signals, AtgScope.home, AtgScope.settings},
-      () {
-        _load();
-        _loadTickers();
-      },
-    );
+    _unbind = realtime.bind({
+      AtgScope.signals,
+      AtgScope.home,
+      AtgScope.settings,
+    }, _load);
   }
 
   @override
   void dispose() {
     _unbind?.call();
     super.dispose();
-  }
-
-  Future<void> _loadTickers() async {
-    try {
-      final home = await api.home();
-      if (!mounted) return;
-      setState(() => _tickers = home.tickers);
-    } on ApiException {
-      // Tickers are decorative; the signal list reports connection problems.
-    }
   }
 
   Future<void> _load() async {
@@ -69,7 +54,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
       setState(() {
         _items = items;
         _loading = false;
-        _subtitle = items.length == 1 ? '1 call' : '${items.length} calls';
+        _subtitle = items.length == 1 ? '1 signal' : '${items.length} signals';
       });
     } on ApiException catch (e) {
       if (!mounted || request != _request) return;
@@ -96,14 +81,6 @@ class _SignalsScreenState extends State<SignalsScreen> {
               subtitle: _subtitle,
               onBell: () => notifyAllCaughtUp(context),
               onAvatar: _openProfile,
-            ),
-            TickerStrip(
-              tickers: _tickers,
-              onTap: (pair) => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => PairDetailScreen(symbol: pair.symbol),
-                ),
-              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
@@ -134,7 +111,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
                         children: const [
                           EmptyState(
                             title: 'Nothing here yet',
-                            message: 'Calls appear here as soon as the floor posts them.',
+                            message: 'Signals appear here as soon as the floor posts them.',
                             icon: Icons.bolt_outlined,
                           ),
                         ],

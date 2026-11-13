@@ -2,6 +2,7 @@ package com.atg.api.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class MarketPair {
 
@@ -19,7 +20,7 @@ public class MarketPair {
     private BigDecimal high = BigDecimal.ZERO;
     private BigDecimal low = BigDecimal.ZERO;
     private BigDecimal prevClose = BigDecimal.ZERO;
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

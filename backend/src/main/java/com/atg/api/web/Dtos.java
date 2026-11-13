@@ -39,10 +39,10 @@ public final class Dtos {
 
     public record DepositReq(
             @NotBlank String broker,
-            String clientId,
+            @NotBlank String clientId,
             @NotNull BigDecimal amount,
             @NotBlank String wallet,
-            String mobile) {}
+            @NotBlank String mobile) {}
 
     public record WithdrawReq(
             @NotBlank String payout,
@@ -55,6 +55,8 @@ public final class Dtos {
     public record PurchaseReq(@NotBlank String type, Long courseId, String proofUrl) {}
 
     public record MessageReq(@NotBlank String text) {}
+
+    public record RoomReq(@NotBlank String name, String description) {}
 
     public record DecisionReq(boolean approve, String note) {}
 

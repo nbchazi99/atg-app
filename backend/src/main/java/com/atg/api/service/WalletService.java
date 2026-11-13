@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 
 @Service
@@ -56,6 +57,15 @@ public class WalletService {
     }
 
     public DepositRequest createDeposit(User user, Dtos.DepositReq req) {
+        if (!"Weltrade".equalsIgnoreCase(req.broker().trim())) {
+            throw bad("Only Weltrade deposits are supported");
+        }
+        String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
+            case "ecocash" -> "EcoCash";
+            case "cash" -> "Cash";
+            case "smilecash" -> "SmileCash";
+            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+        };
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
         if (amount.compareTo(s.getMinDeposit()) < 0) {
@@ -66,10 +76,10 @@ public class WalletService {
         }
         DepositRequest d = new DepositRequest();
         d.setUserId(user.getId());
-        d.setBroker(req.broker());
-        d.setClientId(req.clientId());
-        d.setWallet(req.wallet());
-        d.setMobile(req.mobile());
+        d.setBroker("Weltrade");
+        d.setClientId(req.clientId().trim());
+        d.setWallet(wallet);
+        d.setMobile(req.mobile().trim());
         d.setAmount(amount);
         d.setFeePct(s.getAdminFeePct());
         d.setFee(scale(amount.multiply(s.getAdminFeePct()).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)));
@@ -78,7 +88,7 @@ public class WalletService {
         WalletTransaction tx = new WalletTransaction();
         tx.setUserId(user.getId());
         tx.setType(WalletTransaction.Type.DEPOSIT);
-        tx.setDescription("Deposit to " + req.broker());
+        tx.setDescription("Deposit to Weltrade");
         tx.setAmount(d.getTotalPaid());
         tx.setStatus(WalletTransaction.Status.PENDING);
         transactions.save(tx);
@@ -134,6 +144,9 @@ public class WalletService {
             if (req.courseId() == null) throw bad("Course is required");
             Course course = courses.findById(req.courseId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+            if (course.getPrice().signum() == 0) {
+                throw bad("This course is free. Enroll directly from its course page.");
+            }
             amount = course.getPrice();
             courseId = course.getId();
             description = "Course: " + course.getTitle();
@@ -169,7 +182,7 @@ public class WalletService {
         if (d.getStatus() != DepositRequest.Status.PENDING) throw bad("This request was already reviewed");
         d.setStatus(approve ? DepositRequest.Status.APPROVED : DepositRequest.Status.REJECTED);
         d.setAdminNote(note);
-        d.setReviewedAt(LocalDateTime.now());
+        d.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         deposits.save(d);
         settle(d.getTransactionId(), approve);
         return d;
@@ -181,7 +194,7 @@ public class WalletService {
         if (w.getStatus() != WithdrawalRequest.Status.PENDING) throw bad("This request was already reviewed");
         w.setStatus(approve ? WithdrawalRequest.Status.APPROVED : WithdrawalRequest.Status.REJECTED);
         w.setAdminNote(note);
-        w.setReviewedAt(LocalDateTime.now());
+        w.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         withdrawals.save(w);
         settle(w.getTransactionId(), approve);
         return w;
@@ -193,7 +206,7 @@ public class WalletService {
         if (p.getStatus() != PurchaseRequest.Status.PENDING) throw bad("This request was already reviewed");
         p.setStatus(approve ? PurchaseRequest.Status.APPROVED : PurchaseRequest.Status.REJECTED);
         p.setAdminNote(note);
-        p.setReviewedAt(LocalDateTime.now());
+        p.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         purchases.save(p);
 
         if (approve) {

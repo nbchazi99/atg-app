@@ -12,17 +12,6 @@
 
         <include layout="@layout/view_app_header" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSignalTickers"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:paddingStart="@dimen/screen_pad"
-            android:paddingTop="2dp"
-            android:paddingEnd="@dimen/screen_pad"
-            android:paddingBottom="12dp" />
-
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -114,7 +103,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:gravity="center"
-                    android:text="Calls appear here as soon as the floor posts them."
+                    android:text="Signals appear here as soon as the floor posts them."
                     android:textColor="@color/muted"
                     android:textSize="13sp" />
             </LinearLayout>

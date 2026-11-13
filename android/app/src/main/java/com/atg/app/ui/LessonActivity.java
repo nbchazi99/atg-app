@@ -69,7 +69,9 @@ public class LessonActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvLessonMeta)).setText(
                 getIntent().getIntExtra("duration", 10) + " min · Lesson "
                         + (getIntent().getIntExtra("order", 0) + 1));
-        ((TextView) findViewById(R.id.tvLessonContent)).setText(getIntent().getStringExtra("content"));
+        TextView content = findViewById(R.id.tvLessonContent);
+        content.setText(getIntent().getStringExtra("content"));
+        Ui.enableWebLinks(content);
 
         complete = findViewById(R.id.btnComplete);
         MaterialButton next = findViewById(R.id.btnNext);
@@ -89,8 +91,15 @@ public class LessonActivity extends AppCompatActivity {
 
     private void openVideo(String url) {
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (Exception e) {
+            Uri uri = Uri.parse(url.trim().matches("(?i)^https?://.*")
+                    ? url.trim() : "https://" + url.trim());
+            if (!("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme()))
+                    || uri.getHost() == null || uri.getHost().isBlank()) {
+                Ui.toast(this, "That video link is not a valid web address");
+                return;
+            }
+            startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        } catch (android.content.ActivityNotFoundException e) {
             Ui.toast(this, "No app can open that video link");
         }
     }

@@ -172,6 +172,18 @@ class Api {
     return _parseList(data, Room.fromJson);
   }
 
+  Future<Room> createRoom({
+    required String name,
+    required String description,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/admin/rooms',
+      body: {'name': name, 'description': description},
+    );
+    return Room.fromJson((data as Map).cast<String, dynamic>());
+  }
+
   Future<List<FeedItem>> feed(String filter) async {
     final data = await _send(
       'GET',
@@ -314,6 +326,10 @@ class Api {
       'api/courses/$courseId/complete',
       body: {'lessonId': lessonId},
     );
+  }
+
+  Future<void> enrollInFreeCourse(int courseId) async {
+    await _send('POST', 'api/courses/$courseId/enroll');
   }
 
   Future<List<Purchase>> purchases() async {

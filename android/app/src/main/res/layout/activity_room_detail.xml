@@ -14,7 +14,7 @@
         android:paddingStart="@dimen/screen_pad"
         android:paddingEnd="@dimen/screen_pad"
         android:paddingBottom="6dp"
-        android:text="Everyone here trades the same calls. Be kind."
+        android:text="Everyone here follows the same signals. Be kind."
         android:textColor="@color/muted"
         android:textSize="11sp" />
 

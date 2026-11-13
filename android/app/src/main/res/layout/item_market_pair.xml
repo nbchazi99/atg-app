@@ -61,21 +61,6 @@
             android:textColor="@color/ink" />
 
         <TextView
-            android:id="@+id/tvPairChange"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
-            android:background="@drawable/bg_chip_green"
-            android:paddingStart="7dp"
-            android:paddingEnd="7dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:text="-0.21%"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:textColor="@color/red_text" />
-
-        <TextView
             android:id="@+id/tvPairUpdated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
