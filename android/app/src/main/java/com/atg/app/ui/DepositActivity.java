@@ -136,7 +136,7 @@ public class DepositActivity extends AppCompatActivity {
         double amount = Ui.parseAmount(text(etAmount), 0);
         double pct = settings == null ? 12 : settings.adminFeePct;
         double min = settings == null ? 5 : settings.minDeposit;
-        double max = settings == null ? 454.54 : settings.maxDeposit;
+        double max = settings == null ? 454 : settings.maxDeposit;
         double fee = Math.round(amount * pct) / 100.0;
         double total = Math.round((amount + fee) * 100.0) / 100.0;
 
@@ -159,7 +159,7 @@ public class DepositActivity extends AppCompatActivity {
 
         double amount = Ui.parseAmount(text(etAmount), 0);
         double min = settings == null ? 5 : settings.minDeposit;
-        double max = settings == null ? 454.54 : settings.maxDeposit;
+        double max = settings == null ? 454 : settings.maxDeposit;
         if (amount <= 0) {
             tilAmount.setError("Enter the amount you want to deposit");
             return;

@@ -589,6 +589,7 @@ class Settings {
     required this.minDeposit,
     required this.maxDeposit,
     required this.minWithdraw,
+    required this.maxWithdraw,
     required this.fact,
     required this.promotionTitle,
     required this.promotionBody,
@@ -600,6 +601,7 @@ class Settings {
   final double minDeposit;
   final double maxDeposit;
   final double minWithdraw;
+  final double maxWithdraw;
   final String fact;
   final String promotionTitle;
   final String promotionBody;
@@ -611,6 +613,7 @@ class Settings {
     minDeposit: _d(json['minDeposit']),
     maxDeposit: _d(json['maxDeposit']),
     minWithdraw: _d(json['minWithdraw']),
+    maxWithdraw: json['maxWithdraw'] == null ? 454 : _d(json['maxWithdraw']),
     fact: _s(json['fact']) ?? '',
     promotionTitle: _s(json['promotionTitle']) ?? '',
     promotionBody: _s(json['promotionBody']) ?? '',

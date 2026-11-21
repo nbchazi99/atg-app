@@ -51,6 +51,7 @@ public class HomeController extends BaseController {
                 "minDeposit", s.getMinDeposit(),
                 "maxDeposit", s.getMaxDeposit(),
                 "minWithdraw", s.getMinWithdraw(),
+                "maxWithdraw", s.getMaxWithdraw(),
                 "fact", s.getFact(),
                 "promotionTitle", s.getPromotionTitle(),
                 "promotionBody", s.getPromotionBody(),

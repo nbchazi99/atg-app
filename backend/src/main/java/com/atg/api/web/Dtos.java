@@ -91,6 +91,6 @@ public final class Dtos {
     public record MembershipReq(@NotBlank String membership) {}
 
     public record SettingsReq(BigDecimal adminFeePct, BigDecimal withdrawFeePct, BigDecimal minDeposit,
-                              BigDecimal maxDeposit, BigDecimal minWithdraw, String fact,
+                              BigDecimal maxDeposit, BigDecimal minWithdraw, BigDecimal maxWithdraw, String fact,
                               String promotionTitle, String promotionBody) {}
 }

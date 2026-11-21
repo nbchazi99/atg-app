@@ -75,7 +75,7 @@ class _DepositScreenState extends State<DepositScreen> {
 
   double get _feePct => _settings?.adminFeePct ?? 10;
   double get _min => _settings?.minDeposit ?? 5;
-  double get _max => _settings?.maxDeposit ?? 454.54;
+  double get _max => _settings?.maxDeposit ?? 454;
 
   double get _enteredAmount => parseAmount(_amount.text);
   double get _fee => (_enteredAmount * _feePct).round() / 100;

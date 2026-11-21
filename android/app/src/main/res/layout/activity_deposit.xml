@@ -90,7 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="$5.00 to $454.54, before the 12% admin fee." />
+                android:text="$5.00 to $454.00, before the 12% admin fee." />
 
             <LinearLayout
                 android:layout_width="match_parent"

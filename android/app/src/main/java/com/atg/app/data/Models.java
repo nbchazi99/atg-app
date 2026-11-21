@@ -288,6 +288,7 @@ public class Models {
         public double minDeposit;
         public double maxDeposit;
         public double minWithdraw;
+        public double maxWithdraw;
         public int pointsPerReferral;
         public String fact;
         public String promotionTitle;
@@ -363,6 +364,7 @@ public class Models {
         public Double minDeposit;
         public Double maxDeposit;
         public Double minWithdraw;
+        public Double maxWithdraw;
         public String fact;
         public String promotionTitle;
         public String promotionBody;

@@ -54,7 +54,19 @@ public class WalletService {
             s.setMinDeposit(req.minDeposit());
         }
         if (req.maxDeposit() != null) s.setMaxDeposit(req.maxDeposit());
-        if (req.minWithdraw() != null) s.setMinWithdraw(req.minWithdraw());
+        if (s.getMaxDeposit().compareTo(s.getMinDeposit()) < 0) {
+            throw bad("Maximum deposit cannot be lower than minimum deposit");
+        }
+        if (req.minWithdraw() != null) {
+            if (req.minWithdraw().compareTo(BigDecimal.valueOf(5)) < 0) {
+                throw bad("Minimum withdrawal cannot be below $5");
+            }
+            s.setMinWithdraw(req.minWithdraw());
+        }
+        if (req.maxWithdraw() != null) s.setMaxWithdraw(req.maxWithdraw());
+        if (s.getMaxWithdraw().compareTo(s.getMinWithdraw()) < 0) {
+            throw bad("Maximum withdrawal cannot be lower than minimum withdrawal");
+        }
         if (req.fact() != null) s.setFact(req.fact());
         if (req.promotionTitle() != null) s.setPromotionTitle(req.promotionTitle());
         if (req.promotionBody() != null) s.setPromotionBody(req.promotionBody());
@@ -111,6 +123,9 @@ public class WalletService {
         }
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
+        }
+        if (amount.compareTo(s.getMaxWithdraw()) > 0) {
+            throw bad("Maximum withdrawal is $" + s.getMaxWithdraw());
         }
         if (req.proofUrl() == null || req.proofUrl().isBlank()) {
             throw bad("A screenshot of the withdrawal confirmation is required");

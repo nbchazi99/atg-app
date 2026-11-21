@@ -33,6 +33,7 @@ class _AdminScreenState extends State<AdminScreen> {
   final _minDeposit = TextEditingController();
   final _maxDeposit = TextEditingController();
   final _minWithdraw = TextEditingController();
+  final _maxWithdraw = TextEditingController();
   final _fact = TextEditingController();
   final _promoTitle = TextEditingController();
   final _promoBody = TextEditingController();
@@ -79,6 +80,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _minDeposit.dispose();
     _maxDeposit.dispose();
     _minWithdraw.dispose();
+    _maxWithdraw.dispose();
     _fact.dispose();
     _promoTitle.dispose();
     _promoBody.dispose();
@@ -162,6 +164,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _minDeposit.text = trimNumber(s.minDeposit);
     _maxDeposit.text = trimNumber(s.maxDeposit);
     _minWithdraw.text = trimNumber(s.minWithdraw);
+    _maxWithdraw.text = trimNumber(s.maxWithdraw);
     _fact.text = s.fact;
     _promoTitle.text = s.promotionTitle;
     _promoBody.text = s.promotionBody;
@@ -495,8 +498,9 @@ class _AdminScreenState extends State<AdminScreen> {
         'adminFeePct': parseAmount(_adminFee.text, 10),
         'withdrawFeePct': parseAmount(_withdrawFee.text, 7),
         'minDeposit': parseAmount(_minDeposit.text, 5),
-        'maxDeposit': parseAmount(_maxDeposit.text, 454.54),
-        'minWithdraw': parseAmount(_minWithdraw.text, 12.5),
+        'maxDeposit': parseAmount(_maxDeposit.text, 454),
+        'minWithdraw': parseAmount(_minWithdraw.text, 5),
+        'maxWithdraw': parseAmount(_maxWithdraw.text, 454),
         'fact': _fact.text.trim(),
         'promotionTitle': _promoTitle.text.trim(),
         'promotionBody': _promoBody.text.trim(),
@@ -1176,10 +1180,24 @@ class _AdminScreenState extends State<AdminScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        AtgField(
-          controller: _minWithdraw,
-          label: 'Minimum withdrawal',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        Row(
+          children: [
+            Expanded(
+              child: AtgField(
+                controller: _minWithdraw,
+                label: 'Min withdrawal',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AtgField(
+                controller: _maxWithdraw,
+                label: 'Max withdrawal',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 22),
         const SectionLabel('HOME CONTENT'),

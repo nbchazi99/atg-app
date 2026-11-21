@@ -220,11 +220,12 @@ public class WithdrawActivity extends AppCompatActivity {
     private void updateSummary() {
         double amount = Ui.parseAmount(text(etWithdrawAmount), 0);
         double pct = settings == null ? 7 : settings.withdrawFeePct;
-        double min = settings == null ? 12.50 : settings.minWithdraw;
+        double min = settings == null ? 5 : settings.minWithdraw;
+        double max = settings == null ? 454 : settings.maxWithdraw;
         double fee = Math.round(amount * pct) / 100.0;
         double receive = Math.round((amount - fee) * 100.0) / 100.0;
 
-        tvMinWithdraw.setText("Minimum withdrawal is " + Ui.money(min) + ".");
+        tvMinWithdraw.setText("Withdraw between " + Ui.money(min) + " and " + Ui.money(max) + ".");
         tvWithdrawFeeLabel.setText("Withdrawal charge (" + formatPct(pct) + "%)");
         tvWithdrawAmount.setText(Ui.money(amount));
         tvWithdrawFee.setText("- " + Ui.money(fee));
@@ -244,13 +245,18 @@ public class WithdrawActivity extends AppCompatActivity {
         tilWithdrawAmount.setError(null);
         tilWithdrawMobile.setError(null);
         double amount = Ui.parseAmount(text(etWithdrawAmount), 0);
-        double min = settings == null ? 12.50 : settings.minWithdraw;
+        double min = settings == null ? 5 : settings.minWithdraw;
+        double max = settings == null ? 454 : settings.maxWithdraw;
         if (amount <= 0) {
             tilWithdrawAmount.setError("Enter the amount you want to withdraw");
             return false;
         }
         if (amount < min) {
             tilWithdrawAmount.setError("Minimum withdrawal is " + Ui.money(min));
+            return false;
+        }
+        if (amount > max) {
+            tilWithdrawAmount.setError("Maximum withdrawal is " + Ui.money(max));
             return false;
         }
         if (text(etWithdrawMobile).isEmpty()) {

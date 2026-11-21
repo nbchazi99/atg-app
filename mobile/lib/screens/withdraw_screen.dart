@@ -85,7 +85,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   double get _feePct => _settings?.withdrawFeePct ?? 7;
-  double get _min => _settings?.minWithdraw ?? 12.50;
+  double get _min => _settings?.minWithdraw ?? 5;
+  double get _max => _settings?.maxWithdraw ?? 454;
   double get _enteredAmount => parseAmount(_amount.text);
   double get _fee => (_enteredAmount * _feePct).round() / 100;
   double get _receive => ((_enteredAmount - _fee) * 100).round() / 100;
@@ -123,6 +124,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     }
     if (amount < _min) {
       setState(() => _amountError = 'Minimum withdrawal is ${money(_min)}');
+      return false;
+    }
+    if (amount > _max) {
+      setState(() => _amountError = 'Maximum withdrawal is ${money(_max)}');
       return false;
     }
     if (contact.isEmpty) {
@@ -322,7 +327,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       ),
       const SizedBox(height: 6),
       Text(
-        'Minimum withdrawal is ${money(_min)}.',
+        'Withdraw between ${money(_min)} and ${money(_max)}.',
         style: AtgText.small.copyWith(fontSize: 11.5),
       ),
       const SizedBox(height: 14),

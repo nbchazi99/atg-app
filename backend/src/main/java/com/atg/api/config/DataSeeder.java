@@ -48,6 +48,22 @@ public class DataSeeder implements CommandLineRunner {
             currentSettings.setDepositMinimumMigrated(true);
             saveSettings = true;
         }
+        if (!currentSettings.isFinancialLimitsMigrated()) {
+            if (currentSettings.getMaxDeposit() == null
+                    || currentSettings.getMaxDeposit().compareTo(new BigDecimal("454.54")) == 0) {
+                currentSettings.setMaxDeposit(BigDecimal.valueOf(454));
+            }
+            if (currentSettings.getMinWithdraw() == null
+                    || currentSettings.getMinWithdraw().compareTo(new BigDecimal("12.50")) == 0
+                    || currentSettings.getMinWithdraw().compareTo(BigDecimal.valueOf(5)) < 0) {
+                currentSettings.setMinWithdraw(BigDecimal.valueOf(5));
+            }
+            if (currentSettings.getMaxWithdraw() == null) {
+                currentSettings.setMaxWithdraw(BigDecimal.valueOf(454));
+            }
+            currentSettings.setFinancialLimitsMigrated(true);
+            saveSettings = true;
+        }
         if (saveSettings) settings.save(currentSettings);
 
         seedRooms();
