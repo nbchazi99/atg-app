@@ -79,7 +79,9 @@ public class WalletService {
         }
         String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
             case "ecocash" -> "EcoCash";
-            default -> throw bad("Choose EcoCash");
+            case "cash" -> "Cash";
+            case "smilecash" -> "SmileCash";
+            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
         };
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
@@ -118,9 +120,12 @@ public class WalletService {
     public WithdrawalRequest createWithdrawal(User user, Dtos.WithdrawReq req) {
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
-        if (!req.payout().trim().equalsIgnoreCase("EcoCash")) {
-            throw bad("Choose EcoCash");
-        }
+        String payout = switch (req.payout().trim().toLowerCase(Locale.ROOT)) {
+            case "ecocash" -> "EcoCash";
+            case "cash" -> "Cash";
+            case "smilecash" -> "SmileCash";
+            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+        };
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
         }
@@ -132,7 +137,7 @@ public class WalletService {
         }
         WithdrawalRequest w = new WithdrawalRequest();
         w.setUserId(user.getId());
-        w.setPayout(req.payout());
+        w.setPayout(payout);
         w.setMobile(req.mobile());
         w.setAmount(amount);
         w.setFeePct(s.getWithdrawFeePct());
@@ -145,7 +150,7 @@ public class WalletService {
         WalletTransaction tx = new WalletTransaction();
         tx.setUserId(user.getId());
         tx.setType(WalletTransaction.Type.WITHDRAWAL);
-        tx.setDescription("Withdrawal to " + req.payout());
+        tx.setDescription("Withdrawal to " + payout);
         tx.setAmount(w.getReceive());
         tx.setStatus(WalletTransaction.Status.PENDING);
         transactions.save(tx);

@@ -3,15 +3,17 @@ package com.atg.api.web;
 import com.atg.api.repo.UserRepository;
 import com.atg.api.service.FirebaseCourseAssetStorage;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 class UploadControllerTest {
 
@@ -40,6 +42,20 @@ class UploadControllerTest {
         assertThatThrownBy(() -> controller.uploadCourseAsset(file))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Upload an image, video, PDF, Office document, or audio file");
+
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void rejectsCourseFilesLargerThan250Mb() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getSize()).thenReturn(250L * 1024 * 1024 + 1);
+
+        assertThatThrownBy(() -> controller.uploadCourseAsset(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(error -> ((ResponseStatusException) error).getStatusCode())
+                .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
 
         verifyNoInteractions(storage);
     }

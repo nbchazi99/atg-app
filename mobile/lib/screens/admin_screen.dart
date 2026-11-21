@@ -1716,7 +1716,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       return;
     }
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: const [
           'jpg',
@@ -1742,9 +1742,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
           'ogg',
           'flac',
         ],
-        withReadStream: true,
       );
-      final file = result?.files.single;
       if (file == null || !mounted) return;
       setState(() => lesson.uploadingMaterial = true);
       final url = await api.uploadCourseMaterial(file);
@@ -1802,6 +1800,11 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       if (!mounted) return;
       setState(() => _uploadingCover = false);
       showMessage(context, 'Could not upload the cover', e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not upload the course cover: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() => _uploadingCover = false);
+      showToast(context, 'Could not upload the cover. Try again.');
     }
   }
 

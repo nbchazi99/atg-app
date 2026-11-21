@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'course_asset_upload_stub.dart'
+    if (dart.library.html) 'course_asset_upload_web.dart'
+    as browser_upload;
 import 'models.dart';
 import 'session.dart';
 
@@ -39,13 +42,12 @@ class Api {
     '.m4v': 'video/mp4',
     '.pdf': 'application/pdf',
     '.doc': 'application/msword',
-    '.docx':
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     '.xls': 'application/vnd.ms-excel',
-    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.xlsx':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     '.ppt': 'application/vnd.ms-powerpoint',
-    '.pptx':
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     '.mp3': 'audio/mpeg',
     '.wav': 'audio/wav',
     '.m4a': 'audio/mp4',
@@ -345,17 +347,23 @@ class Api {
 
   Future<String> uploadCourseAsset(XFile file) async {
     final size = await file.length();
+    if (kIsWeb) {
+      return _uploadCourseAssetInBrowser(Uri.parse(file.path), file.name, size);
+    }
     return _uploadCourseAssetStream(file.name, size, file.openRead());
   }
 
   Future<String> uploadCourseMaterial(PlatformFile file) async {
-    final stream = file.readStream;
-    if (stream == null) {
+    final size = await file.length();
+    if (size == null) {
       throw const ApiException(
-        'Could not read the selected file. Please select it again.',
+        'Could not determine the selected file size. Please select it again.',
       );
     }
-    return _uploadCourseAssetStream(file.name, file.size, stream);
+    if (kIsWeb) {
+      return _uploadCourseAssetInBrowser(file.uri, file.name, size);
+    }
+    return _uploadCourseAssetStream(file.name, size, file.readAsByteStream());
   }
 
   Future<String> _uploadCourseAssetStream(
@@ -363,21 +371,8 @@ class Api {
     int size,
     Stream<List<int>> stream,
   ) async {
-    final lower = filename.toLowerCase();
-    final dot = lower.lastIndexOf('.');
-    final extension = dot < 0 ? '' : lower.substring(dot);
-    final mime = _courseAssetMimeTypes[extension];
-    if (mime == null) {
-      throw const ApiException(
-        'Choose an image, video, PDF, Office document, or audio file.',
-      );
-    }
-    if (size <= 0) {
-      throw const ApiException('The selected file is empty.');
-    }
-    if (size > _maxCourseAssetBytes) {
-      throw const ApiException('Course files must be 250 MB or smaller.');
-    }
+    final mime = _courseAssetMimeType(filename);
+    _validateCourseAssetSize(size);
 
     final uri = Uri.parse('${session.server}api/admin/course-assets');
     final request = http.MultipartRequest('POST', uri);
@@ -400,22 +395,7 @@ class Api {
         const Duration(minutes: 15),
       );
       final response = await http.Response.fromStream(streamed);
-      dynamic decoded;
-      try {
-        decoded = response.body.isEmpty ? null : jsonDecode(response.body);
-      } catch (_) {
-        decoded = null;
-      }
-      if (response.statusCode >= 200 &&
-          response.statusCode < 300 &&
-          decoded is Map &&
-          decoded['url'] is String) {
-        return decoded['url'] as String;
-      }
-      final message = decoded is Map && decoded['error'] is String
-          ? decoded['error'] as String
-          : 'Could not upload the course file (${response.statusCode})';
-      throw ApiException(message, response.statusCode);
+      return _uploadedCourseAssetUrl(response.statusCode, response.body);
     } on ApiException {
       rethrow;
     } on TimeoutException {
@@ -428,6 +408,82 @@ class Api {
         'Could not upload the course file. Check your connection and try again.',
       );
     }
+  }
+
+  Future<String> _uploadCourseAssetInBrowser(
+    Uri fileUri,
+    String filename,
+    int size,
+  ) async {
+    _courseAssetMimeType(filename);
+    _validateCourseAssetSize(size);
+    final token = session.token;
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Sign in as an admin to upload course files.');
+    }
+    try {
+      final response = await browser_upload.uploadCourseAssetInBrowser(
+        endpoint: Uri.parse('${session.server}api/admin/course-assets'),
+        token: token,
+        fileUri: fileUri,
+        filename: filename,
+      );
+      return _uploadedCourseAssetUrl(response.statusCode, response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(
+        'The upload timed out. Check your connection and try again.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('ATG browser course-file upload failed: $error\n$stackTrace');
+      throw const ApiException(
+        'Could not upload the course file. Check your connection and try again.',
+      );
+    }
+  }
+
+  String _courseAssetMimeType(String filename) {
+    final lower = filename.toLowerCase();
+    final dot = lower.lastIndexOf('.');
+    final extension = dot < 0 ? '' : lower.substring(dot);
+    final mime = _courseAssetMimeTypes[extension];
+    if (mime == null) {
+      throw const ApiException(
+        'Choose an image, video, PDF, Office document, or audio file.',
+      );
+    }
+    return mime;
+  }
+
+  void _validateCourseAssetSize(int size) {
+    if (size <= 0) {
+      throw const ApiException('The selected file is empty.');
+    }
+    if (size > _maxCourseAssetBytes) {
+      throw const ApiException('Course files must be 250 MB or smaller.');
+    }
+  }
+
+  String _uploadedCourseAssetUrl(int statusCode, String body) {
+    dynamic decoded;
+    try {
+      decoded = body.isEmpty ? null : jsonDecode(body);
+    } catch (_) {
+      decoded = null;
+    }
+    if (statusCode >= 200 &&
+        statusCode < 300 &&
+        decoded is Map &&
+        decoded['url'] is String) {
+      return decoded['url'] as String;
+    }
+    final message = decoded is Map && decoded['message'] is String
+        ? decoded['message'] as String
+        : decoded is Map && decoded['error'] is String
+        ? decoded['error'] as String
+        : 'Could not upload the course file ($statusCode)';
+    throw ApiException(message, statusCode);
   }
 
   Future<String> _uploadMedia(XFile file, {required bool video}) async {

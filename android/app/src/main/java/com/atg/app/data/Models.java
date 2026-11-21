@@ -44,19 +44,6 @@ public class Models {
         }
     }
 
-    public static class MarketPair {
-        public long id;
-        public String symbol;
-        public String name;
-        public String assetClass;
-        public double price;
-        public double changePct;
-        public double high;
-        public double low;
-        public double prevClose;
-        public String updatedAt;
-    }
-
     public static class Signal {
         public long id;
         public String title;
@@ -71,12 +58,6 @@ public class Models {
         public String ruleName;
         public int participants;
         public String createdAt;
-    }
-
-    public static class PairRes {
-        public MarketPair pair;
-        public List<Signal> calls;
-        public boolean favourite;
     }
 
     public static class HomeRes {

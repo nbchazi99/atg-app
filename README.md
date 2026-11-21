@@ -20,9 +20,10 @@ reference implementation.
 - Wallet: balance history, pending request counts, deposit and withdrawal entry points.
 - Deposit: Weltrade only, $5 minimum, and EcoCash payment method.
 - Withdrawal: four steps — payout, source and amount, proof upload, done.
-- Academy: courses with progress, lesson pictures and notes, YouTube/video links or uploaded videos
-  (up to 50 MB), clickable learning links, downloadable lesson notes (`.txt` export), and course- and
-  lesson-level discussions. Course purchase by payment proof.
+- Academy: courses with progress, lesson pictures and notes, YouTube/video links, and uploaded
+  lesson assets (images, video, PDF, Office documents, and audio; up to 250 MB per file), clickable
+  learning links, downloadable lesson notes (`.txt` export), and course- and lesson-level discussions.
+  Course purchase by payment proof.
 - Tools: glossary (22 terms) and pip calculator.
 - Profile: membership, purchases, transaction history, server setting, admin entry, sign out.
 
@@ -31,8 +32,8 @@ reference implementation.
 - Requests: deposits, withdrawals and purchases with approve / reject and a note.
 - Users: change membership (none, Deriv VIP, Weltrade VIP).
 - Signals: create and delete signals.
-- Courses: create (with lessons) and delete. Lesson lines use
-  `Title | minutes | content | video URL`, where the video URL is optional.
+- Courses: create with a required USD price (enter `0` for free), cover image, and lessons with
+  uploaded media/files or external links; delete courses.
 - Settings: deposit fee, withdrawal fee, min/max amounts, daily fact, promotion copy.
 
 The server creates the open Community room and separate Deriv VIP and Weltrade VIP rooms when they are
@@ -72,6 +73,9 @@ java -jar build/libs/atg-api-1.0.0.jar
 
 - Default `dev` profile uses embedded H2 stored in `backend/data/atg`, so there is nothing to install.
 - Uploaded payment proofs go to `backend/uploads` and are served at `/uploads/**`.
+- Course assets are stored in Firebase Storage. Configure `FIREBASE_STORAGE_BUCKET` (defaults to
+  `atg-app-6908e.firebasestorage.app`) and grant the backend service account permission to create
+  objects in that bucket.
 - API root: `http://localhost:8080/api`.
 
 Production with PostgreSQL:
@@ -213,7 +217,8 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
   `POST /rooms/{id}/threads`, `PATCH /rooms/{id}/threads/{threadId}`,
   `GET|POST /rooms/{id}/messages?threadId={threadId}` (omit `threadId` for the room-wide chat)
 - Wallet: `GET /wallet`, `GET|POST /deposits`, `GET|POST /withdrawals`
-- Uploads: `POST /uploads` (multipart `file`; images and supported videos)
+- Uploads: `POST /uploads` (images and supported videos), admin-only
+  `POST /admin/course-assets` (multipart `file`; allowed course assets up to 250 MB)
 - Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`,
   `GET|POST /courses/{id}/comments`, `GET|POST /courses/{id}/lessons/{lessonId}/comments`,
   `GET|POST /purchases`

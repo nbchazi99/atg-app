@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -30,11 +29,6 @@ public class Adapters {
 
     public interface OnSignal {
         void open(Models.Signal signal);
-    }
-
-    public interface OnMarket {
-        void open(Models.MarketPair pair);
-        void favourite(Models.MarketPair pair, int position);
     }
 
     public interface OnFeed {
@@ -250,74 +244,6 @@ public class Adapters {
                 rule = v.findViewById(R.id.tvSignalRule);
                 participants = v.findViewById(R.id.tvSignalParticipants);
                 time = v.findViewById(R.id.tvSignalTime);
-            }
-        }
-    }
-
-    public static class MarketsAdapter extends RecyclerView.Adapter<MarketsAdapter.Holder> {
-        private final List<Models.MarketPair> items = new ArrayList<>();
-        private final Set<String> favourites = new HashSet<>();
-        private final OnMarket callback;
-
-        public MarketsAdapter(OnMarket callback) {
-            this.callback = callback;
-        }
-
-        public void setItems(List<Models.MarketPair> data) {
-            items.clear();
-            items.addAll(data);
-            notifyDataSetChanged();
-        }
-
-        public void setFavourites(List<Models.MarketPair> favs) {
-            favourites.clear();
-            for (Models.MarketPair p : favs) favourites.add(p.symbol);
-            notifyDataSetChanged();
-        }
-
-        public List<Models.MarketPair> current() {
-            return items;
-        }
-
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_market_pair, parent, false);
-            return new Holder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            Models.MarketPair p = items.get(position);
-            h.symbol.setText(p.symbol);
-            h.name.setText(p.name);
-            h.price.setText(Ui.price(p.price));
-            h.updated.setText(Ui.timeAgo(p.updatedAt));
-            h.fav.setImageResource(favourites.contains(p.symbol) ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
-            h.itemView.setOnClickListener(v -> {
-                if (callback != null) callback.open(p);
-            });
-            h.fav.setOnClickListener(v -> {
-                if (callback != null) callback.favourite(p, position);
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, name, price, updated;
-            final ImageButton fav;
-
-            Holder(View v) {
-                super(v);
-                symbol = v.findViewById(R.id.tvPairSymbol);
-                name = v.findViewById(R.id.tvPairName);
-                price = v.findViewById(R.id.tvPairPrice);
-                updated = v.findViewById(R.id.tvPairUpdated);
-                fav = v.findViewById(R.id.btnFavourite);
             }
         }
     }

@@ -47,7 +47,8 @@ public class UploadController extends BaseController {
     public Map<String, Object> upload(@RequestParam("file") MultipartFile file) {
         if (file == null || file.isEmpty()) throw bad("No file received");
         if (file.getSize() > MAX_GENERAL_UPLOAD_BYTES) {
-            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Images must be 52 MB or smaller");
+            throw new ResponseStatusException(
+                    HttpStatus.PAYLOAD_TOO_LARGE, "Uploads must be 52 MB or smaller");
         }
         String type = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
         boolean image = type.startsWith("image/");

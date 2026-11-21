@@ -30,15 +30,6 @@ public interface ApiService {
     @GET("api/signals")
     Call<List<Models.Signal>> signals(@Query("status") String status, @Query("symbol") String symbol);
 
-    @GET("api/markets")
-    Call<List<Models.MarketPair>> markets(@Query("category") String category);
-
-    @GET("api/markets/{symbol}")
-    Call<Models.PairRes> pair(@Path("symbol") String symbol);
-
-    @POST("api/markets/{symbol}/favourite")
-    Call<Map<String, Object>> toggleFavourite(@Path("symbol") String symbol);
-
     @GET("api/rooms")
     Call<List<Models.Room>> rooms();
 

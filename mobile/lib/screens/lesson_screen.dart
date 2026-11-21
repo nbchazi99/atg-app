@@ -158,8 +158,8 @@ class _LessonScreenState extends State<LessonScreen> {
                     if (lesson.materialUrl?.trim().isNotEmpty == true) ...[
                       const SizedBox(height: 14),
                       OutlineButton(
-                        label: 'Open PDF / learning material',
-                        icon: Icons.picture_as_pdf_outlined,
+                        label: 'Open learning material',
+                        icon: Icons.attach_file_rounded,
                         onPressed: _openMaterial,
                       ),
                     ],

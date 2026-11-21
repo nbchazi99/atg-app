@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,14 +73,40 @@ class WalletServiceLimitsTest {
                 .hasMessageContaining("Maximum withdrawal is $454");
     }
 
+    @Test
+    void acceptsOnlyConfiguredDepositAndWithdrawalMethods() {
+        for (String method : List.of("EcoCash", "Cash", "SmileCash")) {
+            assertThat(service.createDeposit(user, deposit("5", method))).isNotNull();
+            assertThat(service.createWithdrawal(user, withdrawal("5", method))).isNotNull();
+        }
+    }
+
+    @Test
+    void rejectsUnsupportedDepositAndWithdrawalMethods() {
+        assertThatThrownBy(() -> service.createDeposit(user, deposit("5", "InnBucks")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Choose EcoCash, Cash, or SmileCash");
+        assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", "Other")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Choose EcoCash, Cash, or SmileCash");
+    }
+
     private static Dtos.DepositReq deposit(String amount) {
+        return deposit(amount, "EcoCash");
+    }
+
+    private static Dtos.DepositReq deposit(String amount, String wallet) {
         return new Dtos.DepositReq(
-                "Weltrade", "client-1", new BigDecimal(amount), "EcoCash", "0712345678");
+                "Weltrade", "client-1", new BigDecimal(amount), wallet, "0712345678");
     }
 
     private static Dtos.WithdrawReq withdrawal(String amount) {
+        return withdrawal(amount, "EcoCash");
+    }
+
+    private static Dtos.WithdrawReq withdrawal(String amount, String payout) {
         return new Dtos.WithdrawReq(
-                "EcoCash", "0712345678", new BigDecimal(amount),
+                payout, "0712345678", new BigDecimal(amount),
                 "Weltrade", "client-1", "https://example.com/proof.png");
     }
 }
