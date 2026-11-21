@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -24,6 +25,34 @@ class ApiException implements Exception {
 
 class Api {
   Api(this.session);
+
+  static const _maxCourseAssetBytes = 250 * 1024 * 1024;
+  static const _courseAssetMimeTypes = <String, String>{
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.webp': 'image/webp',
+    '.gif': 'image/gif',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.mov': 'video/quicktime',
+    '.m4v': 'video/mp4',
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx':
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.m4a': 'audio/mp4',
+    '.aac': 'audio/aac',
+    '.ogg': 'audio/ogg',
+    '.flac': 'audio/flac',
+  };
 
   final Session session;
   final http.Client _client = http.Client();
@@ -312,6 +341,93 @@ class Api {
 
   Future<String> uploadVideo(XFile file) async {
     return _uploadMedia(file, video: true);
+  }
+
+  Future<String> uploadCourseAsset(XFile file) async {
+    final size = await file.length();
+    return _uploadCourseAssetStream(file.name, size, file.openRead());
+  }
+
+  Future<String> uploadCourseMaterial(PlatformFile file) async {
+    final stream = file.readStream;
+    if (stream == null) {
+      throw const ApiException(
+        'Could not read the selected file. Please select it again.',
+      );
+    }
+    return _uploadCourseAssetStream(file.name, file.size, stream);
+  }
+
+  Future<String> _uploadCourseAssetStream(
+    String filename,
+    int size,
+    Stream<List<int>> stream,
+  ) async {
+    final lower = filename.toLowerCase();
+    final dot = lower.lastIndexOf('.');
+    final extension = dot < 0 ? '' : lower.substring(dot);
+    final mime = _courseAssetMimeTypes[extension];
+    if (mime == null) {
+      throw const ApiException(
+        'Choose an image, video, PDF, Office document, or audio file.',
+      );
+    }
+    if (size <= 0) {
+      throw const ApiException('The selected file is empty.');
+    }
+    if (size > _maxCourseAssetBytes) {
+      throw const ApiException('Course files must be 250 MB or smaller.');
+    }
+
+    final uri = Uri.parse('${session.server}api/admin/course-assets');
+    final request = http.MultipartRequest('POST', uri);
+    final token = session.token;
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    try {
+      request.files.add(
+        http.MultipartFile(
+          'file',
+          stream,
+          size,
+          filename: filename,
+          contentType: MediaType.parse(mime),
+        ),
+      );
+      final streamed = await request.send().timeout(
+        const Duration(minutes: 15),
+      );
+      final response = await http.Response.fromStream(streamed);
+      dynamic decoded;
+      try {
+        decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+      } catch (_) {
+        decoded = null;
+      }
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          decoded is Map &&
+          decoded['url'] is String) {
+        return decoded['url'] as String;
+      }
+      final message = decoded is Map && decoded['error'] is String
+          ? decoded['error'] as String
+          : 'Could not upload the course file (${response.statusCode})';
+      throw ApiException(message, response.statusCode);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(
+        'The upload timed out. Check your connection and try again.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('ATG course-file upload failed: $error\n$stackTrace');
+      throw const ApiException(
+        'Could not upload the course file. Check your connection and try again.',
+      );
+    }
   }
 
   Future<String> _uploadMedia(XFile file, {required bool video}) async {

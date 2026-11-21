@@ -19,6 +19,8 @@ services:
         value: "-Xmx320m -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=48m"
       - key: GOOGLE_APPLICATION_CREDENTIALS
         sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        value: atg-app-6908e.firebasestorage.app
       - key: MAIL_HOST
         sync: false
       - key: MAIL_PORT

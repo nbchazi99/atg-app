@@ -209,14 +209,17 @@ public class AdminController extends BaseController {
 
     @PostMapping("/courses")
     public Course createCourse(@RequestBody Dtos.CourseReq req) {
-        if (req.price() != null && req.price().signum() < 0) {
+        if (req.price() == null) {
+            throw bad("Course price is required");
+        }
+        if (req.price().signum() < 0) {
             throw bad("Course price cannot be negative");
         }
         Course c = new Course();
         c.setTitle(req.title());
         c.setSubtitle(req.subtitle());
         c.setDescription(req.description());
-        c.setPrice(req.price() == null ? BigDecimal.ZERO : req.price());
+        c.setPrice(req.price());
         c.setLevel(req.level() == null ? "Beginner" : req.level());
         c.setImageUrl(req.imageUrl());
         courses.save(c);

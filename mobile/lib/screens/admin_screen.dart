@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -1638,14 +1639,15 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       final title = lesson.title.text.trim();
       if (title.isEmpty) continue;
       final duration = int.tryParse(lesson.duration.text.trim()) ?? 10;
+      final materialUrl =
+          lesson.uploadedMaterialUrl ?? lesson.material.text.trim();
       items.add({
         'title': title,
         'durationMin': duration,
         'content': lesson.content.text.trim(),
         if (lesson.video.text.trim().isNotEmpty)
           'videoUrl': lesson.video.text.trim(),
-        if (lesson.material.text.trim().isNotEmpty)
-          'materialUrl': lesson.material.text.trim(),
+        if (materialUrl.isNotEmpty) 'materialUrl': materialUrl,
         if (lesson.imageUrl.isNotEmpty) 'imageUrl': lesson.imageUrl,
       });
     }
@@ -1662,7 +1664,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       );
       if (file == null || !mounted) return;
       setState(() => lesson.uploadingImage = true);
-      final url = await api.uploadImage(file);
+      final url = await api.uploadCourseAsset(file);
       if (!mounted) return;
       setState(() {
         lesson.imageUrl = url;
@@ -1688,7 +1690,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       final file = await ImagePicker().pickVideo(source: ImageSource.gallery);
       if (file == null || !mounted) return;
       setState(() => lesson.uploadingVideo = true);
-      final url = await api.uploadVideo(file);
+      final url = await api.uploadCourseAsset(file);
       if (!mounted) return;
       setState(() {
         lesson.video.text = url;
@@ -1704,6 +1706,65 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       if (!mounted) return;
       setState(() => lesson.uploadingVideo = false);
       showToast(context, 'Could not upload lesson video. Try again.');
+    }
+  }
+
+  Future<void> _pickLessonMaterial(_LessonEditorFields lesson) async {
+    if (lesson.uploadingImage ||
+        lesson.uploadingVideo ||
+        lesson.uploadingMaterial) {
+      return;
+    }
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const [
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+          'gif',
+          'mp4',
+          'webm',
+          'mov',
+          'm4v',
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'mp3',
+          'wav',
+          'm4a',
+          'aac',
+          'ogg',
+          'flac',
+        ],
+        withReadStream: true,
+      );
+      final file = result?.files.single;
+      if (file == null || !mounted) return;
+      setState(() => lesson.uploadingMaterial = true);
+      final url = await api.uploadCourseMaterial(file);
+      if (!mounted) return;
+      setState(() {
+        lesson.uploadedMaterialUrl = url;
+        lesson.uploadedMaterialName = file.name;
+        lesson.material.clear();
+        lesson.uploadingMaterial = false;
+      });
+      showToast(context, 'Learning material uploaded');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => lesson.uploadingMaterial = false);
+      showMessage(context, 'Could not upload learning material', e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not upload course material: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() => lesson.uploadingMaterial = false);
+      showToast(context, 'Could not upload learning material. Try again.');
     }
   }
 
@@ -1730,7 +1791,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
 
     setState(() => _uploadingCover = true);
     try {
-      final url = await api.uploadImage(file);
+      final url = await api.uploadCourseAsset(file);
       if (!mounted) return;
       setState(() {
         _imageUrl = url;
@@ -1759,9 +1820,12 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       return;
     }
     if (_lessons.any(
-      (lesson) => lesson.uploadingImage || lesson.uploadingVideo,
+      (lesson) =>
+          lesson.uploadingImage ||
+          lesson.uploadingVideo ||
+          lesson.uploadingMaterial,
     )) {
-      showToast(context, 'Wait for lesson media to finish uploading');
+      showToast(context, 'Wait for lesson files to finish uploading');
       return;
     }
     if (_lessons.any(
@@ -1770,6 +1834,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
           (lesson.content.text.trim().isNotEmpty ||
               lesson.video.text.trim().isNotEmpty ||
               lesson.material.text.trim().isNotEmpty ||
+              lesson.uploadedMaterialUrl != null ||
               lesson.imageUrl.isNotEmpty),
     )) {
       showToast(context, 'Add a title to each lesson with content');
@@ -1841,6 +1906,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
           AtgField(
             controller: _price,
             label: 'Price (USD)',
+            hint: 'e.g. 25.00',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 4),
@@ -1929,7 +1995,9 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
                 _uploadingCover ||
                     _lessons.any(
                       (lesson) =>
-                          lesson.uploadingImage || lesson.uploadingVideo,
+                          lesson.uploadingImage ||
+                          lesson.uploadingVideo ||
+                          lesson.uploadingMaterial,
                     )
                 ? null
                 : _create,
@@ -1951,7 +2019,10 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
               if (_lessons.length > 1)
                 IconButton(
                   tooltip: 'Remove lesson',
-                  onPressed: lesson.uploadingImage || lesson.uploadingVideo
+                  onPressed:
+                      lesson.uploadingImage ||
+                          lesson.uploadingVideo ||
+                          lesson.uploadingMaterial
                       ? null
                       : () => setState(() {
                           _lessons.removeAt(index).dispose();
@@ -1989,18 +2060,72 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
           OutlineButton(
             label: lesson.uploadingVideo
                 ? 'Uploading video…'
-                : 'Upload video (up to 50 MB)',
+                : 'Upload video (up to 250 MB)',
             icon: Icons.video_library_outlined,
-            onPressed: lesson.uploadingVideo || lesson.uploadingImage
+            onPressed:
+                lesson.uploadingVideo ||
+                    lesson.uploadingImage ||
+                    lesson.uploadingMaterial
                 ? null
                 : () => _pickLessonVideo(lesson),
           ),
           const SizedBox(height: 8),
           AtgField(
             controller: lesson.material,
-            label: 'PDF or learning-material link',
+            label: 'Learning-material link (optional)',
+            hint: 'Paste a link, or upload a file below',
             keyboardType: TextInputType.url,
+            onChanged: (_) {
+              if (lesson.uploadedMaterialUrl != null) {
+                setState(() {
+                  lesson.uploadedMaterialUrl = null;
+                  lesson.uploadedMaterialName = null;
+                });
+              }
+            },
           ),
+          const SizedBox(height: 8),
+          OutlineButton(
+            label: lesson.uploadingMaterial
+                ? 'Uploading learning material…'
+                : lesson.uploadedMaterialName == null
+                ? 'Upload a file (up to 250 MB)'
+                : 'Replace uploaded file',
+            icon: Icons.upload_file_outlined,
+            onPressed:
+                lesson.uploadingImage ||
+                    lesson.uploadingVideo ||
+                    lesson.uploadingMaterial
+                ? null
+                : () => _pickLessonMaterial(lesson),
+          ),
+          if (lesson.uploadedMaterialName != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.attach_file_rounded, size: 16),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    lesson.uploadedMaterialName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AtgText.small,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Remove uploaded material',
+                  onPressed: lesson.uploadingMaterial
+                      ? null
+                      : () => setState(() {
+                          lesson.uploadedMaterialUrl = null;
+                          lesson.uploadedMaterialName = null;
+                        }),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           if (lesson.imageUrl.isNotEmpty) ...[
             ClipRRect(
@@ -2023,7 +2148,10 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
                 ? 'Add lesson picture'
                 : 'Change lesson picture',
             icon: Icons.image_outlined,
-            onPressed: lesson.uploadingImage || lesson.uploadingVideo
+            onPressed:
+                lesson.uploadingImage ||
+                    lesson.uploadingVideo ||
+                    lesson.uploadingMaterial
                 ? null
                 : () => _pickLessonImage(lesson),
           ),
@@ -2039,9 +2167,12 @@ class _LessonEditorFields {
   final content = TextEditingController();
   final video = TextEditingController();
   final material = TextEditingController();
+  String? uploadedMaterialUrl;
+  String? uploadedMaterialName;
   String imageUrl = '';
   bool uploadingImage = false;
   bool uploadingVideo = false;
+  bool uploadingMaterial = false;
 
   void dispose() {
     title.dispose();

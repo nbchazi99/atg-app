@@ -20,7 +20,9 @@ public class FirestoreConfig {
     private static final Logger log = LoggerFactory.getLogger(FirestoreConfig.class);
 
     @Bean
-    public FirebaseApp firebaseApp(@Value("${app.firebase.service-account:}") String serviceAccountPath)
+    public FirebaseApp firebaseApp(
+            @Value("${app.firebase.service-account:}") String serviceAccountPath,
+            @Value("${app.firebase.storage-bucket:}") String storageBucket)
             throws IOException {
         if (!FirebaseApp.getApps().isEmpty()) {
             return FirebaseApp.getInstance();
@@ -33,6 +35,9 @@ public class FirestoreConfig {
             // Cloud Run supplies credentials via the metadata server / GOOGLE_APPLICATION_CREDENTIALS
             options.setCredentials(GoogleCredentials.getApplicationDefault());
             log.info("Firebase initialized from application default credentials");
+        }
+        if (storageBucket != null && !storageBucket.isBlank()) {
+            options.setStorageBucket(storageBucket);
         }
         return FirebaseApp.initializeApp(options.build());
     }
