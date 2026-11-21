@@ -237,7 +237,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Minimum withdrawal is $12.50." />
+                    android:text="Withdraw between $5.00 and $454.00." />
 
                 <LinearLayout
                     android:layout_width="match_parent"

@@ -14,7 +14,6 @@ import '../widgets.dart';
 import 'academy_screen.dart';
 import 'deposit_screen.dart';
 import 'glossary_screen.dart';
-import 'pair_detail_screen.dart';
 import 'pip_calculator_screen.dart';
 import 'profile_screen.dart';
 import 'signal_detail_screen.dart';
@@ -131,12 +130,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _openPair(String symbol) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => PairDetailScreen(symbol: symbol)));
-  }
-
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
@@ -148,13 +141,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final referralPoints = _settings?.pointsPerReferral ?? 0;
     final liveLine = home == null
         ? (_failed
-              ? 'Live calls are unavailable right now.'
+              ? 'Live signals are unavailable right now.'
               : 'Checking the floor…')
         : liveCount == 0
-        ? 'No calls are live right now.'
+        ? 'No signals are live right now.'
         : liveCount == 1
-        ? '1 call is live.'
-        : '$liveCount calls are live.';
+        ? '1 signal is live.'
+        : '$liveCount signals are live.';
 
     return SafeArea(
       bottom: false,
@@ -269,15 +262,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       children: [
                         Text(
                           home == null
-                              ? 'Live calls are unavailable'
-                              : 'No live calls right now',
+                              ? 'Live signals are unavailable'
+                              : 'No live signals right now',
                           style: AtgText.h3,
                         ),
                         const SizedBox(height: 3),
                         Text(
                           home == null
                               ? 'We could not reach the ATG server. Pull down to try again.'
-                              : 'The floor is quiet. New calls show up here the moment they are posted.',
+                              : 'The floor is quiet. New signals show up here the moment they are posted.',
                           style: AtgText.small,
                         ),
                       ],
@@ -347,7 +340,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     _QuickAction(
                       icon: Icons.bolt_outlined,
-                      label: 'Calls',
+                      label: 'Signals',
                       onTap: () => widget.onOpenTab(1),
                     ),
                   ],
@@ -399,6 +392,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
+              const SizedBox(height: 14),
               if (_fact.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -618,7 +612,7 @@ class _WeltradeCardState extends State<_WeltradeCard> {
           ),
           const _WeltradeStep(
             number: '3',
-            text: 'Fund it from EcoCash, Omari, InnBucks, OneMoney or ZB.',
+            text: 'Fund it with EcoCash.',
             last: true,
           ),
           const SizedBox(height: 4),
@@ -668,34 +662,6 @@ class _WeltradeCardState extends State<_WeltradeCard> {
             style: TextStyle(fontSize: 11, height: 1.4, color: AtgColors.muted),
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: AtgColors.redBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 15,
-                  color: AtgColors.redText,
-                ),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Accurate Trading Group. Trading carries risk.',
-                    style: TextStyle(
-                      fontSize: 11,
-                      height: 1.3,
-                      fontWeight: FontWeight.w700,
-                      color: AtgColors.redText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

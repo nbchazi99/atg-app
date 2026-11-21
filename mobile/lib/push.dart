@@ -18,6 +18,7 @@ class PushService {
 
   static Future<PushService> start(Session session, Api api) async {
     _instance ??= PushService._(session, api);
+    if (kIsWeb) return _instance!;
     await _instance!._start();
     return _instance!;
   }

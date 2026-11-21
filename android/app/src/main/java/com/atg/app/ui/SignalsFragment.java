@@ -54,7 +54,7 @@ public class SignalsFragment extends Fragment {
         avatar.setText(ApiClient.session().initials());
         avatar.setOnClickListener(v -> startActivity(new android.content.Intent(requireContext(), ProfileActivity.class)));
         view.findViewById(R.id.btnBell).setOnClickListener(v ->
-                Ui.alert(requireContext(), "Notifications", "New calls and updates land here. You are all caught up."));
+                Ui.alert(requireContext(), "Notifications", "New signals and updates land here. You are all caught up."));
 
         chipLive = view.findViewById(R.id.btnFilterLive);
         chipOpen = view.findViewById(R.id.btnFilterOpen);
@@ -102,7 +102,7 @@ public class SignalsFragment extends Fragment {
                 }
                 adapter.setItems(items);
                 empty.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
-                subtitle.setText(items.size() == 1 ? "1 call" : items.size() + " calls");
+                subtitle.setText(items.size() == 1 ? "1 signal" : items.size() + " signals");
             }
 
             @Override
@@ -113,16 +113,5 @@ public class SignalsFragment extends Fragment {
             }
         });
 
-        ApiClient.api().home().enqueue(new Callback<>() {
-            @Override
-            public void onResponse(@NonNull Call<Models.HomeRes> call, @NonNull Response<Models.HomeRes> response) {
-                if (!isAdded() || response.body() == null) return;
-                subtitle.setText(response.body().liveCount + " live now");
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<Models.HomeRes> call, @NonNull Throwable t) {
-            }
-        });
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +29,8 @@ public class AdminController extends BaseController {
     private final WithdrawalRequestRepository withdrawals;
     private final PurchaseRequestRepository purchases;
     private final SignalRepository signals;
+    private final RoomRepository rooms;
+    private final RoomMessageRepository roomMessages;
     private final CourseRepository courses;
     private final LessonRepository lessons;
     private final RealtimeHub realtime;
@@ -36,7 +40,9 @@ public class AdminController extends BaseController {
     public AdminController(UserRepository users, WalletService wallet,
                            WalletTransactionRepository transactions, DepositRequestRepository deposits,
                            WithdrawalRequestRepository withdrawals, PurchaseRequestRepository purchases,
-                           SignalRepository signals, CourseRepository courses, LessonRepository lessons,
+                           SignalRepository signals, RoomRepository rooms,
+                           RoomMessageRepository roomMessages,
+                           CourseRepository courses, LessonRepository lessons,
                            RealtimeHub realtime, JwtService jwt, PasswordEncoder encoder) {
         super(users);
         this.wallet = wallet;
@@ -45,6 +51,8 @@ public class AdminController extends BaseController {
         this.withdrawals = withdrawals;
         this.purchases = purchases;
         this.signals = signals;
+        this.rooms = rooms;
+        this.roomMessages = roomMessages;
         this.courses = courses;
         this.lessons = lessons;
         this.realtime = realtime;
@@ -67,9 +75,11 @@ public class AdminController extends BaseController {
         }
         if (req.password() != null && !req.password().isBlank()) {
             admin.setPasswordHash(encoder.encode(req.password()));
+            admin.setTokenVersion(admin.getTokenVersion() + 1);
         }
         users.save(admin);
-        return new Dtos.AuthRes(jwt.generate(admin.getEmail(), admin.getRole().name()),
+        return new Dtos.AuthRes(jwt.generate(
+                admin.getEmail(), admin.getRole().name(), admin.getTokenVersion()),
                 Dtos.UserView.of(admin));
     }
 
@@ -129,10 +139,35 @@ public class AdminController extends BaseController {
         return signals.findAllByOrderByCreatedAtDesc();
     }
 
+    @PostMapping("/rooms")
+    public Room createRoom(@Valid @RequestBody Dtos.RoomReq req) {
+        Room room = new Room();
+        room.setName(req.name().trim());
+        room.setDescription(req.description() == null ? "" : req.description().trim());
+        room.setPreview("");
+        Room saved = rooms.save(room);
+        realtime.publish(RealtimeHub.ROOMS, Map.of("roomId", saved.getId(), "kind", "created"));
+        return saved;
+    }
+
+    @DeleteMapping("/rooms/{roomId}/messages/{messageId}")
+    public Map<String, Object> deleteRoomMessage(@PathVariable Long roomId, @PathVariable Long messageId) {
+        RoomMessage message = roomMessages.findById(messageId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Message not found"));
+        if (!roomId.equals(message.getRoomId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message does not belong to this room");
+        }
+        roomMessages.deleteById(messageId);
+        realtime.publish(RealtimeHub.ROOMS, Map.of("roomId", roomId, "kind", "message-deleted"));
+        realtime.publish(RealtimeHub.roomScope(roomId), Map.of("roomId", roomId, "kind", "message-deleted"));
+        return Map.of("deleted", true);
+    }
+
     @PostMapping("/signals")
     public Signal createSignal(@RequestBody Dtos.SignalReq req) {
         Signal s = new Signal();
         apply(s, req);
+        s.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
         Signal saved = signals.save(s);
         realtime.publish(RealtimeHub.SIGNALS, Map.of("signalId", saved.getId(), "kind", "created"));
         realtime.publish(RealtimeHub.HOME, Map.of("kind", "signals"));
@@ -174,6 +209,9 @@ public class AdminController extends BaseController {
 
     @PostMapping("/courses")
     public Course createCourse(@RequestBody Dtos.CourseReq req) {
+        if (req.price() != null && req.price().signum() < 0) {
+            throw bad("Course price cannot be negative");
+        }
         Course c = new Course();
         c.setTitle(req.title());
         c.setSubtitle(req.subtitle());
@@ -191,6 +229,8 @@ public class AdminController extends BaseController {
                 l.setDurationMin(lr.durationMin() == null ? 10 : lr.durationMin());
                 l.setContent(lr.content());
                 l.setVideoUrl(lr.videoUrl());
+                l.setMaterialUrl(lr.materialUrl());
+                l.setImageUrl(lr.imageUrl());
                 l.setOrderIndex(i++);
                 lessons.save(l);
             }

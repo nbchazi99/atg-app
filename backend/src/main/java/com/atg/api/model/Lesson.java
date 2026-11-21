@@ -10,6 +10,8 @@ public class Lesson {
     private int durationMin = 10;
     private String content;
     private String videoUrl;
+    private String materialUrl;
+    private String imageUrl;
     private int orderIndex = 0;
 
     public Long getId() { return id; }
@@ -24,6 +26,10 @@ public class Lesson {
     public void setContent(String content) { this.content = content; }
     public String getVideoUrl() { return videoUrl; }
     public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
+    public String getMaterialUrl() { return materialUrl; }
+    public void setMaterialUrl(String materialUrl) { this.materialUrl = materialUrl; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public int getOrderIndex() { return orderIndex; }
     public void setOrderIndex(int orderIndex) { this.orderIndex = orderIndex; }
 }

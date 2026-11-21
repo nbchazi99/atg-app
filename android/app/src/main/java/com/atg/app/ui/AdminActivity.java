@@ -572,6 +572,7 @@ public class AdminActivity extends AppCompatActivity {
                 set(R.id.etMinDeposit, trim(s.minDeposit));
                 set(R.id.etMaxDeposit, trim(s.maxDeposit));
                 set(R.id.etMinWithdraw, trim(s.minWithdraw));
+                set(R.id.etMaxWithdraw, trim(s.maxWithdraw));
                 set(R.id.etFact, s.fact);
                 set(R.id.etPromoTitle, s.promotionTitle);
                 set(R.id.etPromoBody, s.promotionBody);
@@ -588,9 +589,10 @@ public class AdminActivity extends AppCompatActivity {
         Models.SettingsReq req = new Models.SettingsReq();
         req.adminFeePct = Ui.parseAmount(text((EditText) findViewById(R.id.etAdminFee)), 12);
         req.withdrawFeePct = Ui.parseAmount(text((EditText) findViewById(R.id.etWithdrawFee)), 7);
-        req.minDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMinDeposit)), 12.5);
-        req.maxDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMaxDeposit)), 454.54);
-        req.minWithdraw = Ui.parseAmount(text((EditText) findViewById(R.id.etMinWithdraw)), 12.5);
+        req.minDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMinDeposit)), 5);
+        req.maxDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMaxDeposit)), 454);
+        req.minWithdraw = Ui.parseAmount(text((EditText) findViewById(R.id.etMinWithdraw)), 5);
+        req.maxWithdraw = Ui.parseAmount(text((EditText) findViewById(R.id.etMaxWithdraw)), 454);
         req.fact = text((EditText) findViewById(R.id.etFact));
         req.promotionTitle = text((EditText) findViewById(R.id.etPromoTitle));
         req.promotionBody = text((EditText) findViewById(R.id.etPromoBody));

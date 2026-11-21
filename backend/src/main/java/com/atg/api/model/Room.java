@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class Room {
 
@@ -10,7 +11,7 @@ public class Room {
     private String description;
     private String preview;
     private int unreadCount = 0;
-    private LocalDateTime lastActivityAt = LocalDateTime.now();
+    private LocalDateTime lastActivityAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

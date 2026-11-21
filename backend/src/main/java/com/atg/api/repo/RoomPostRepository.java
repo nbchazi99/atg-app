@@ -16,15 +16,23 @@ public class RoomPostRepository extends AbstractFirestoreStore<RoomPost> {
         super(db, ids, "room_posts", RoomPost.class);
     }
 
-    public List<RoomPost> findAllByOrderByCreatedAtDesc() {
+    public List<RoomPost> findAllByLatestActivityDesc() {
         List<RoomPost> posts = findAll();
-        posts.sort(Comparator.comparing(RoomPost::getCreatedAt).reversed());
+        sortByActivity(posts);
         return posts;
     }
 
-    public List<RoomPost> findByOpenOrderByCreatedAtDesc(boolean open) {
+    public List<RoomPost> findByOpenOrderByLatestActivityDesc(boolean open) {
         List<RoomPost> posts = queryWhere("open", open);
-        posts.sort(Comparator.comparing(RoomPost::getCreatedAt).reversed());
+        sortByActivity(posts);
         return posts;
+    }
+
+    private void sortByActivity(List<RoomPost> posts) {
+        posts.sort(Comparator.comparing(
+                (RoomPost post) -> post.getLastActivityAt() == null
+                        ? post.getCreatedAt()
+                        : post.getLastActivityAt()
+        ).reversed());
     }
 }

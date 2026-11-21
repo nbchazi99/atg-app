@@ -4,11 +4,13 @@ import 'package:image_picker/image_picker.dart';
 import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../widgets/academy_discussion.dart';
 import 'lesson_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
@@ -112,11 +114,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     }
   }
 
+  Future<void> _enrollFree(Course course) async {
+    if (_buying) return;
+    setState(() => _buying = true);
+    try {
+      await api.enrollInFreeCourse(course.id);
+      if (!mounted) return;
+      setState(() => _buying = false);
+      showToast(context, 'Enrolled in ${course.title}');
+      await _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _buying = false);
+      showMessage(context, 'Could not enroll in the course', e.message);
+    }
+  }
+
   Future<void> _openLesson(Lesson lesson, bool completed) async {
     final detail = _detail;
     if (detail == null) return;
     if (!detail.enrolled) {
-      showToast(context, 'Buy this course to unlock the lessons');
+      showToast(context, 'Start this course to unlock the lessons');
       return;
     }
     await Navigator.of(context).push(
@@ -195,36 +213,50 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 ),
                               ),
                           if (!detail.enrolled) ...[
-                            const SizedBox(height: 16),
-                            SurfaceCard(
-                              padding: const EdgeInsets.all(14),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.lock_outline_rounded,
-                                    size: 18,
-                                    color: AtgColors.gold,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Expanded(
-                                    child: Text(
-                                      'Lessons unlock after the administrator approves your payment proof. '
-                                      'You will see the decision in your profile.',
-                                      style: AtgText.small,
-                                    ),
-                                  ),
-                                ],
+                            if (detail.course.price <= 0) ...[
+                              const SizedBox(height: 16),
+                              PrimaryButton(
+                                label: 'Start this free course',
+                                loading: _buying,
+                                onPressed: () => _enrollFree(detail.course),
                               ),
-                            ),
-                            const SizedBox(height: 14),
-                            PrimaryButton(
-                              label:
-                                  'Buy this course · ${money(detail.course.price)}',
-                              loading: _buying,
-                              onPressed: () => _buy(detail.course),
-                            ),
+                            ] else ...[
+                              const SizedBox(height: 16),
+                              SurfaceCard(
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(
+                                      Icons.lock_outline_rounded,
+                                      size: 18,
+                                      color: AtgColors.gold,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Expanded(
+                                      child: Text(
+                                        'Lessons unlock after the administrator approves your payment proof. '
+                                        'You will see the decision in your profile.',
+                                        style: AtgText.small,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              PrimaryButton(
+                                label:
+                                    'Buy this course · ${money(detail.course.price)}',
+                                loading: _buying,
+                                onPressed: () => _buy(detail.course),
+                              ),
+                            ],
                           ],
+                          const SizedBox(height: 22),
+                          AcademyDiscussion(
+                            courseId: detail.course.id,
+                            title: 'Course discussion',
+                          ),
                         ],
                       ),
               ),
@@ -268,19 +300,22 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           Text(course.title, style: AtgText.pageTitle.copyWith(fontSize: 22)),
           if (course.subtitle.isNotEmpty) ...[
             const SizedBox(height: 4),
-            Text(course.subtitle, style: AtgText.body),
+            LinkedText(course.subtitle, style: AtgText.body),
           ],
           if (course.description.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(course.description, style: AtgText.bodySmall),
+            LinkedText(course.description, style: AtgText.bodySmall),
           ],
           const SizedBox(height: 14),
           Row(
             children: [
-              Text('Course price', style: AtgText.small),
+              Text(
+                course.price <= 0 ? 'Course access' : 'Course price',
+                style: AtgText.small,
+              ),
               const Spacer(),
               Text(
-                money(course.price),
+                course.price <= 0 ? 'Free' : money(course.price),
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,

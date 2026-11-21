@@ -35,9 +35,10 @@ public class JwtFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                String email = jwtService.subject(header.substring(7).trim());
+                String token = header.substring(7).trim();
+                String email = jwtService.subject(token);
                 User user = users.findByEmailIgnoreCase(email).orElse(null);
-                if (user != null) {
+                if (user != null && user.getTokenVersion() == jwtService.tokenVersion(token)) {
                     var auth = new UsernamePasswordAuthenticationToken(
                             user.getEmail(), null,
                             List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));

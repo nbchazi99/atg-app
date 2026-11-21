@@ -11,17 +11,18 @@ reference implementation.
 **Trader app**
 
 - Sign in / register, persistent session, configurable server address.
-- Home: greeting, points, live calls, promo card, quick actions, market tickers, daily fact, referral card
-  and a Weltrade account-registration card (steps, partner link, risk notice).
+- Home: greeting, points, live signals, promo card, quick actions, daily fact, referral card
+  and a Weltrade account-registration card (steps and partner link).
 - Signals: Live / Open / Inner / Closed filters, full level detail (entry, stop, targets, rule, participants).
-- Markets: Favourites / Forex / Metals / Crypto, search, live pair detail with stats and calls, star favourites.
-- Community: main floor + Deriv VIP + Weltrade VIP, open/closed/all feed, room chat with posting.
-  VIP rooms and their feed posts stay locked until the matching membership is approved.
+- Community: shared Community chat + private Deriv VIP and Weltrade VIP rooms. Members can start
+  separate conversations, browse Open / Closed / Latest, and continue each conversation in its own chat.
+  VIP rooms, their feed posts and VIP-labelled signals stay locked until the matching membership is approved.
 - Wallet: balance history, pending request counts, deposit and withdrawal entry points.
-- Deposit: broker, client ID, amount, fee summary, wallet, mobile, payer reference.
+- Deposit: Weltrade only, $5 minimum, and EcoCash payment method.
 - Withdrawal: four steps — payout, source and amount, proof upload, done.
-- Academy: courses with progress, lessons with completion, downloadable lesson notes (`.txt` export),
-  and optional video links that open in the device's video app or browser. Course purchase by payment proof.
+- Academy: courses with progress, lesson pictures and notes, YouTube/video links or uploaded videos
+  (up to 50 MB), clickable learning links, downloadable lesson notes (`.txt` export), and course- and
+  lesson-level discussions. Course purchase by payment proof.
 - Tools: glossary (22 terms) and pip calculator.
 - Profile: membership, purchases, transaction history, server setting, admin entry, sign out.
 
@@ -29,12 +30,13 @@ reference implementation.
 
 - Requests: deposits, withdrawals and purchases with approve / reject and a note.
 - Users: change membership (none, Deriv VIP, Weltrade VIP).
-- Signals: create and delete calls.
+- Signals: create and delete signals.
 - Courses: create (with lessons) and delete. Lesson lines use
   `Title | minutes | content | video URL`, where the video URL is optional.
 - Settings: deposit fee, withdrawal fee, min/max amounts, daily fact, promotion copy.
 
-Seed data on a fresh database: 15 market pairs, 7 signals, 3 rooms with chat, 3 courses, 2 accounts.
+The server creates the open Community room and separate Deriv VIP and Weltrade VIP rooms when they are
+missing. Signals and courses are published by an administrator; no demo traders are created.
 
 ## Repository layout
 
@@ -151,17 +153,26 @@ API. On an empty database the server creates the administrator from the `ADMIN_E
 unset it starts with no admin and logs a warning. An admin replaces their own login from
 **Admin → Account**, which writes to the database and keeps the session signed in.
 
+Forgot-password codes are delivered over SMTP. Configure `MAIL_HOST`, `MAIL_PORT`,
+`MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM` in the Render dashboard. The reset code expires
+after 15 minutes, can be requested again after 60 seconds, and is limited to five guesses.
+
 ## Business rules
 
-- **Deposit** — a 10% admin fee is added on top: `$25.00 + $2.50 = $27.50` paid. Minimum `$12.50`,
+- **Deposit** — a 10% admin fee is added on top: `$25.00 + $2.50 = $27.50` paid. Minimum `$5.00`,
   maximum `$454.54`.
 - **Withdrawal** — a 7% fee is deducted: `$25.00 − $1.75 = $23.25` received. Minimum `$12.50`;
   a proof image is required.
 - Every deposit, withdrawal, course purchase and VIP purchase is **reviewed manually** by an admin.
   Approving settles the wallet transaction and applies the membership or course enrolment.
 - VIP membership costs `$30.00`; course prices come from the course record.
+- **Community chat** is shared by all signed-in members and appears before the VIP rooms.
+- Community conversations are visible to signed-in members; creators and admins can close or reopen
+  them. Closed conversations remain readable but do not accept new messages.
 - VIP rooms are enforced server-side: without the matching membership the room list marks them
-  `locked`, their posts are hidden from the feed, and messages return `403`. Admins bypass the lock.
+  `locked`, their posts and VIP-labelled signals are hidden from the feed, and messages return `403`.
+  Admins bypass the lock.
+- Deposits are accepted only for Weltrade accounts, using EcoCash.
 - Fees and limits are stored in `app_settings` and can be changed live from **Admin → Settings**.
 - Money is stored as `BigDecimal` in the API; the client only formats it.
 
@@ -197,12 +208,15 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - Auth: `POST /auth/login`, `POST /auth/register`
 - Me / home: `GET /me`, `PUT /me`, `GET /home`, `GET /settings/public`
 - Signals: `GET /signals?status=&symbol=`
-- Markets: `GET /markets?category=forex|metals|crypto|favourites`, `GET /markets/{symbol}`,
-  `POST /markets/{symbol}/favourite`
-- Rooms: `GET /rooms`, `GET /rooms/feed?filter=open|closed|all`, `GET|POST /rooms/{id}/messages`
+- Rooms: `GET /rooms`, `GET /rooms/feed?filter=open|closed|latest|all`,
+  `POST /rooms/community/threads` (creates Community if missing),
+  `POST /rooms/{id}/threads`, `PATCH /rooms/{id}/threads/{threadId}`,
+  `GET|POST /rooms/{id}/messages?threadId={threadId}` (omit `threadId` for the room-wide chat)
 - Wallet: `GET /wallet`, `GET|POST /deposits`, `GET|POST /withdrawals`
-- Uploads: `POST /uploads` (multipart `file`)
-- Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`, `GET|POST /purchases`
+- Uploads: `POST /uploads` (multipart `file`; images and supported videos)
+- Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`,
+  `GET|POST /courses/{id}/comments`, `GET|POST /courses/{id}/lessons/{lessonId}/comments`,
+  `GET|POST /purchases`
 - Admin: `GET /admin/users`, `PATCH /admin/users/{id}/membership`, `GET /admin/requests`,
   `POST /admin/deposits/{id}/decide`, `POST /admin/withdrawals/{id}/decide`,
   `POST /admin/purchases/{id}/decide`, `GET|POST /admin/signals`, `PUT|DELETE /admin/signals/{id}`,
@@ -234,8 +248,8 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
   uploading to Play.
 - The whole trader and admin flow was walked at runtime in a browser against the live API (the same
   Dart code, built as `flutter build web --release` and served locally, used as a harness because this
-  machine has no emulator or phone): sign-in for both roles, home, signals and detail, markets,
-  favourites and pair detail, room chat posting, rooms feed, wallet, deposit, the 4-step withdrawal,
+  machine has no emulator or phone): sign-in for both roles, home, signals and detail, room chat
+  posting, rooms feed, wallet, deposit, the 4-step withdrawal,
   VIP purchase, and every admin tab (requests, users, signals, courses, settings).
 - Live updates verified against the running API, twice over:
   - **Socket level** — a Node script opened two authenticated sockets (learner + admin) on
@@ -257,8 +271,8 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - The home screen ends with a Weltrade registration card: numbered steps, a **Create a Weltrade account**
   button that opens `https://track.gowt.me/visit/?bta=46667&brand=weltrade` in the system browser
   (`url_launcher`, `LaunchMode.externalApplication`; the link answers `302` to the Weltrade
-  registration page with the affiliate code), and the notice *Accurate Trading Group. Trading carries
-  risk.* The former "Are you a Wella?" prompt was folded into this card, and the **Rooms** tab is now
+  registration page with the affiliate code). The former "Are you a Wella?" prompt was folded into
+  this card, and the **Rooms** tab is now
   **Community** across the bottom bar, home quick actions, feed header and signal detail.
 - Branding comes from the supplied gold-bull logo (`mobile/assets/brand/atg-bull-logo.png`), processed by
   `mobile/tool/build_brand_assets.py` (Pillow). It writes the five Android launcher mipmaps plus adaptive
@@ -286,5 +300,6 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - The original Java client builds with `gradle assembleDebug`.
 - VIP room gating is also enforced server-side: locked rooms are flagged in `GET /rooms`, their posts
   are filtered from the feed, and messages return `403`.
-- The production database starts empty: no seeded signals, courses, rooms or demo traders. Content
-  appears only when an admin publishes it.
+- The production database starts without signals, courses or demo traders. The server creates a
+  public Community room and the separate private VIP rooms when they are missing; signal/course
+  content appears when an admin publishes it.

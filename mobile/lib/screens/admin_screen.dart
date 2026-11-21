@@ -22,6 +22,7 @@ class _AdminScreenState extends State<AdminScreen> {
     'Requests',
     'Users',
     'Signals',
+    'Rooms',
     'Courses',
     'Settings',
     'Account',
@@ -32,6 +33,7 @@ class _AdminScreenState extends State<AdminScreen> {
   final _minDeposit = TextEditingController();
   final _maxDeposit = TextEditingController();
   final _minWithdraw = TextEditingController();
+  final _maxWithdraw = TextEditingController();
   final _fact = TextEditingController();
   final _promoTitle = TextEditingController();
   final _promoBody = TextEditingController();
@@ -45,6 +47,7 @@ class _AdminScreenState extends State<AdminScreen> {
   AdminRequests? _requests;
   List<AppUser> _users = const [];
   List<Signal> _signals = const [];
+  List<Room> _rooms = const [];
   List<Course> _courses = const [];
   bool _savingSettings = false;
   bool _savingAccount = false;
@@ -55,9 +58,15 @@ class _AdminScreenState extends State<AdminScreen> {
     super.initState();
     _loadTab();
     _unbind = realtime.bind(
-      {AtgScope.requests, AtgScope.users, AtgScope.signals, AtgScope.courses},
+      {
+        AtgScope.requests,
+        AtgScope.users,
+        AtgScope.signals,
+        AtgScope.rooms,
+        AtgScope.courses,
+      },
       () {
-        if (!mounted || _savingSettings || _tab == 4 || _tab == 5) return;
+        if (!mounted || _savingSettings || _tab == 5 || _tab == 6) return;
         _loadTab();
       },
     );
@@ -71,6 +80,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _minDeposit.dispose();
     _maxDeposit.dispose();
     _minWithdraw.dispose();
+    _maxWithdraw.dispose();
     _fact.dispose();
     _promoTitle.dispose();
     _promoBody.dispose();
@@ -108,6 +118,14 @@ class _AdminScreenState extends State<AdminScreen> {
           });
           break;
         case 3:
+          final rooms = await api.rooms();
+          if (!mounted) return;
+          setState(() {
+            _rooms = rooms;
+            _loading = false;
+          });
+          break;
+        case 4:
           final rows = await api.courses();
           if (!mounted) return;
           setState(() {
@@ -115,13 +133,13 @@ class _AdminScreenState extends State<AdminScreen> {
             _loading = false;
           });
           break;
-        case 4:
+        case 5:
           final settings = await api.adminSettings();
           if (!mounted) return;
           _fillSettings(settings);
           setState(() => _loading = false);
           break;
-        case 5:
+        case 6:
           if (!mounted) return;
           setState(() => _loading = false);
           break;
@@ -146,6 +164,7 @@ class _AdminScreenState extends State<AdminScreen> {
     _minDeposit.text = trimNumber(s.minDeposit);
     _maxDeposit.text = trimNumber(s.maxDeposit);
     _minWithdraw.text = trimNumber(s.minWithdraw);
+    _maxWithdraw.text = trimNumber(s.maxWithdraw);
     _fact.text = s.fact;
     _promoTitle.text = s.promotionTitle;
     _promoBody.text = s.promotionBody;
@@ -381,7 +400,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Delete ${signal.title}?',
-      message: 'The call disappears for every trader on the floor.',
+      message: 'The signal disappears for every trader on the floor.',
       confirmLabel: 'Delete',
       cancelLabel: 'Keep',
       destructive: true,
@@ -428,6 +447,28 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  Future<void> _addRoom() async {
+    final draft = await showModalBottomSheet<_RoomDraft>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AtgColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => const _RoomFormSheet(),
+    );
+    if (draft == null || !mounted) return;
+    try {
+      await api.createRoom(name: draft.name, description: draft.description);
+      if (!mounted) return;
+      showToast(context, 'Chat room created');
+      await _loadTab();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showMessage(context, 'Could not create the chat room', e.message);
+    }
+  }
+
   Future<void> _deleteCourse(Course course) async {
     final confirmed = await confirmAction(
       context,
@@ -457,9 +498,10 @@ class _AdminScreenState extends State<AdminScreen> {
       await api.updateSettings({
         'adminFeePct': parseAmount(_adminFee.text, 10),
         'withdrawFeePct': parseAmount(_withdrawFee.text, 7),
-        'minDeposit': parseAmount(_minDeposit.text, 12.5),
-        'maxDeposit': parseAmount(_maxDeposit.text, 454.54),
-        'minWithdraw': parseAmount(_minWithdraw.text, 12.5),
+        'minDeposit': parseAmount(_minDeposit.text, 5),
+        'maxDeposit': parseAmount(_maxDeposit.text, 454),
+        'minWithdraw': parseAmount(_minWithdraw.text, 5),
+        'maxWithdraw': parseAmount(_maxWithdraw.text, 454),
         'fact': _fact.text.trim(),
         'promotionTitle': _promoTitle.text.trim(),
         'promotionBody': _promoBody.text.trim(),
@@ -559,9 +601,10 @@ class _AdminScreenState extends State<AdminScreen> {
                     : switch (_tab) {
                         1 => _usersView(),
                         2 => _signalsView(),
-                        3 => _coursesView(),
-                        4 => _settingsView(),
-                        5 => _accountView(),
+                        3 => _roomsView(),
+                        4 => _coursesView(),
+                        5 => _settingsView(),
+                        6 => _accountView(),
                         _ => _requestsView(),
                       },
               ),
@@ -782,7 +825,9 @@ class _AdminScreenState extends State<AdminScreen> {
           child: Row(
             children: [
               Text(
-                _signals.isEmpty ? 'No calls yet' : '${_signals.length} calls',
+                _signals.isEmpty
+                    ? 'No signals yet'
+                    : '${_signals.length} signals',
                 style: AtgText.small,
               ),
               const Spacer(),
@@ -814,8 +859,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   padding: const EdgeInsets.only(top: 20),
                   children: const [
                     EmptyState(
-                      title: 'No calls',
-                      message: 'Publish the first call for the floor.',
+                      title: 'No signals',
+                      message: 'Publish the first signal for the floor.',
                       icon: Icons.bolt_outlined,
                     ),
                   ],
@@ -848,7 +893,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                 StatusPill(signal.status, fontSize: 9),
                                 IconButton(
                                   onPressed: () => _deleteSignal(signal),
-                                  tooltip: 'Delete call',
+                                  tooltip: 'Delete signal',
                                   visualDensity: VisualDensity.compact,
                                   icon: const Icon(
                                     Icons.delete_outline_rounded,
@@ -891,6 +936,87 @@ class _AdminScreenState extends State<AdminScreen> {
                             ),
                           ],
                         ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _roomsView() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+          child: Row(
+            children: [
+              Text(
+                _rooms.isEmpty ? 'No chat rooms yet' : '${_rooms.length} rooms',
+                style: AtgText.small,
+              ),
+              const Spacer(),
+              SizedBox(
+                height: 36,
+                child: FilledButton(
+                  onPressed: _addRoom,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AtgColors.primary,
+                    foregroundColor: AtgColors.ink,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  child: const Text('New chat room'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _rooms.isEmpty
+              ? ListView(
+                  padding: const EdgeInsets.only(top: 20),
+                  children: const [
+                    EmptyState(
+                      title: 'No chat rooms',
+                      message: 'Create a room so traders have a place to start chatting.',
+                      icon: Icons.forum_outlined,
+                    ),
+                  ],
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                  itemCount: _rooms.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final room = _rooms[index];
+                    return SurfaceCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(room.name, style: AtgText.h3),
+                          if (room.description.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(room.description, style: AtgText.small),
+                          ],
+                          const SizedBox(height: 8),
+                          Text(
+                            room.preview.isEmpty
+                                ? 'No messages yet'
+                                : room.preview,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AtgText.tiny,
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -971,7 +1097,8 @@ class _AdminScreenState extends State<AdminScreen> {
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    '${course.level} · ${course.lessonsCount} lessons · ${money(course.price)}',
+                                    '${course.level} · ${course.lessonsCount} lessons · '
+                                    '${course.price <= 0 ? 'Free' : money(course.price)}',
                                     style: AtgText.small.copyWith(
                                       fontSize: 11.5,
                                     ),
@@ -1054,10 +1181,24 @@ class _AdminScreenState extends State<AdminScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        AtgField(
-          controller: _minWithdraw,
-          label: 'Minimum withdrawal',
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        Row(
+          children: [
+            Expanded(
+              child: AtgField(
+                controller: _minWithdraw,
+                label: 'Min withdrawal',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AtgField(
+                controller: _maxWithdraw,
+                label: 'Max withdrawal',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 22),
         const SectionLabel('HOME CONTENT'),
@@ -1299,6 +1440,13 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
               ),
             ],
           ),
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Text(
+              'Use OPEN FLOOR for public signals, or Deriv VIP / Weltrade VIP for member-only signals.',
+              style: AtgText.small,
+            ),
+          ),
           const SizedBox(height: 14),
           const SectionLabel('SIDE'),
           const SizedBox(height: 8),
@@ -1353,6 +1501,84 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
   }
 }
 
+class _RoomDraft {
+  const _RoomDraft({required this.name, required this.description});
+
+  final String name;
+  final String description;
+}
+
+class _RoomFormSheet extends StatefulWidget {
+  const _RoomFormSheet();
+
+  @override
+  State<_RoomFormSheet> createState() => _RoomFormSheetState();
+}
+
+class _RoomFormSheetState extends State<_RoomFormSheet> {
+  final _name = TextEditingController();
+  final _description = TextEditingController();
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _description.dispose();
+    super.dispose();
+  }
+
+  void _create() {
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      showToast(context, 'Give the chat room a name');
+      return;
+    }
+    Navigator.of(context)
+        .pop(_RoomDraft(name: name, description: _description.text.trim()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AtgColors.stroke,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text('New chat room', style: AtgText.pageTitle),
+          const SizedBox(height: 14),
+          AtgField(
+            controller: _name,
+            label: 'Room name',
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 10),
+          AtgField(
+            controller: _description,
+            label: 'Description (optional)',
+            maxLines: 3,
+            minLines: 2,
+          ),
+          const SizedBox(height: 18),
+          PrimaryButton(label: 'Create room', onPressed: _create),
+        ],
+      ),
+    );
+  }
+}
+
 class _CourseDraft {
   const _CourseDraft({
     required this.title,
@@ -1384,13 +1610,8 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
   final _title = TextEditingController();
   final _subtitle = TextEditingController();
   final _description = TextEditingController();
-  final _price = TextEditingController(text: '30');
-  final _lessons = TextEditingController(
-    text:
-        'Welcome and chart basics | 12 | Why price moves, how to read a candle and set up your charts.\n'
-        'The M10 rule | 18 | Entries, stops and targets on the 10-minute chart.\n'
-        'Risk and review | 15 | Position sizing, journaling and weekly review.',
-  );
+  final _price = TextEditingController();
+  final List<_LessonEditorFields> _lessons = [_LessonEditorFields()];
 
   String _level = 'Beginner';
   String _imageUrl = '';
@@ -1402,31 +1623,85 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
     _subtitle.dispose();
     _description.dispose();
     _price.dispose();
-    _lessons.dispose();
+    for (final lesson in _lessons) {
+      lesson.dispose();
+    }
     super.dispose();
   }
 
   List<Map<String, Object?>> _parseLessons() {
     final items = <Map<String, Object?>>[];
-    for (final line in _lessons.text.split(RegExp(r'\r?\n'))) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      final parts = trimmed.split('|');
-      final title = parts[0].trim();
+    for (final lesson in _lessons) {
+      final title = lesson.title.text.trim();
       if (title.isEmpty) continue;
-      final duration = parts.length > 1
-          ? parseAmount(parts[1], 10).round()
-          : 10;
-      final content = parts.length > 2 ? parts[2].trim() : '';
-      final video = parts.length > 3 ? parts[3].trim() : '';
+      final duration = int.tryParse(lesson.duration.text.trim()) ?? 10;
       items.add({
         'title': title,
         'durationMin': duration,
-        'content': content,
-        if (video.isNotEmpty) 'videoUrl': video,
+        'content': lesson.content.text.trim(),
+        if (lesson.video.text.trim().isNotEmpty)
+          'videoUrl': lesson.video.text.trim(),
+        if (lesson.material.text.trim().isNotEmpty)
+          'materialUrl': lesson.material.text.trim(),
+        if (lesson.imageUrl.isNotEmpty) 'imageUrl': lesson.imageUrl,
       });
     }
     return items;
+  }
+
+  Future<void> _pickLessonImage(_LessonEditorFields lesson) async {
+    if (lesson.uploadingImage) return;
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (file == null || !mounted) return;
+      setState(() => lesson.uploadingImage = true);
+      final url = await api.uploadImage(file);
+      if (!mounted) return;
+      setState(() {
+        lesson.imageUrl = url;
+        lesson.uploadingImage = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => lesson.uploadingImage = false);
+      showMessage(context, 'Could not upload lesson picture', e.message);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Could not upload Academy lesson picture: $error\n$stackTrace',
+      );
+      if (!mounted) return;
+      setState(() => lesson.uploadingImage = false);
+      showToast(context, 'Could not upload lesson picture. Try again.');
+    }
+  }
+
+  Future<void> _pickLessonVideo(_LessonEditorFields lesson) async {
+    if (lesson.uploadingVideo) return;
+    try {
+      final file = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      if (file == null || !mounted) return;
+      setState(() => lesson.uploadingVideo = true);
+      final url = await api.uploadVideo(file);
+      if (!mounted) return;
+      setState(() {
+        lesson.video.text = url;
+        lesson.uploadingVideo = false;
+      });
+      showToast(context, 'Lesson video uploaded');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => lesson.uploadingVideo = false);
+      showMessage(context, 'Could not upload lesson video', e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not upload Academy lesson video: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() => lesson.uploadingVideo = false);
+      showToast(context, 'Could not upload lesson video. Try again.');
+    }
   }
 
   Future<void> _pickCover() async {
@@ -1471,12 +1746,46 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       showToast(context, 'Give the course a title');
       return;
     }
+    if (_price.text.trim().isEmpty) {
+      showToast(context, 'Enter a course price, or 0 for a free course');
+      return;
+    }
+    final price = double.tryParse(_price.text.trim());
+    if (price == null || !price.isFinite || price < 0) {
+      showToast(context, 'Enter a valid non-negative course price');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) => lesson.uploadingImage || lesson.uploadingVideo,
+    )) {
+      showToast(context, 'Wait for lesson media to finish uploading');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) =>
+          lesson.title.text.trim().isEmpty &&
+          (lesson.content.text.trim().isNotEmpty ||
+              lesson.video.text.trim().isNotEmpty ||
+              lesson.material.text.trim().isNotEmpty ||
+              lesson.imageUrl.isNotEmpty),
+    )) {
+      showToast(context, 'Add a title to each lesson with content');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) =>
+          lesson.title.text.trim().isNotEmpty &&
+          (int.tryParse(lesson.duration.text.trim()) ?? 0) <= 0,
+    )) {
+      showToast(context, 'Enter a positive whole number for lesson duration');
+      return;
+    }
     Navigator.of(context).pop(
       _CourseDraft(
         title: _title.text.trim(),
         subtitle: _subtitle.text.trim(),
         description: _description.text.trim(),
-        price: parseAmount(_price.text),
+        price: price,
         level: _level,
         imageUrl: _imageUrl,
         lessons: _parseLessons(),
@@ -1530,6 +1839,11 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
             controller: _price,
             label: 'Price (USD)',
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Enter 0 to make this course free.',
+            style: AtgText.small.copyWith(fontSize: 11.5),
           ),
           const SizedBox(height: 12),
           const SectionLabel('LEVEL'),
@@ -1590,17 +1904,147 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
             style: AtgText.small.copyWith(fontSize: 11.5),
           ),
           const SizedBox(height: 14),
-          AtgField(
-            controller: _lessons,
-            label: 'Lessons (title | minutes | content | video URL)',
-            maxLines: 8,
-            minLines: 5,
-            alignLabelWithHint: true,
+          Row(
+            children: [
+              const Expanded(child: SectionLabel('LESSONS')),
+              TextButton.icon(
+                onPressed: () =>
+                    setState(() => _lessons.add(_LessonEditorFields())),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add lesson'),
+              ),
+            ],
           ),
+          for (var index = 0; index < _lessons.length; index++) ...[
+            const SizedBox(height: 8),
+            _buildLessonEditor(index, _lessons[index]),
+          ],
           const SizedBox(height: 18),
-          PrimaryButton(label: 'Create course', onPressed: _create),
+          PrimaryButton(
+            label: 'Create course',
+            onPressed:
+                _uploadingCover ||
+                    _lessons.any(
+                      (lesson) =>
+                          lesson.uploadingImage || lesson.uploadingVideo,
+                    )
+                ? null
+                : _create,
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildLessonEditor(int index, _LessonEditorFields lesson) {
+    return SurfaceCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text('Lesson ${index + 1}', style: AtgText.h3)),
+              if (_lessons.length > 1)
+                IconButton(
+                  tooltip: 'Remove lesson',
+                  onPressed: lesson.uploadingImage || lesson.uploadingVideo
+                      ? null
+                      : () => setState(() {
+                          _lessons.removeAt(index).dispose();
+                        }),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+            ],
+          ),
+          AtgField(
+            controller: lesson.title,
+            label: 'Lesson title',
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.duration,
+            label: 'Duration (minutes)',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.content,
+            label: 'Lesson notes (links are clickable)',
+            minLines: 3,
+            maxLines: 7,
+            alignLabelWithHint: true,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.video,
+            label: 'YouTube or video URL',
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 6),
+          OutlineButton(
+            label: lesson.uploadingVideo
+                ? 'Uploading video…'
+                : 'Upload video (up to 50 MB)',
+            icon: Icons.video_library_outlined,
+            onPressed: lesson.uploadingVideo || lesson.uploadingImage
+                ? null
+                : () => _pickLessonVideo(lesson),
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.material,
+            label: 'PDF or learning-material link',
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 8),
+          if (lesson.imageUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                mediaUrl(lesson.imageUrl),
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          OutlineButton(
+            label: lesson.uploadingImage
+                ? 'Uploading picture…'
+                : lesson.imageUrl.isEmpty
+                ? 'Add lesson picture'
+                : 'Change lesson picture',
+            icon: Icons.image_outlined,
+            onPressed: lesson.uploadingImage || lesson.uploadingVideo
+                ? null
+                : () => _pickLessonImage(lesson),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LessonEditorFields {
+  final title = TextEditingController();
+  final duration = TextEditingController(text: '10');
+  final content = TextEditingController();
+  final video = TextEditingController();
+  final material = TextEditingController();
+  String imageUrl = '';
+  bool uploadingImage = false;
+  bool uploadingVideo = false;
+
+  void dispose() {
+    title.dispose();
+    duration.dispose();
+    content.dispose();
+    video.dispose();
+    material.dispose();
   }
 }

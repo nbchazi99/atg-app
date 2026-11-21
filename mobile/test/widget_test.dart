@@ -20,6 +20,21 @@ void main() {
     expect(pct(-1.5), '-1.50%');
   });
 
+  test('timeAgo treats timezone-less server timestamps as UTC', () {
+    final now = DateTime.utc(2026, 11, 5, 19, 0, 45);
+
+    expect(timeAgo('2026-11-05T19:00:00', now: now), 'just now');
+    expect(timeAgo('2026-11-05T21:00:00+02:00', now: now), 'just now');
+    expect(timeAgo('2026-11-05T18:58:00Z', now: now), '2m ago');
+  });
+
+  test('timeAgo compares server timestamps with an offset local clock', () {
+    final localNow = DateTime.parse('2026-11-05T21:00:45+02:00');
+
+    expect(timeAgo('2026-11-05T19:00:00', now: localNow), 'just now');
+    expect(timeAgo('2026-11-05T18:00:00', now: localNow), '1h ago');
+  });
+
   test('initials uses the first and last name', () {
     expect(initials('Blessed Moyo'), 'BM');
     expect(initials('Blessed'), 'B');

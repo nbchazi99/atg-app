@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         Fragment fragment;
         if (itemId == R.id.nav_signals) fragment = new SignalsFragment();
-        else if (itemId == R.id.nav_markets) fragment = new MarketsFragment();
+        else if (itemId == R.id.nav_academy) fragment = new AcademyFragment();
         else if (itemId == R.id.nav_rooms) fragment = new RoomsFragment();
         else if (itemId == R.id.nav_wallet) fragment = new WalletFragment();
         else fragment = new HomeFragment();

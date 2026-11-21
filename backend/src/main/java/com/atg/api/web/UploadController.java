@@ -32,7 +32,13 @@ public class UploadController extends BaseController {
     public Map<String, Object> upload(@RequestParam("file") MultipartFile file) {
         if (file == null || file.isEmpty()) throw bad("No file received");
         String type = file.getContentType() == null ? "" : file.getContentType().toLowerCase(Locale.ROOT);
-        if (!type.startsWith("image/")) throw bad("Only images can be uploaded");
+        boolean image = type.startsWith("image/");
+        boolean video = type.equals("video/mp4") || type.equals("video/webm")
+                || type.equals("video/quicktime") || type.equals("video/x-m4v");
+        if (!image && !video) throw bad("Upload an image or a supported video file");
+        if (video && file.getSize() > 50L * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, "Videos must be 50 MB or smaller");
+        }
         String name = file.getOriginalFilename() == null ? "proof" : file.getOriginalFilename();
         String ext = name.contains(".") ? name.substring(name.lastIndexOf('.')).toLowerCase(Locale.ROOT) : ".jpg";
         if (ext.length() > 6) ext = ".jpg";

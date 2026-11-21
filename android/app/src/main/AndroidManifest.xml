@@ -26,7 +26,6 @@
         <activity android:name=".ui.MainActivity" />
         <activity android:name=".ui.DepositActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.WithdrawActivity" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.PairDetailActivity" />
         <activity android:name=".ui.SignalDetailActivity" />
         <activity android:name=".ui.RoomDetailActivity" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.AcademyActivity" />

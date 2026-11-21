@@ -5,7 +5,6 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -30,11 +29,6 @@ public class Adapters {
 
     public interface OnSignal {
         void open(Models.Signal signal);
-    }
-
-    public interface OnMarket {
-        void open(Models.MarketPair pair);
-        void favourite(Models.MarketPair pair, int position);
     }
 
     public interface OnFeed {
@@ -210,6 +204,7 @@ public class Adapters {
             Context c = h.itemView.getContext();
             h.title.setText(s.title);
             h.subtitle.setText(s.subtitle);
+            Ui.enableWebLinks(h.subtitle);
             h.side.setText(s.side);
             boolean buy = "BUY".equals(s.side);
             h.side.setBackgroundResource(buy ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
@@ -253,80 +248,6 @@ public class Adapters {
         }
     }
 
-    public static class MarketsAdapter extends RecyclerView.Adapter<MarketsAdapter.Holder> {
-        private final List<Models.MarketPair> items = new ArrayList<>();
-        private final Set<String> favourites = new HashSet<>();
-        private final OnMarket callback;
-
-        public MarketsAdapter(OnMarket callback) {
-            this.callback = callback;
-        }
-
-        public void setItems(List<Models.MarketPair> data) {
-            items.clear();
-            items.addAll(data);
-            notifyDataSetChanged();
-        }
-
-        public void setFavourites(List<Models.MarketPair> favs) {
-            favourites.clear();
-            for (Models.MarketPair p : favs) favourites.add(p.symbol);
-            notifyDataSetChanged();
-        }
-
-        public List<Models.MarketPair> current() {
-            return items;
-        }
-
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_market_pair, parent, false);
-            return new Holder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            Models.MarketPair p = items.get(position);
-            Context c = h.itemView.getContext();
-            h.symbol.setText(p.symbol);
-            h.name.setText(p.name);
-            h.price.setText(Ui.price(p.price));
-            boolean up = p.changePct >= 0;
-            h.change.setText(Ui.pct(p.changePct));
-            h.change.setBackgroundResource(up ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
-            h.change.setTextColor(ContextCompat.getColor(c, up ? R.color.green_text : R.color.red_text));
-            h.updated.setText(Ui.timeAgo(p.updatedAt));
-            h.fav.setImageResource(favourites.contains(p.symbol) ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
-            h.itemView.setOnClickListener(v -> {
-                if (callback != null) callback.open(p);
-            });
-            h.fav.setOnClickListener(v -> {
-                if (callback != null) callback.favourite(p, position);
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, name, price, change, updated;
-            final ImageButton fav;
-
-            Holder(View v) {
-                super(v);
-                symbol = v.findViewById(R.id.tvPairSymbol);
-                name = v.findViewById(R.id.tvPairName);
-                price = v.findViewById(R.id.tvPairPrice);
-                change = v.findViewById(R.id.tvPairChange);
-                updated = v.findViewById(R.id.tvPairUpdated);
-                fav = v.findViewById(R.id.btnFavourite);
-            }
-        }
-    }
-
     public static class FeedAdapter extends RecyclerView.Adapter<FeedAdapter.Holder> {
         private final List<Models.FeedItem> items = new ArrayList<>();
         private final OnFeed callback;
@@ -352,19 +273,20 @@ public class Adapters {
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Models.FeedItem f = items.get(position);
             Context c = h.itemView.getContext();
-            h.badge.setText(f.badge);
-            boolean buy = "BUY".equals(f.side);
-            h.badge.setBackgroundResource(buy ? R.drawable.bg_circle_green : R.drawable.bg_circle_red);
-            h.badge.setTextColor(ContextCompat.getColor(c, buy ? R.color.green_text : R.color.red_text));
+            h.badge.setText("CHAT");
+            h.badge.setBackgroundResource(R.drawable.bg_circle_green);
+            h.badge.setTextColor(ContextCompat.getColor(c, R.color.green_text));
             h.title.setText(f.title);
-            h.side.setText(f.side);
-            h.side.setBackgroundResource(buy ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
-            h.side.setTextColor(ContextCompat.getColor(c, buy ? R.color.green_text : R.color.red_text));
+            boolean open = f.open;
+            h.side.setText(open ? "OPEN" : "CLOSED");
+            h.side.setBackgroundResource(open ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
+            h.side.setTextColor(ContextCompat.getColor(c, open ? R.color.green_text : R.color.red_text));
             h.preview.setText(f.preview);
-            h.time.setText(Ui.timeAgo(f.createdAt));
-            if (f.participants > 0) {
+            Ui.enableWebLinks(h.preview);
+            h.time.setText(Ui.timeAgo(f.lastActivityAt == null ? f.createdAt : f.lastActivityAt));
+            if (f.createdByName != null && !f.createdByName.trim().isEmpty()) {
                 h.count.setVisibility(View.VISIBLE);
-                h.count.setText(String.valueOf(f.participants));
+                h.count.setText("By " + f.createdByName);
             } else {
                 h.count.setVisibility(View.GONE);
             }
@@ -425,6 +347,7 @@ public class Adapters {
             boolean own = m.author != null && m.author.equalsIgnoreCase(selfName);
             h.author.setText(m.author);
             h.text.setText(m.text);
+            Ui.enableWebLinks(h.text);
             h.time.setText(Ui.timeAgo(m.createdAt));
             h.bubble.setBackgroundResource(own ? R.drawable.bg_bubble_out : R.drawable.bg_bubble_in);
             LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) h.bubble.getLayoutParams();

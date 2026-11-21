@@ -4,14 +4,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../app_state.dart';
+import '../linked_text.dart';
 import '../models.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../widgets/academy_discussion.dart';
 
 class LessonScreen extends StatefulWidget {
   const LessonScreen({
@@ -55,11 +56,15 @@ class _LessonScreenState extends State<LessonScreen> {
   Future<void> _watchVideo() async {
     final url = widget.lesson.videoUrl.trim();
     if (url.isEmpty) return;
-    final ok = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    );
+    final ok = await openWebLink(url);
     if (!ok && mounted) showToast(context, 'No app can open that video link');
+  }
+
+  Future<void> _openMaterial() async {
+    final url = widget.lesson.materialUrl?.trim() ?? '';
+    if (url.isEmpty) return;
+    final ok = await openWebLink(url);
+    if (!ok && mounted) showToast(context, 'No app can open that material');
   }
 
   String get _notesFileName {
@@ -122,8 +127,20 @@ class _LessonScreenState extends State<LessonScreen> {
                     const SizedBox(height: 8),
                     Text(lesson.title, style: AtgText.pageTitle),
                     const SizedBox(height: 16),
+                    if (lesson.imageUrl?.isNotEmpty == true) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          mediaUrl(lesson.imageUrl!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     SurfaceCard(
-                      child: Text(
+                      child: LinkedText(
                         lesson.content.trim().isEmpty
                             ? 'The desk has not added notes for this lesson yet.'
                             : lesson.content,
@@ -136,6 +153,14 @@ class _LessonScreenState extends State<LessonScreen> {
                         label: 'Watch the video',
                         icon: Icons.play_circle_outline_rounded,
                         onPressed: _watchVideo,
+                      ),
+                    ],
+                    if (lesson.materialUrl?.trim().isNotEmpty == true) ...[
+                      const SizedBox(height: 14),
+                      OutlineButton(
+                        label: 'Open PDF / learning material',
+                        icon: Icons.picture_as_pdf_outlined,
+                        onPressed: _openMaterial,
                       ),
                     ],
                     const SizedBox(height: 14),
@@ -151,6 +176,12 @@ class _LessonScreenState extends State<LessonScreen> {
                       onPressed: _markComplete,
                     ),
                     const SizedBox(height: 10),
+                    AcademyDiscussion(
+                      courseId: widget.courseId,
+                      lessonId: lesson.id,
+                      title: 'Lesson comments',
+                    ),
+                    const SizedBox(height: 14),
                     const Text(
                       'Progress is saved to your ATG account, so it follows you to the website and any other phone.',
                       style: TextStyle(

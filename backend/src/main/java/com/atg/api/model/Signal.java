@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class Signal {
 
@@ -23,7 +24,7 @@ public class Signal {
     private String targets;
     private String ruleName;
     private int participants = 0;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

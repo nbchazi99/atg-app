@@ -2,6 +2,7 @@ package com.atg.api.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class DepositRequest {
 
@@ -24,7 +25,7 @@ public class DepositRequest {
     private Long transactionId;
 
     private String adminNote;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
     private LocalDateTime reviewedAt;
 
     public Long getId() { return id; }

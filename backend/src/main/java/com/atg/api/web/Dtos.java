@@ -21,17 +21,25 @@ public final class Dtos {
 
     public record LoginReq(@Email @NotBlank String email, @NotBlank String password) {}
 
+    public record PasswordResetReq(@Email @NotBlank String email) {}
+
+    public record PasswordResetConfirmReq(
+            @Email @NotBlank String email,
+            @NotBlank @jakarta.validation.constraints.Pattern(regexp = "\\d{8}") String code,
+            @NotBlank @Size(min = 6, max = 128) String password) {}
+
     public record AdminAccountReq(
             @NotBlank String currentPassword,
             @Email String email,
             @Size(min = 6, message = "Password must be at least 6 characters") String password) {}
 
     public record UserView(Long id, String name, String email, String phone, String role,
-                           int points, String membership, String createdAt) {
+                           int points, String membership, String createdAt, String avatarUrl) {
         public static UserView of(User u) {
             return new UserView(u.getId(), u.getName(), u.getEmail(), u.getPhone(),
                     u.getRole().name(), u.getPoints(), u.getMembership().name(),
-                    u.getCreatedAt() == null ? null : u.getCreatedAt().toString());
+                    u.getCreatedAt() == null ? null : u.getCreatedAt().toString(),
+                    u.getAvatarUrl());
         }
     }
 
@@ -39,10 +47,10 @@ public final class Dtos {
 
     public record DepositReq(
             @NotBlank String broker,
-            String clientId,
+            @NotBlank String clientId,
             @NotNull BigDecimal amount,
             @NotBlank String wallet,
-            String mobile) {}
+            @NotBlank String mobile) {}
 
     public record WithdrawReq(
             @NotBlank String payout,
@@ -54,7 +62,17 @@ public final class Dtos {
 
     public record PurchaseReq(@NotBlank String type, Long courseId, String proofUrl) {}
 
-    public record MessageReq(@NotBlank String text) {}
+    public record MessageReq(
+            @Size(max = 2000, message = "Message must be 2000 characters or fewer") String text,
+            @Size(max = 2048, message = "Image URL is too long") String attachmentUrl) {}
+
+    public record CommunityThreadReq(
+            @NotBlank @Size(max = 100, message = "Title must be 100 characters or fewer") String title,
+            @NotBlank @Size(max = 2000, message = "Message must be 2000 characters or fewer") String message) {}
+
+    public record ThreadStateReq(boolean open) {}
+
+    public record RoomReq(@NotBlank String name, String description) {}
 
     public record DecisionReq(boolean approve, String note) {}
 
@@ -64,7 +82,8 @@ public final class Dtos {
                             String roomLabel, String entry, String stopLoss, String targets,
                             String ruleName, Integer participants) {}
 
-    public record LessonReq(String title, Integer durationMin, String content, String videoUrl) {}
+    public record LessonReq(String title, Integer durationMin, String content, String videoUrl,
+                            String materialUrl, String imageUrl) {}
 
     public record CourseReq(String title, String subtitle, String description, BigDecimal price,
                             String level, String imageUrl, List<LessonReq> lessons) {}
@@ -72,6 +91,6 @@ public final class Dtos {
     public record MembershipReq(@NotBlank String membership) {}
 
     public record SettingsReq(BigDecimal adminFeePct, BigDecimal withdrawFeePct, BigDecimal minDeposit,
-                              BigDecimal maxDeposit, BigDecimal minWithdraw, String fact,
+                              BigDecimal maxDeposit, BigDecimal minWithdraw, BigDecimal maxWithdraw, String fact,
                               String promotionTitle, String promotionBody) {}
 }

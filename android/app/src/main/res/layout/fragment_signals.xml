@@ -103,7 +103,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:gravity="center"
-                    android:text="Calls appear here as soon as the floor posts them."
+                    android:text="Signals appear here as soon as the floor posts them."
                     android:textColor="@color/muted"
                     android:textSize="13sp" />
             </LinearLayout>

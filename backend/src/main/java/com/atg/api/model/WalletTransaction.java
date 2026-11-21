@@ -2,6 +2,7 @@ package com.atg.api.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class WalletTransaction {
 
@@ -15,7 +16,7 @@ public class WalletTransaction {
     private String description;
     private BigDecimal amount = BigDecimal.ZERO;
     private Status status = Status.PENDING;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

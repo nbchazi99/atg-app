@@ -94,7 +94,7 @@ public class SignalDetailActivity extends AppCompatActivity {
         if (buy) {
             notes.setText("Wait for the candle to close in your favour before entering. Risk no more than 1% of your account. Move the stop to break-even when the first target prints, and do not add to a losing position.");
         } else {
-            notes.setText("Sell only after price rejects the level on the close. Risk no more than 1% of your account, trail the stop behind structure, and take the call off the table if the rule invalidates.");
+            notes.setText("Sell only after price rejects the level on the close. Risk no more than 1% of your account, trail the stop behind structure, and dismiss the signal if the rule invalidates.");
         }
 
         View openChat = findViewById(R.id.btnOpenChat);

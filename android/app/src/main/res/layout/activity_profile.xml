@@ -169,7 +169,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Access the Deriv VIP room, its calls and the traders posting them." />
+                    android:text="Access the Deriv VIP room, its signals and the traders posting them." />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnBuyDeriv"
@@ -217,7 +217,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="The Wella room. Same calls, faster context, Weltrade payouts." />
+                    android:text="The Wella room. Same signals, faster context, Weltrade payouts." />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnBuyWeltrade"

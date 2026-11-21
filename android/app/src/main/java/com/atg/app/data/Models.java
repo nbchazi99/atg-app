@@ -44,19 +44,6 @@ public class Models {
         }
     }
 
-    public static class MarketPair {
-        public long id;
-        public String symbol;
-        public String name;
-        public String assetClass;
-        public double price;
-        public double changePct;
-        public double high;
-        public double low;
-        public double prevClose;
-        public String updatedAt;
-    }
-
     public static class Signal {
         public long id;
         public String title;
@@ -71,12 +58,6 @@ public class Models {
         public String ruleName;
         public int participants;
         public String createdAt;
-    }
-
-    public static class PairRes {
-        public MarketPair pair;
-        public List<Signal> calls;
-        public boolean favourite;
     }
 
     public static class HomeRes {
@@ -110,15 +91,38 @@ public class Models {
         public String roomName;
         public int participants;
         public boolean open;
+        public Long createdById;
+        public String createdByName;
         public String createdAt;
+        public String lastActivityAt;
     }
 
     public static class RoomMessage {
         public long id;
         public long roomId;
+        public Long threadId;
+        public Long authorId;
         public String author;
         public String text;
         public String createdAt;
+    }
+
+    public static class ThreadReq {
+        public String title;
+        public String message;
+
+        public ThreadReq(String title, String message) {
+            this.title = title;
+            this.message = message;
+        }
+    }
+
+    public static class ThreadStateReq {
+        public boolean open;
+
+        public ThreadStateReq(boolean open) {
+            this.open = open;
+        }
     }
 
     public static class TextReq {
@@ -265,6 +269,7 @@ public class Models {
         public double minDeposit;
         public double maxDeposit;
         public double minWithdraw;
+        public double maxWithdraw;
         public int pointsPerReferral;
         public String fact;
         public String promotionTitle;
@@ -340,6 +345,7 @@ public class Models {
         public Double minDeposit;
         public Double maxDeposit;
         public Double minWithdraw;
+        public Double maxWithdraw;
         public String fact;
         public String promotionTitle;
         public String promotionBody;

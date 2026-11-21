@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Locale;
 
 @Service
@@ -46,9 +47,26 @@ public class WalletService {
         AppSettings s = settings();
         if (req.adminFeePct() != null) s.setAdminFeePct(req.adminFeePct());
         if (req.withdrawFeePct() != null) s.setWithdrawFeePct(req.withdrawFeePct());
-        if (req.minDeposit() != null) s.setMinDeposit(req.minDeposit());
+        if (req.minDeposit() != null) {
+            if (req.minDeposit().compareTo(BigDecimal.valueOf(5)) < 0) {
+                throw bad("Minimum deposit cannot be below $5");
+            }
+            s.setMinDeposit(req.minDeposit());
+        }
         if (req.maxDeposit() != null) s.setMaxDeposit(req.maxDeposit());
-        if (req.minWithdraw() != null) s.setMinWithdraw(req.minWithdraw());
+        if (s.getMaxDeposit().compareTo(s.getMinDeposit()) < 0) {
+            throw bad("Maximum deposit cannot be lower than minimum deposit");
+        }
+        if (req.minWithdraw() != null) {
+            if (req.minWithdraw().compareTo(BigDecimal.valueOf(5)) < 0) {
+                throw bad("Minimum withdrawal cannot be below $5");
+            }
+            s.setMinWithdraw(req.minWithdraw());
+        }
+        if (req.maxWithdraw() != null) s.setMaxWithdraw(req.maxWithdraw());
+        if (s.getMaxWithdraw().compareTo(s.getMinWithdraw()) < 0) {
+            throw bad("Maximum withdrawal cannot be lower than minimum withdrawal");
+        }
         if (req.fact() != null) s.setFact(req.fact());
         if (req.promotionTitle() != null) s.setPromotionTitle(req.promotionTitle());
         if (req.promotionBody() != null) s.setPromotionBody(req.promotionBody());
@@ -56,20 +74,32 @@ public class WalletService {
     }
 
     public DepositRequest createDeposit(User user, Dtos.DepositReq req) {
+        if (!"Weltrade".equalsIgnoreCase(req.broker().trim())) {
+            throw bad("Only Weltrade deposits are supported");
+        }
+        String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
+            case "ecocash" -> "EcoCash";
+            case "cash" -> "Cash";
+            case "smilecash" -> "SmileCash";
+            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+        };
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
-        if (amount.compareTo(s.getMinDeposit()) < 0) {
-            throw bad("Minimum deposit is $" + s.getMinDeposit());
+        BigDecimal minimum = s.getMinDeposit().compareTo(BigDecimal.valueOf(5)) < 0
+                ? BigDecimal.valueOf(5)
+                : s.getMinDeposit();
+        if (amount.compareTo(minimum) < 0) {
+            throw bad("Minimum deposit is $" + minimum);
         }
         if (amount.compareTo(s.getMaxDeposit()) > 0) {
             throw bad("Maximum deposit is $" + s.getMaxDeposit());
         }
         DepositRequest d = new DepositRequest();
         d.setUserId(user.getId());
-        d.setBroker(req.broker());
-        d.setClientId(req.clientId());
-        d.setWallet(req.wallet());
-        d.setMobile(req.mobile());
+        d.setBroker("Weltrade");
+        d.setClientId(req.clientId().trim());
+        d.setWallet(wallet);
+        d.setMobile(req.mobile().trim());
         d.setAmount(amount);
         d.setFeePct(s.getAdminFeePct());
         d.setFee(scale(amount.multiply(s.getAdminFeePct()).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)));
@@ -78,7 +108,7 @@ public class WalletService {
         WalletTransaction tx = new WalletTransaction();
         tx.setUserId(user.getId());
         tx.setType(WalletTransaction.Type.DEPOSIT);
-        tx.setDescription("Deposit to " + req.broker());
+        tx.setDescription("Deposit to Weltrade");
         tx.setAmount(d.getTotalPaid());
         tx.setStatus(WalletTransaction.Status.PENDING);
         transactions.save(tx);
@@ -90,18 +120,24 @@ public class WalletService {
     public WithdrawalRequest createWithdrawal(User user, Dtos.WithdrawReq req) {
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
-        if (!req.payout().trim().equalsIgnoreCase("EcoCash")) {
-            throw bad("Choose EcoCash");
-        }
+        String payout = switch (req.payout().trim().toLowerCase(Locale.ROOT)) {
+            case "ecocash" -> "EcoCash";
+            case "cash" -> "Cash";
+            case "smilecash" -> "SmileCash";
+            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+        };
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
+        }
+        if (amount.compareTo(s.getMaxWithdraw()) > 0) {
+            throw bad("Maximum withdrawal is $" + s.getMaxWithdraw());
         }
         if (req.proofUrl() == null || req.proofUrl().isBlank()) {
             throw bad("A screenshot of the withdrawal confirmation is required");
         }
         WithdrawalRequest w = new WithdrawalRequest();
         w.setUserId(user.getId());
-        w.setPayout(req.payout());
+        w.setPayout(payout);
         w.setMobile(req.mobile());
         w.setAmount(amount);
         w.setFeePct(s.getWithdrawFeePct());
@@ -114,7 +150,7 @@ public class WalletService {
         WalletTransaction tx = new WalletTransaction();
         tx.setUserId(user.getId());
         tx.setType(WalletTransaction.Type.WITHDRAWAL);
-        tx.setDescription("Withdrawal to " + req.payout());
+        tx.setDescription("Withdrawal to " + payout);
         tx.setAmount(w.getReceive());
         tx.setStatus(WalletTransaction.Status.PENDING);
         transactions.save(tx);
@@ -137,6 +173,9 @@ public class WalletService {
             if (req.courseId() == null) throw bad("Course is required");
             Course course = courses.findById(req.courseId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+            if (course.getPrice().signum() == 0) {
+                throw bad("This course is free. Enroll directly from its course page.");
+            }
             amount = course.getPrice();
             courseId = course.getId();
             description = "Course: " + course.getTitle();
@@ -172,7 +211,7 @@ public class WalletService {
         if (d.getStatus() != DepositRequest.Status.PENDING) throw bad("This request was already reviewed");
         d.setStatus(approve ? DepositRequest.Status.APPROVED : DepositRequest.Status.REJECTED);
         d.setAdminNote(note);
-        d.setReviewedAt(LocalDateTime.now());
+        d.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         deposits.save(d);
         settle(d.getTransactionId(), approve);
         return d;
@@ -184,7 +223,7 @@ public class WalletService {
         if (w.getStatus() != WithdrawalRequest.Status.PENDING) throw bad("This request was already reviewed");
         w.setStatus(approve ? WithdrawalRequest.Status.APPROVED : WithdrawalRequest.Status.REJECTED);
         w.setAdminNote(note);
-        w.setReviewedAt(LocalDateTime.now());
+        w.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         withdrawals.save(w);
         settle(w.getTransactionId(), approve);
         return w;
@@ -196,7 +235,7 @@ public class WalletService {
         if (p.getStatus() != PurchaseRequest.Status.PENDING) throw bad("This request was already reviewed");
         p.setStatus(approve ? PurchaseRequest.Status.APPROVED : PurchaseRequest.Status.REJECTED);
         p.setAdminNote(note);
-        p.setReviewedAt(LocalDateTime.now());
+        p.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         purchases.save(p);
 
         if (approve) {

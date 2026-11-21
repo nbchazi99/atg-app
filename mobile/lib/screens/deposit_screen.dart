@@ -19,21 +19,10 @@ class _DepositScreenState extends State<DepositScreen> {
   static const _brokers = [
     OptionTile(
       title: 'Weltrade',
-      subtitle: 'The broker ATG trades and posts every call against',
+      subtitle: 'The broker ATG trades and posts every signal against',
       badge: 'W',
       badgeColor: AtgColors.greenText,
       tag: 'Preferred',
-    ),
-    OptionTile(
-      title: 'Deriv',
-      subtitle: 'Funded by the nickname on your Deriv account',
-      badge: 'D',
-      badgeColor: AtgColors.redText,
-    ),
-    OptionTile(
-      title: 'Other',
-      subtitle: 'Any other broker. Paid out to a USDT wallet you give us',
-      badge: 'O',
     ),
   ];
 
@@ -44,29 +33,17 @@ class _DepositScreenState extends State<DepositScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
+    OptionTile(title: 'Cash', subtitle: 'Cash payment', badge: 'C'),
     OptionTile(
-      title: 'Omari',
-      subtitle: 'Mobile money · OneMoney',
-      badge: 'OM',
-    ),
-    OptionTile(
-      title: 'InnBucks',
-      subtitle: 'Mobile wallet',
-      badge: 'IB',
-      logo: 'assets/images/wallets/innbucks.png',
-    ),
-    OptionTile(
-      title: 'OneMoney',
-      subtitle: 'Mobile money · NetOne',
-      badge: '1M',
-      logo: 'assets/images/wallets/onemoney.png',
+      title: 'SmileCash',
+      subtitle: 'SmileCash mobile money',
+      badge: 'SC',
     ),
   ];
 
   final _clientId = TextEditingController();
   final _amount = TextEditingController();
   final _mobile = TextEditingController();
-  final _payingFrom = TextEditingController();
 
   int _broker = 0;
   int _wallet = 0;
@@ -75,13 +52,11 @@ class _DepositScreenState extends State<DepositScreen> {
   String? _clientError;
   String? _amountError;
   String? _mobileError;
-  String? _payingError;
 
   @override
   void initState() {
     super.initState();
     _mobile.text = session.phone;
-    _payingFrom.text = session.phone;
     _amount.addListener(() => setState(() {}));
     _loadSettings();
   }
@@ -91,7 +66,6 @@ class _DepositScreenState extends State<DepositScreen> {
     _clientId.dispose();
     _amount.dispose();
     _mobile.dispose();
-    _payingFrom.dispose();
     super.dispose();
   }
 
@@ -106,8 +80,8 @@ class _DepositScreenState extends State<DepositScreen> {
   }
 
   double get _feePct => _settings?.adminFeePct ?? 10;
-  double get _min => _settings?.minDeposit ?? 12.50;
-  double get _max => _settings?.maxDeposit ?? 454.54;
+  double get _min => _settings?.minDeposit ?? 5;
+  double get _max => _settings?.maxDeposit ?? 454;
 
   double get _enteredAmount => parseAmount(_amount.text);
   double get _fee => (_enteredAmount * _feePct).round() / 100;
@@ -115,18 +89,10 @@ class _DepositScreenState extends State<DepositScreen> {
 
   String get _pctLabel => trimNumber(_feePct);
 
-  String get _clientLabel => switch (_broker) {
-    1 => 'Deriv nickname',
-    2 => 'USDT wallet address',
-    _ => 'Weltrade Client ID',
-  };
+  String get _clientLabel => 'Weltrade Client ID';
 
-  String get _clientHint => switch (_broker) {
-    1 => 'The nickname shown on your Deriv account, not your email.',
-    2 =>
-      'The wallet that should receive your funds. Double-check every character.',
-    _ => 'In your Weltrade cabinet, under your name. It is not your MT5 login.',
-  };
+  String get _clientHint =>
+      'In your Weltrade cabinet, under your name. It is not your MT5 login.';
 
   Future<void> _submit() async {
     if (_submitting) return;
@@ -134,13 +100,11 @@ class _DepositScreenState extends State<DepositScreen> {
       _clientError = null;
       _amountError = null;
       _mobileError = null;
-      _payingError = null;
     });
 
     final amount = _enteredAmount;
     final client = _clientId.text.trim();
     final mobile = _mobile.text.trim();
-    final paying = _payingFrom.text.trim();
 
     var invalid = false;
     if (amount <= 0) {
@@ -159,10 +123,6 @@ class _DepositScreenState extends State<DepositScreen> {
     }
     if (mobile.isEmpty) {
       _mobileError = 'Enter the number ATG can reach you on';
-      invalid = true;
-    }
-    if (paying.isEmpty) {
-      _payingError = 'Enter the number the money leaves from';
       invalid = true;
     }
     if (invalid) {
@@ -184,8 +144,8 @@ class _DepositScreenState extends State<DepositScreen> {
       await showMessage(
         context,
         'Deposit request filed',
-        'Pay ${money(result.totalPaid)} to ${result.wallet} on ${result.mobile}. '
-            'The administrator will review it and your wallet history will update.\n\n'
+        'Your ${result.wallet} deposit request for ${money(result.totalPaid)} has been filed. '
+            'ATG can reach you on ${result.mobile}. The administrator will review the request and your wallet history will update.\n\n'
             'Reference: DEP-${result.id}',
         action: 'Done',
       );
@@ -266,7 +226,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     style: AtgText.small.copyWith(fontSize: 11.5),
                   ),
                   const SizedBox(height: 20),
-                  const SectionLabel('3. AMOUNT AND WALLET'),
+                  const SectionLabel('3. AMOUNT AND PAYMENT METHOD'),
                   const SizedBox(height: 10),
                   AtgField(
                     controller: _amount,
@@ -288,7 +248,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     onSelected: (index) => setState(() => _wallet = index),
                   ),
                   const SizedBox(height: 20),
-                  const SectionLabel('4. CONTACT AND PAYMENT'),
+                  const SectionLabel('4. CONTACT DETAILS'),
                   const SizedBox(height: 10),
                   AtgField(
                     controller: _mobile,
@@ -297,12 +257,6 @@ class _DepositScreenState extends State<DepositScreen> {
                     errorText: _mobileError,
                   ),
                   const SizedBox(height: 12),
-                  AtgField(
-                    controller: _payingFrom,
-                    label: 'Number the money leaves from',
-                    keyboardType: TextInputType.phone,
-                    errorText: _payingError,
-                  ),
                   const SizedBox(height: 20),
                   SurfaceCard(
                     padding: const EdgeInsets.all(15),

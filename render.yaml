@@ -7,7 +7,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
-    healthCheckPath: /api/markets/ping
+    healthCheckPath: /api/settings/public
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
@@ -19,6 +19,22 @@ services:
         value: "-Xmx320m -XX:MaxMetaspaceSize=120m -XX:ReservedCodeCacheSize=48m"
       - key: GOOGLE_APPLICATION_CREDENTIALS
         sync: false
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: MAIL_SMTP_AUTH
+        value: "true"
+      - key: MAIL_SMTP_STARTTLS
+        value: "true"
+      - key: MAIL_SMTP_SSL
+        value: "false"
       # Bootstrap admin for an empty database only; set the values in the Render
       # dashboard so no credential lands in this public repository.
       - key: ADMIN_EMAIL

@@ -75,7 +75,7 @@ public class AuthActivity extends AppCompatActivity {
         tvAuthTitle.setText(register ? "Join the floor." : "Welcome back.");
         tvAuthSubtitle.setText(register
                 ? "Create your ATG account to track courses, calls and payment requests."
-                : "Sign in to your ATG account. Your courses, calls and wallet live here.");
+                : "Sign in to your ATG account. Your courses, signals and wallet live here.");
         btnSubmit.setText(register ? "Create account" : "Sign in");
         Ui.setChip(btnModeLogin, !register);
         Ui.setChip(btnModeRegister, register);

@@ -1,6 +1,7 @@
 package com.atg.api.web;
 
 import com.atg.api.model.Signal;
+import com.atg.api.model.User;
 import com.atg.api.repo.SignalRepository;
 import com.atg.api.repo.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -24,24 +25,32 @@ public class SignalController extends BaseController {
     @GetMapping
     public List<Signal> list(@RequestParam(required = false) String status,
                              @RequestParam(required = false) String symbol) {
+        User user = me();
+        List<Signal> results;
         if (symbol != null && !symbol.isBlank()) {
-            return signals.findBySymbolOrderByCreatedAtDesc(symbol.toUpperCase(Locale.ROOT));
-        }
-        if (status != null && !status.isBlank() && !status.equalsIgnoreCase("all")) {
+            results = signals.findBySymbolOrderByCreatedAtDesc(symbol.toUpperCase(Locale.ROOT));
+        } else if (status != null && !status.isBlank() && !status.equalsIgnoreCase("all")) {
             Signal.Status parsed;
             try {
                 parsed = Signal.Status.valueOf(status.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException e) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown signal status");
+            } catch (IllegalArgumentException exception) {
+                throw bad("Unknown signal status");
             }
-            return signals.findByStatusOrderByCreatedAtDesc(parsed);
+            results = signals.findByStatusOrderByCreatedAtDesc(parsed);
+        } else {
+            results = signals.findAllByOrderByCreatedAtDesc();
         }
-        return signals.findAllByOrderByCreatedAtDesc();
+        return results.stream()
+                .filter(signal -> MembershipAccess.canAccess(
+                        user, MembershipAccess.requiredForSignal(signal)))
+                .toList();
     }
 
     @GetMapping("/{id}")
     public Signal one(@PathVariable Long id) {
-        return signals.findById(id)
+        Signal signal = signals.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Signal not found"));
+        MembershipAccess.requireAccess(me(), MembershipAccess.requiredForSignal(signal), "Signal");
+        return signal;
     }
 }

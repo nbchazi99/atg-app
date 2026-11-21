@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_state.dart';
 import 'format.dart';
+import 'linked_text.dart';
 import 'models.dart';
 import 'theme.dart';
 
@@ -24,7 +25,7 @@ class LiveDot extends StatelessWidget {
             onTap: () => showToast(
               context,
               connected
-                  ? 'Live updates are on. New messages, approvals and calls appear without refreshing.'
+                  ? 'Live updates are on. New messages, approvals and signals appear without refreshing.'
                   : 'Live updates are reconnecting. Pull down to refresh in the meantime.',
             ),
             child: Padding(
@@ -99,11 +100,13 @@ class AvatarCircle extends StatelessWidget {
     required this.text,
     this.size = 34,
     this.onTap,
+    this.imageUrl,
   });
 
   final String text;
   final double size;
   final VoidCallback? onTap;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -118,14 +121,33 @@ class AvatarCircle extends StatelessWidget {
           color: AtgColors.primarySoft,
           shape: BoxShape.circle,
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: size * 0.34,
-            fontWeight: FontWeight.w800,
-            color: AtgColors.ink,
-          ),
-        ),
+        child: imageUrl != null && imageUrl!.isNotEmpty
+            ? ClipOval(
+                child: Image.network(
+                  mediaUrl(imageUrl!),
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Center(
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: size * 0.34,
+                        fontWeight: FontWeight.w800,
+                        color: AtgColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(
+                  fontSize: size * 0.34,
+                  fontWeight: FontWeight.w800,
+                  color: AtgColors.ink,
+                ),
+              ),
       ),
     );
   }
@@ -905,7 +927,9 @@ class SignalCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: Text(signal.subtitle, style: AtgText.small)),
+              Expanded(
+                child: LinkedText(signal.subtitle, style: AtgText.small),
+              ),
               if (signal.roomLabel.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 AtgPill(text: signal.roomLabel.toUpperCase()),
@@ -1022,95 +1046,6 @@ class CourseCover extends StatelessWidget {
   }
 }
 
-class MarketRow extends StatelessWidget {
-  const MarketRow({
-    super.key,
-    required this.pair,
-    required this.favourite,
-    required this.onTap,
-    required this.onFavourite,
-  });
-
-  final MarketPair pair;
-  final bool favourite;
-  final VoidCallback onTap;
-  final VoidCallback onFavourite;
-
-  @override
-  Widget build(BuildContext context) {
-    final up = pair.changePct >= 0;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-        child: Row(
-          children: [
-            InkWell(
-              onTap: onFavourite,
-              borderRadius: BorderRadius.circular(20),
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: Icon(
-                  favourite ? Icons.star_rounded : Icons.star_border_rounded,
-                  size: 21,
-                  color: favourite ? AtgColors.primaryDark : AtgColors.stroke,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pair.symbol,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AtgColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    pair.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AtgText.small,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  price(pair.price),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AtgColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                AtgPill(
-                  text: pct(pair.changePct),
-                  background: up ? AtgColors.greenBg : AtgColors.redBg,
-                  foreground: up ? AtgColors.greenText : AtgColors.redText,
-                  fontSize: 11,
-                ),
-                const SizedBox(height: 3),
-                Text(timeAgo(pair.updatedAt), style: AtgText.tiny),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class TxRow extends StatelessWidget {
   const TxRow({super.key, required this.tx, this.showDivider = true});
 
@@ -1205,7 +1140,6 @@ class FeedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buy = item.isBuy;
     return SurfaceCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -1218,16 +1152,13 @@ class FeedRow extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: buy ? AtgColors.greenBg : AtgColors.redBg,
+              color: AtgColors.primary.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: Text(
-              item.badge.isEmpty ? (buy ? 'B' : 'S') : item.badge,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: buy ? AtgColors.greenText : AtgColors.redText,
-              ),
+            child: const Icon(
+              Icons.forum_outlined,
+              size: 19,
+              color: AtgColors.gold,
             ),
           ),
           const SizedBox(width: 12),
@@ -1250,35 +1181,51 @@ class FeedRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    SidePill(item.side, fontSize: 9.5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: item.open
+                            ? AtgColors.greenBg
+                            : AtgColors.redBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item.open ? 'OPEN' : 'CLOSED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: item.open
+                              ? AtgColors.greenText
+                              : AtgColors.redText,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 3),
-                Text(
+                LinkedText(
                   item.preview,
+                  style: AtgText.small,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AtgText.small,
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
                     Text(
-                      item.roomName,
+                      item.createdByName.isEmpty
+                          ? item.roomName
+                          : 'By ${item.createdByName}',
                       style: AtgText.tiny.copyWith(color: AtgColors.gold),
                     ),
                     const Spacer(),
-                    if (item.participants > 0) ...[
-                      const Icon(
-                        Icons.person_outline_rounded,
-                        size: 13,
-                        color: AtgColors.muted,
-                      ),
-                      const SizedBox(width: 3),
-                      Text('${item.participants}', style: AtgText.tiny),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(timeAgo(item.createdAt), style: AtgText.tiny),
+                    Text(
+                      timeAgo(item.lastActivityAt ?? item.createdAt),
+                      style: AtgText.tiny,
+                    ),
                   ],
                 ),
               ],
@@ -1558,6 +1505,6 @@ void notifyAllCaughtUp(BuildContext context) {
   showMessage(
     context,
     'Notifications',
-    'You are all caught up. New calls and payment decisions appear here.',
+    'You are all caught up. New signals and payment decisions appear here.',
   );
 }

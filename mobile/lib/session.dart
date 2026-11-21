@@ -43,6 +43,11 @@ class Session extends ChangeNotifier {
     await _prefs.setString('role', user.role);
     await _prefs.setString('membership', user.membership);
     await _prefs.setInt('points', user.points);
+    if (user.avatarUrl == null || user.avatarUrl!.isEmpty) {
+      await _prefs.remove('avatarUrl');
+    } else {
+      await _prefs.setString('avatarUrl', user.avatarUrl!);
+    }
   }
 
   Future<void> savePoints(int points) async {
@@ -59,6 +64,7 @@ class Session extends ChangeNotifier {
     await _prefs.remove('role');
     await _prefs.remove('membership');
     await _prefs.remove('points');
+    await _prefs.remove('avatarUrl');
     notifyListeners();
   }
 
@@ -70,6 +76,11 @@ class Session extends ChangeNotifier {
   String get role => _prefs.getString('role') ?? 'USER';
   String get membership => _prefs.getString('membership') ?? 'NONE';
   int get points => _prefs.getInt('points') ?? 0;
+  String? get avatarUrl {
+    final value = _prefs.getString('avatarUrl');
+    return value == null || value.isEmpty ? null : value;
+  }
+
   bool get isAdmin => role == 'ADMIN';
   String get initialsText => initials(name);
   String get membershipText => membershipLabel(membership);

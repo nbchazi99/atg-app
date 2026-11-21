@@ -123,6 +123,8 @@ public class WithdrawActivity extends AppCompatActivity {
         tvFiledUnder.setText("Filed under " + ApiClient.session().name() + ", " + ApiClient.session().email() + ".");
 
         payouts.add(new Adapters.Option("EcoCash", "Mobile money", "EC"));
+        payouts.add(new Adapters.Option("Cash", "Cash payment", "C"));
+        payouts.add(new Adapters.Option("SmileCash", "SmileCash mobile money", "SC"));
 
         sources.add(new Adapters.Option("Weltrade withdrawal", "You withdrew to the ATG agent on Weltrade.", "W").color("#1B7A3D"));
         sources.add(new Adapters.Option("Deriv withdrawal", "You withdrew to the ATG agent on Deriv.", "D").color("#B3261E"));
@@ -192,7 +194,8 @@ public class WithdrawActivity extends AppCompatActivity {
     }
 
     private void updatePayoutFields() {
-        boolean mobileMoney = payoutAdapter.selectedIndex() == 0;
+        Adapters.Option selected = payoutAdapter.selectedOption();
+        boolean mobileMoney = selected != null && !"Cash".equals(selected.title);
         tilPayoutMobile.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
         tvPayoutHint.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
     }
@@ -220,11 +223,12 @@ public class WithdrawActivity extends AppCompatActivity {
     private void updateSummary() {
         double amount = Ui.parseAmount(text(etWithdrawAmount), 0);
         double pct = settings == null ? 7 : settings.withdrawFeePct;
-        double min = settings == null ? 12.50 : settings.minWithdraw;
+        double min = settings == null ? 5 : settings.minWithdraw;
+        double max = settings == null ? 454 : settings.maxWithdraw;
         double fee = Math.round(amount * pct) / 100.0;
         double receive = Math.round((amount - fee) * 100.0) / 100.0;
 
-        tvMinWithdraw.setText("Minimum withdrawal is " + Ui.money(min) + ".");
+        tvMinWithdraw.setText("Withdraw between " + Ui.money(min) + " and " + Ui.money(max) + ".");
         tvWithdrawFeeLabel.setText("Withdrawal charge (" + formatPct(pct) + "%)");
         tvWithdrawAmount.setText(Ui.money(amount));
         tvWithdrawFee.setText("- " + Ui.money(fee));
@@ -233,7 +237,8 @@ public class WithdrawActivity extends AppCompatActivity {
     }
 
     private boolean validatePayout() {
-        if (payoutAdapter.selectedIndex() < 2 && text(etPayoutMobile).isEmpty()) {
+        Adapters.Option payout = payoutAdapter.selectedOption();
+        if (payout != null && !"Cash".equals(payout.title) && text(etPayoutMobile).isEmpty()) {
             Ui.toast(this, "Enter the mobile money number");
             return false;
         }
@@ -244,13 +249,18 @@ public class WithdrawActivity extends AppCompatActivity {
         tilWithdrawAmount.setError(null);
         tilWithdrawMobile.setError(null);
         double amount = Ui.parseAmount(text(etWithdrawAmount), 0);
-        double min = settings == null ? 12.50 : settings.minWithdraw;
+        double min = settings == null ? 5 : settings.minWithdraw;
+        double max = settings == null ? 454 : settings.maxWithdraw;
         if (amount <= 0) {
             tilWithdrawAmount.setError("Enter the amount you want to withdraw");
             return false;
         }
         if (amount < min) {
             tilWithdrawAmount.setError("Minimum withdrawal is " + Ui.money(min));
+            return false;
+        }
+        if (amount > max) {
+            tilWithdrawAmount.setError("Maximum withdrawal is " + Ui.money(max));
             return false;
         }
         if (text(etWithdrawMobile).isEmpty()) {

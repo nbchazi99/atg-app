@@ -8,9 +8,12 @@ public class AppSettings {
 
     private BigDecimal adminFeePct = BigDecimal.valueOf(10);
     private BigDecimal withdrawFeePct = BigDecimal.valueOf(7);
-    private BigDecimal minDeposit = BigDecimal.valueOf(12.50);
-    private BigDecimal maxDeposit = BigDecimal.valueOf(454.54);
-    private BigDecimal minWithdraw = BigDecimal.valueOf(12.50);
+    private BigDecimal minDeposit = BigDecimal.valueOf(5);
+    private BigDecimal maxDeposit = BigDecimal.valueOf(454);
+    private BigDecimal minWithdraw = BigDecimal.valueOf(5);
+    private BigDecimal maxWithdraw = BigDecimal.valueOf(454);
+    private boolean depositMinimumMigrated;
+    private boolean financialLimitsMigrated;
     private String fact = "";
     private String promotionTitle = "";
     private String promotionBody = "";
@@ -28,6 +31,16 @@ public class AppSettings {
     public void setMaxDeposit(BigDecimal maxDeposit) { this.maxDeposit = maxDeposit; }
     public BigDecimal getMinWithdraw() { return minWithdraw; }
     public void setMinWithdraw(BigDecimal minWithdraw) { this.minWithdraw = minWithdraw; }
+    public BigDecimal getMaxWithdraw() { return maxWithdraw; }
+    public void setMaxWithdraw(BigDecimal maxWithdraw) { this.maxWithdraw = maxWithdraw; }
+    public boolean isDepositMinimumMigrated() { return depositMinimumMigrated; }
+    public void setDepositMinimumMigrated(boolean depositMinimumMigrated) {
+        this.depositMinimumMigrated = depositMinimumMigrated;
+    }
+    public boolean isFinancialLimitsMigrated() { return financialLimitsMigrated; }
+    public void setFinancialLimitsMigrated(boolean financialLimitsMigrated) {
+        this.financialLimitsMigrated = financialLimitsMigrated;
+    }
     public String getFact() { return fact; }
     public void setFact(String fact) { this.fact = fact; }
     public String getPromotionTitle() { return promotionTitle; }

@@ -33,11 +33,16 @@ double parseAmount(String? raw, [double fallback = 0]) {
   return double.tryParse(cleaned) ?? fallback;
 }
 
-String timeAgo(String? iso) {
+String timeAgo(String? iso, {DateTime? now}) {
   if (iso == null || iso.trim().isEmpty) return '';
-  final parsed = DateTime.tryParse(iso);
+  final value = iso.trim();
+  final hasTimezone = RegExp(r'(?:[zZ]|[+-]\d{2}:?\d{2})$').hasMatch(value);
+  final parsed = DateTime.tryParse(hasTimezone ? value : '${value}Z');
   if (parsed == null) return '';
-  final minutes = DateTime.now().difference(parsed.toLocal()).inMinutes;
+  final minutes = (now ?? DateTime.now().toUtc())
+      .toUtc()
+      .difference(parsed.toUtc())
+      .inMinutes;
   if (minutes < 1) return 'just now';
   if (minutes < 60) return '${minutes}m ago';
   final hours = minutes ~/ 60;

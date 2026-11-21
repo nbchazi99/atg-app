@@ -28,7 +28,7 @@
                 style="@style/TextAppearance.ATG.Meta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This funds your trading account. Say which broker and which account, pick the wallet you are paying from, and approve the prompt it sends you. ATG confirms these with the wallet itself." />
+                android:text="Fund your Weltrade trading account with EcoCash and enter your account details." />
 
             <TextView
                 style="@style/TextAppearance.ATG.Section"
@@ -90,7 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="$12.50 to $454.54, before the 12% admin fee." />
+                android:text="$5.00 to $454.00, before the 12% admin fee." />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -225,29 +225,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="Where ATG will reach you about this deposit" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilPayingFrom"
-                style="@style/Widget.ATG.Input"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:hint="Number you are paying from">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etPayingFrom"
-                    style="@style/Widget.ATG.InputEdit"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="phone" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                style="@style/TextAppearance.ATG.Small"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="The wallet the money leaves. Usually the same number." />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPay"

@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class PushToken {
 
@@ -12,7 +13,7 @@ public class PushToken {
 
     private String platform;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

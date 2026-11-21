@@ -68,7 +68,7 @@ public class HomeFragment extends Fragment {
         avatar.setOnClickListener(v -> startActivity(new Intent(requireContext(), ProfileActivity.class)));
 
         view.findViewById(R.id.btnHomeBell).setOnClickListener(v ->
-                Ui.alert(requireContext(), "Notifications", "You are all caught up. New calls and payment decisions appear here."));
+                Ui.alert(requireContext(), "Notifications", "You are all caught up. New signals and payment decisions appear here."));
 
         view.findViewById(R.id.actDeposit).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), DepositActivity.class)));
@@ -101,7 +101,7 @@ public class HomeFragment extends Fragment {
         view.findViewById(R.id.btnWellaYes).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), ProfileActivity.class)));
         view.findViewById(R.id.btnWellaNo).setOnClickListener(v ->
-                Ui.toast(requireContext(), "Weltrade is the broker ATG posts every call against. Membership unlocks the VIP rooms."));
+                Ui.toast(requireContext(), "Weltrade is the broker ATG posts every signal against. Membership unlocks the VIP rooms."));
 
         swipe.setColorSchemeResources(R.color.primary);
         swipe.setOnRefreshListener(this::load);
@@ -132,7 +132,7 @@ public class HomeFragment extends Fragment {
                 Models.HomeRes home = response.body();
                 if (!response.isSuccessful() || home == null) return;
                 tvPoints.setText(String.valueOf(home.points));
-                tvLiveLine.setText(home.liveCount == 1 ? "1 call is live." : home.liveCount + " calls are live.");
+                tvLiveLine.setText(home.liveCount == 1 ? "1 signal is live." : home.liveCount + " signals are live.");
                 if (home.promotionTitle != null && !home.promotionTitle.isBlank()) {
                     tvPromoTitle.setText(home.promotionTitle);
                     tvPromoBody.setText(home.promotionBody == null ? "" : home.promotionBody);

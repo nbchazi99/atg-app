@@ -34,6 +34,7 @@ public class Session {
     public void saveAuth(String token, Models.User user) {
         prefs.edit()
                 .putString("token", token)
+                .putLong("id", user.id)
                 .putString("name", user.name)
                 .putString("email", user.email)
                 .putString("phone", user.phone)
@@ -45,6 +46,7 @@ public class Session {
 
     public void saveUser(Models.User user) {
         prefs.edit()
+                .putLong("id", user.id)
                 .putString("name", user.name)
                 .putString("email", user.email)
                 .putString("phone", user.phone)
@@ -64,6 +66,10 @@ public class Session {
 
     public String name() {
         return prefs.getString("name", "Trader");
+    }
+
+    public long id() {
+        return prefs.getLong("id", 0);
     }
 
     public String email() {

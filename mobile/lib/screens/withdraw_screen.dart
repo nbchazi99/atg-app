@@ -24,6 +24,12 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
+    OptionTile(title: 'Cash', subtitle: 'Cash payment', badge: 'C'),
+    OptionTile(
+      title: 'SmileCash',
+      subtitle: 'SmileCash mobile money',
+      badge: 'SC',
+    ),
   ];
 
   static const _sources = [
@@ -33,17 +39,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'W',
       badgeColor: AtgColors.greenText,
       tag: 'Common',
-    ),
-    OptionTile(
-      title: 'Deriv withdrawal',
-      subtitle: 'You withdrew to the ATG agent on Deriv.',
-      badge: 'D',
-      badgeColor: AtgColors.redText,
-    ),
-    OptionTile(
-      title: 'Crypto withdrawal',
-      subtitle: 'You sent USDT from your own wallet to ATG.',
-      badge: 'C',
     ),
   ];
 
@@ -96,11 +91,13 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   double get _feePct => _settings?.withdrawFeePct ?? 7;
-  double get _min => _settings?.minWithdraw ?? 12.50;
+  double get _min => _settings?.minWithdraw ?? 5;
+  double get _max => _settings?.maxWithdraw ?? 454;
   double get _enteredAmount => parseAmount(_amount.text);
   double get _fee => (_enteredAmount * _feePct).round() / 100;
   double get _receive => ((_enteredAmount - _fee) * 100).round() / 100;
   String get _pctLabel => trimNumber(_feePct);
+
   void _goTo(int step) {
     setState(() => _step = step);
     if (_scroll.hasClients) {
@@ -113,7 +110,8 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   bool _validatePayout() {
-    if (_payoutMobile.text.trim().isEmpty) {
+    if (_payouts[_payout].title != 'Cash' &&
+        _payoutMobile.text.trim().isEmpty) {
       showToast(context, 'Enter the mobile money number');
       return false;
     }
@@ -133,6 +131,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     }
     if (amount < _min) {
       setState(() => _amountError = 'Minimum withdrawal is ${money(_min)}');
+      return false;
+    }
+    if (amount > _max) {
+      setState(() => _amountError = 'Maximum withdrawal is ${money(_max)}');
       return false;
     }
     if (contact.isEmpty) {
@@ -222,32 +224,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   String get _clientLabel => switch (_source) {
-    1 => 'Deriv nickname',
-    2 => 'USDT wallet address you sent from',
     _ => 'Weltrade Client ID',
   };
 
   String get _clientHint => switch (_source) {
-    1 => 'The nickname on your Deriv account, not your email.',
-    2 => 'The address the USDT left. Double-check every character.',
     _ => 'In your Weltrade cabinet, under your name. It is not your MT5 login.',
   };
 
   String get _instructionTitle => switch (_source) {
-    1 => 'Withdrawing through Deriv',
-    2 => 'Withdrawing through crypto',
     _ => 'Withdrawing through Weltrade',
   };
 
   String get _instructionBody => switch (_source) {
-    1 =>
-      '1. In Deriv, start a withdrawal to the ATG agent.\n\n'
-          '2. When it completes, screenshot the confirmation.\n\n'
-          '3. Attach that screenshot and enter your Deriv nickname.',
-    2 =>
-      '1. Send USDT to the ATG wallet address the desk gives you.\n\n'
-          '2. When the transfer confirms, screenshot it.\n\n'
-          '3. Attach that screenshot and paste the sending wallet address.',
     _ =>
       '1. In Weltrade, start a withdrawal to the "ATG" agent.\n\n'
           '2. When it completes, screenshot the confirmation.\n\n'
@@ -314,16 +302,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         onSelected: (index) => setState(() => _payout = index),
       ),
       const SizedBox(height: 16),
-      AtgField(
-        controller: _payoutMobile,
-        label: 'Mobile money number',
-        keyboardType: TextInputType.phone,
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        'The number that receives the payout. It can differ from your sign-in number.',
-        style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
-      ),
+      if (_payouts[_payout].title != 'Cash') ...[
+        AtgField(
+          controller: _payoutMobile,
+          label: 'Mobile money number',
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'The number that receives the payout. It can differ from your sign-in number.',
+          style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
+        ),
+      ],
       const SizedBox(height: 22),
       PrimaryButton(
         label: 'Continue',
@@ -346,7 +336,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       ),
       const SizedBox(height: 6),
       Text(
-        'Minimum withdrawal is ${money(_min)}.',
+        'Withdraw between ${money(_min)} and ${money(_max)}.',
         style: AtgText.small.copyWith(fontSize: 11.5),
       ),
       const SizedBox(height: 14),

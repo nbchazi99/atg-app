@@ -206,6 +206,22 @@
                         android:inputType="numberDecimal" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilMaxWithdraw"
+                    style="@style/Widget.ATG.Input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="Maximum withdrawal (USD)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMaxWithdraw"
+                        style="@style/Widget.ATG.InputEdit"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <TextView
                     style="@style/TextAppearance.ATG.Section"
                     android:layout_width="wrap_content"

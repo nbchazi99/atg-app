@@ -56,22 +56,60 @@ public class CourseController extends BaseController {
         var enrollment = enrollments.findByUserIdAndCourseId(me().getId(), id);
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("course", course);
-        res.put("lessons", lessons.findByCourseIdOrderByOrderIndexAsc(id));
+        List<Lesson> courseLessons = lessons.findByCourseIdOrderByOrderIndexAsc(id);
+        res.put("lessons", enrollment.isPresent()
+                ? courseLessons
+                : courseLessons.stream().map(CourseController::lessonPreview).toList());
         res.put("enrolled", enrollment.isPresent());
         res.put("completedLessonIds", enrollment.map(e -> parseIds(e.getCompletedLessonIds())).orElse(List.of()));
         return res;
     }
 
+    @PostMapping("/{id}/enroll")
+    public Map<String, Object> enroll(@PathVariable Long id) {
+        Course course = courses.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        if (course.getPrice().signum() != 0) {
+            throw bad("Only free courses can be joined without payment");
+        }
+
+        User user = me();
+        Enrollment enrollment = enrollments.findByUserIdAndCourseId(user.getId(), id)
+                .orElseGet(() -> {
+                    Enrollment created = new Enrollment();
+                    created.setUserId(user.getId());
+                    created.setCourseId(id);
+                    return created;
+                });
+        enrollments.save(enrollment);
+        realtime.publish(RealtimeHub.COURSES, Map.of("courseId", id, "kind", "enrolled"));
+        return Map.of("enrolled", true);
+    }
+
     @PostMapping("/{id}/complete")
     public Map<String, Object> complete(@PathVariable Long id, @RequestBody Dtos.CompleteReq req) {
         Enrollment e = enrollments.findByUserIdAndCourseId(me().getId(), id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Buy this course first"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Enroll in this course first"));
+        Lesson lesson = lessons.findById(req.lessonId())
+                .filter(row -> id.equals(row.getCourseId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lesson not found in this course"));
         List<Long> ids = new ArrayList<>(parseIds(e.getCompletedLessonIds()));
-        if (!ids.contains(req.lessonId())) ids.add(req.lessonId());
+        if (!ids.contains(lesson.getId())) ids.add(lesson.getId());
         e.setCompletedLessonIds(serializeIds(ids));
         enrollments.save(e);
         realtime.publish(RealtimeHub.COURSES, Map.of("courseId", id, "kind", "progress"));
         return Map.of("completedLessonIds", ids);
+    }
+
+    private static Lesson lessonPreview(Lesson lesson) {
+        Lesson preview = new Lesson();
+        preview.setId(lesson.getId());
+        preview.setCourseId(lesson.getCourseId());
+        preview.setTitle(lesson.getTitle());
+        preview.setDurationMin(lesson.getDurationMin());
+        preview.setOrderIndex(lesson.getOrderIndex());
+        preview.setImageUrl(lesson.getImageUrl());
+        return preview;
     }
 
     static List<Long> parseIds(String raw) {

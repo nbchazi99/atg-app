@@ -248,7 +248,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
                         android:letterSpacing="0.12"
-                        android:text="IN THE CALL"
+                        android:text="IN THE SIGNAL"
                         android:textColor="@color/gold"
                         android:textSize="9sp" />
 
@@ -267,7 +267,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:text="How to take this call"
+                android:text="How to take this signal"
                 android:textColor="@color/ink"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -278,7 +278,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
-                android:text="Enter only after the candle closes in the direction of the call. Risk no more than 1% of your account on any single idea. Move to break-even once the first target prints." />
+                android:text="Enter only after the candle closes in the direction of the signal. Risk no more than 1% of your account on any single idea. Move to break-even once the first target prints." />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnOpenChat"
@@ -292,7 +292,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="Calls are educational ideas, not financial advice. Trading involves risk."
+                android:text="Signals are educational ideas, not financial advice. Trading involves risk."
                 android:textColor="@color/muted"
                 android:textSize="11sp" />
         </LinearLayout>

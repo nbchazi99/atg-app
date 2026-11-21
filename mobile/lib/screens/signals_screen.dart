@@ -7,7 +7,6 @@ import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
-import 'pair_detail_screen.dart';
 import 'profile_screen.dart';
 import 'signal_detail_screen.dart';
 
@@ -55,7 +54,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
       setState(() {
         _items = items;
         _loading = false;
-        _subtitle = items.length == 1 ? '1 call' : '${items.length} calls';
+        _subtitle = items.length == 1 ? '1 signal' : '${items.length} signals';
       });
     } on ApiException catch (e) {
       if (!mounted || request != _request) return;
@@ -114,7 +113,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
                           EmptyState(
                             title: 'Nothing here yet',
                             message:
-                                'Calls appear here as soon as the floor posts them.',
+                                'Signals appear here as soon as the floor posts them.',
                             icon: Icons.bolt_outlined,
                           ),
                         ],
