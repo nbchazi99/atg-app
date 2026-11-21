@@ -60,7 +60,7 @@ public class RoomController extends BaseController {
         if (!communityExists) {
             Room community = new Room();
             community.setName("Community");
-            community.setDescription("Chat with all signed-in ATG members.");
+            community.setDescription("Open chat for all ATG traders.");
             community.setPreview("");
             available.add(rooms.save(community));
         }

@@ -333,7 +333,8 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         children: const [
                           EmptyState(
                             title: 'The room is quiet',
-                            message: 'Say hello. The desk and other traders see your message here.',
+                            message:
+                                'Say hello. The desk and other traders see your message here.',
                             icon: Icons.forum_outlined,
                           ),
                         ],

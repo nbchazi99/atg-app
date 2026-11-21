@@ -574,9 +574,9 @@ class CourseDetail {
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) => CourseDetail(
     course: Course.fromJson((json['course'] as Map).cast<String, dynamic>()),
-    lessons: _l(json['lessons'])
-        .map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
+    lessons: _l(
+      json['lessons'],
+    ).map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>())).toList(),
     enrolled: json['enrolled'] == true,
     completedLessonIds: _l(json['completedLessonIds']).map(_i).toList(),
   );

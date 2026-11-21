@@ -225,8 +225,9 @@ class _RoomsScreenState extends State<RoomsScreen> {
                   );
                   return;
                 }
-                Navigator.of(dialogContext)
-                    .pop({'title': title, 'message': message});
+                Navigator.of(
+                  dialogContext,
+                ).pop({'title': title, 'message': message});
               },
               child: const Text('Start chat'),
             ),
@@ -432,7 +433,9 @@ class _RoomsScreenState extends State<RoomsScreen> {
                             title: _feedError == null
                                 ? 'No conversations yet'
                                 : 'Could not load activity',
-                            message: _feedError ?? 'Use Start a new chat above to begin the first conversation.',
+                            message:
+                                _feedError ??
+                                'Use Start a new chat above to begin the first conversation.',
                             icon: _feedError == null
                                 ? Icons.forum_outlined
                                 : Icons.cloud_off_outlined,
