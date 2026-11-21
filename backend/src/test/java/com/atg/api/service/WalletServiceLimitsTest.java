@@ -7,7 +7,6 @@ import com.atg.api.repo.CourseRepository;
 import com.atg.api.repo.DepositRequestRepository;
 import com.atg.api.repo.EnrollmentRepository;
 import com.atg.api.repo.PurchaseRequestRepository;
-import com.atg.api.repo.TransactionRepository;
 import com.atg.api.repo.UserRepository;
 import com.atg.api.repo.WalletTransactionRepository;
 import com.atg.api.repo.WithdrawalRequestRepository;
