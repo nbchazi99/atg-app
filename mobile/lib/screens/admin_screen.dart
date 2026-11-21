@@ -1186,7 +1186,9 @@ class _AdminScreenState extends State<AdminScreen> {
               child: AtgField(
                 controller: _minWithdraw,
                 label: 'Min withdrawal',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -1194,7 +1196,9 @@ class _AdminScreenState extends State<AdminScreen> {
               child: AtgField(
                 controller: _maxWithdraw,
                 label: 'Max withdrawal',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
             ),
           ],
