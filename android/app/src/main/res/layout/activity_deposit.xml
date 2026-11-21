@@ -28,7 +28,7 @@
                 style="@style/TextAppearance.ATG.Meta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Fund your Weltrade trading account. Choose EcoCash, Cash, or SmileCash and enter your account details." />
+                android:text="Fund your Weltrade trading account with EcoCash and enter your account details." />
 
             <TextView
                 style="@style/TextAppearance.ATG.Section"

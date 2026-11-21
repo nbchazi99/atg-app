@@ -87,7 +87,6 @@ public class Models {
         public String promotionBody;
         public int points;
         public int liveCount;
-        public List<MarketPair> tickers;
     }
 
     public static class Room {
@@ -111,15 +110,38 @@ public class Models {
         public String roomName;
         public int participants;
         public boolean open;
+        public Long createdById;
+        public String createdByName;
         public String createdAt;
+        public String lastActivityAt;
     }
 
     public static class RoomMessage {
         public long id;
         public long roomId;
+        public Long threadId;
+        public Long authorId;
         public String author;
         public String text;
         public String createdAt;
+    }
+
+    public static class ThreadReq {
+        public String title;
+        public String message;
+
+        public ThreadReq(String title, String message) {
+            this.title = title;
+            this.message = message;
+        }
+    }
+
+    public static class ThreadStateReq {
+        public boolean open;
+
+        public ThreadStateReq(boolean open) {
+            this.open = open;
+        }
     }
 
     public static class TextReq {

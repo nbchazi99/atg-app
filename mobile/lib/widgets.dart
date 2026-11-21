@@ -100,11 +100,13 @@ class AvatarCircle extends StatelessWidget {
     required this.text,
     this.size = 34,
     this.onTap,
+    this.imageUrl,
   });
 
   final String text;
   final double size;
   final VoidCallback? onTap;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -119,14 +121,33 @@ class AvatarCircle extends StatelessWidget {
           color: AtgColors.primarySoft,
           shape: BoxShape.circle,
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: size * 0.34,
-            fontWeight: FontWeight.w800,
-            color: AtgColors.ink,
-          ),
-        ),
+        child: imageUrl != null && imageUrl!.isNotEmpty
+            ? ClipOval(
+                child: Image.network(
+                  mediaUrl(imageUrl!),
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Center(
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: size * 0.34,
+                        fontWeight: FontWeight.w800,
+                        color: AtgColors.ink,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : Text(
+                text,
+                style: TextStyle(
+                  fontSize: size * 0.34,
+                  fontWeight: FontWeight.w800,
+                  color: AtgColors.ink,
+                ),
+              ),
       ),
     );
   }
@@ -994,62 +1015,6 @@ class _LevelDivider extends StatelessWidget {
   }
 }
 
-class TickerStrip extends StatelessWidget {
-  const TickerStrip({super.key, required this.tickers, this.onTap});
-
-  final List<MarketPair> tickers;
-  final ValueChanged<MarketPair>? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (tickers.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
-      height: 66,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: tickers.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final pair = tickers[index];
-          return InkWell(
-            onTap: onTap == null ? null : () => onTap!(pair),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              width: 124,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-              decoration: cardDecoration(radius: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    pair.symbol,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AtgColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    price(pair.price),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AtgColors.inkSoft,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class CourseCover extends StatelessWidget {
   const CourseCover({super.key, required this.url});
 
@@ -1075,87 +1040,6 @@ class CourseCover extends StatelessWidget {
               color: AtgColors.gold,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class MarketRow extends StatelessWidget {
-  const MarketRow({
-    super.key,
-    required this.pair,
-    required this.favourite,
-    required this.onTap,
-    required this.onFavourite,
-  });
-
-  final MarketPair pair;
-  final bool favourite;
-  final VoidCallback onTap;
-  final VoidCallback onFavourite;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-        child: Row(
-          children: [
-            InkWell(
-              onTap: onFavourite,
-              borderRadius: BorderRadius.circular(20),
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: Icon(
-                  favourite ? Icons.star_rounded : Icons.star_border_rounded,
-                  size: 21,
-                  color: favourite ? AtgColors.primaryDark : AtgColors.stroke,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pair.symbol,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: AtgColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    pair.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AtgText.small,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  price(pair.price),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AtgColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(timeAgo(pair.updatedAt), style: AtgText.tiny),
-              ],
-            ),
-          ],
         ),
       ),
     );
@@ -1256,7 +1140,6 @@ class FeedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buy = item.isBuy;
     return SurfaceCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -1269,16 +1152,13 @@ class FeedRow extends StatelessWidget {
             height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: buy ? AtgColors.greenBg : AtgColors.redBg,
+              color: AtgColors.primary.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: Text(
-              item.badge.isEmpty ? (buy ? 'B' : 'S') : item.badge,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: buy ? AtgColors.greenText : AtgColors.redText,
-              ),
+            child: const Icon(
+              Icons.forum_outlined,
+              size: 19,
+              color: AtgColors.gold,
             ),
           ),
           const SizedBox(width: 12),
@@ -1301,7 +1181,28 @@ class FeedRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    SidePill(item.side, fontSize: 9.5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: item.open
+                            ? AtgColors.greenBg
+                            : AtgColors.redBg,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        item.open ? 'OPEN' : 'CLOSED',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          color: item.open
+                              ? AtgColors.greenText
+                              : AtgColors.redText,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 3),
@@ -1315,21 +1216,16 @@ class FeedRow extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      item.roomName,
+                      item.createdByName.isEmpty
+                          ? item.roomName
+                          : 'By ${item.createdByName}',
                       style: AtgText.tiny.copyWith(color: AtgColors.gold),
                     ),
                     const Spacer(),
-                    if (item.participants > 0) ...[
-                      const Icon(
-                        Icons.person_outline_rounded,
-                        size: 13,
-                        color: AtgColors.muted,
-                      ),
-                      const SizedBox(width: 3),
-                      Text('${item.participants}', style: AtgText.tiny),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(timeAgo(item.createdAt), style: AtgText.tiny),
+                    Text(
+                      timeAgo(item.lastActivityAt ?? item.createdAt),
+                      style: AtgText.tiny,
+                    ),
                   ],
                 ),
               ],

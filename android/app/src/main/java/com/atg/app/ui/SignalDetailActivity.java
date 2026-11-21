@@ -6,13 +6,25 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.atg.app.R;
+import com.atg.app.data.ApiClient;
 import com.atg.app.data.Models;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.util.List;
+import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class SignalDetailActivity extends AppCompatActivity {
+
+    private boolean openingChat;
 
     public static void start(Context context, Models.Signal signal) {
         Intent intent = new Intent(context, SignalDetailActivity.class);
@@ -85,8 +97,72 @@ public class SignalDetailActivity extends AppCompatActivity {
             notes.setText("Sell only after price rejects the level on the close. Risk no more than 1% of your account, trail the stop behind structure, and dismiss the signal if the rule invalidates.");
         }
 
-        findViewById(R.id.btnOpenChat).setOnClickListener(v ->
-                RoomDetailActivity.start(this, 1, value(in, "room", "ATG Trading Floor")));
+        View openChat = findViewById(R.id.btnOpenChat);
+        openChat.setOnClickListener(v -> openRoomChat(openChat, value(in, "room", "OPEN FLOOR")));
+    }
+
+    private void openRoomChat(View button, String roomLabel) {
+        if (openingChat) return;
+        openingChat = true;
+        button.setEnabled(false);
+        ApiClient.api().rooms().enqueue(new Callback<>() {
+            @Override
+            public void onResponse(@NonNull Call<List<Models.Room>> call,
+                                   @NonNull Response<List<Models.Room>> response) {
+                openingChat = false;
+                button.setEnabled(true);
+                if (isFinishing() || isDestroyed()) return;
+                if (!response.isSuccessful() || response.body() == null) {
+                    Ui.toast(SignalDetailActivity.this, ApiClient.errorMessage(response));
+                    return;
+                }
+                Models.Room room = findRoom(response.body(), roomLabel);
+                if (room == null) {
+                    Ui.toast(SignalDetailActivity.this, "Community chat is not configured. Try again shortly.");
+                    return;
+                }
+                if (room.locked) {
+                    String plan = Ui.membershipLabel(room.requiredMembership);
+                    new MaterialAlertDialogBuilder(SignalDetailActivity.this)
+                            .setTitle(room.name)
+                            .setMessage(plan + " members only. Buy the membership from your profile, attach your payment proof, and the administrator unlocks the room after reviewing it.")
+                            .setNegativeButton("Not now", null)
+                            .setPositiveButton("View memberships", (dialog, which) ->
+                                    startActivity(new Intent(SignalDetailActivity.this, ProfileActivity.class)))
+                            .show();
+                    return;
+                }
+                RoomDetailActivity.start(SignalDetailActivity.this, room.id, room.name);
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<Models.Room>> call, @NonNull Throwable t) {
+                openingChat = false;
+                button.setEnabled(true);
+                if (!isFinishing() && !isDestroyed()) {
+                    Ui.toast(SignalDetailActivity.this, ApiClient.connectionMessage(t));
+                }
+            }
+        });
+    }
+
+    private static Models.Room findRoom(List<Models.Room> rooms, String roomLabel) {
+        String label = roomLabel == null ? "" : roomLabel.trim();
+        if (!label.isEmpty() && !label.equalsIgnoreCase("OPEN FLOOR")) {
+            for (Models.Room room : rooms) {
+                if (room.name != null
+                        && room.name.toLowerCase(Locale.ROOT).contains(label.toLowerCase(Locale.ROOT))) {
+                    return room;
+                }
+            }
+        }
+        for (Models.Room room : rooms) {
+            if ("Community".equalsIgnoreCase(room.name)) return room;
+        }
+        for (Models.Room room : rooms) {
+            if (!room.locked) return room;
+        }
+        return rooms.isEmpty() ? null : rooms.get(0);
     }
 
     private static String value(Intent intent, String key, String fallback) {

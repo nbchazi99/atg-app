@@ -347,20 +347,20 @@ public class Adapters {
         public void onBindViewHolder(@NonNull Holder h, int position) {
             Models.FeedItem f = items.get(position);
             Context c = h.itemView.getContext();
-            h.badge.setText(f.badge);
-            boolean buy = "BUY".equals(f.side);
-            h.badge.setBackgroundResource(buy ? R.drawable.bg_circle_green : R.drawable.bg_circle_red);
-            h.badge.setTextColor(ContextCompat.getColor(c, buy ? R.color.green_text : R.color.red_text));
+            h.badge.setText("CHAT");
+            h.badge.setBackgroundResource(R.drawable.bg_circle_green);
+            h.badge.setTextColor(ContextCompat.getColor(c, R.color.green_text));
             h.title.setText(f.title);
-            h.side.setText(f.side);
-            h.side.setBackgroundResource(buy ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
-            h.side.setTextColor(ContextCompat.getColor(c, buy ? R.color.green_text : R.color.red_text));
+            boolean open = f.open;
+            h.side.setText(open ? "OPEN" : "CLOSED");
+            h.side.setBackgroundResource(open ? R.drawable.bg_chip_green : R.drawable.bg_chip_red);
+            h.side.setTextColor(ContextCompat.getColor(c, open ? R.color.green_text : R.color.red_text));
             h.preview.setText(f.preview);
             Ui.enableWebLinks(h.preview);
-            h.time.setText(Ui.timeAgo(f.createdAt));
-            if (f.participants > 0) {
+            h.time.setText(Ui.timeAgo(f.lastActivityAt == null ? f.createdAt : f.lastActivityAt));
+            if (f.createdByName != null && !f.createdByName.trim().isEmpty()) {
                 h.count.setVisibility(View.VISIBLE);
-                h.count.setText(String.valueOf(f.participants));
+                h.count.setText("By " + f.createdByName);
             } else {
                 h.count.setVisibility(View.GONE);
             }
@@ -951,42 +951,4 @@ public class Adapters {
         }
     }
 
-    public static class TickerAdapter extends RecyclerView.Adapter<TickerAdapter.Holder> {
-        private final List<Models.MarketPair> items = new ArrayList<>();
-
-        public void setItems(List<Models.MarketPair> data) {
-            items.clear();
-            if (data != null) items.addAll(data);
-            notifyDataSetChanged();
-        }
-
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_ticker, parent, false);
-            return new Holder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            Models.MarketPair p = items.get(position);
-            h.symbol.setText(p.symbol);
-            h.price.setText(Ui.price(p.price));
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, price;
-
-            Holder(View v) {
-                super(v);
-                symbol = v.findViewById(R.id.tvTickerSymbol);
-                price = v.findViewById(R.id.tvTickerPrice);
-            }
-        }
-    }
 }

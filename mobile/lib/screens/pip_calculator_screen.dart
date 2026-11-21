@@ -73,7 +73,8 @@ class _PipCalculatorScreenState extends State<PipCalculatorScreen> {
     if (yen && currentPrice <= 0) {
       setState(() {
         _value = '—';
-        _detail = 'Yen pairs are quoted in yen, so enter the current price to convert the pip value into US dollars.';
+        _detail =
+            'Yen pairs are quoted in yen, so enter the current price to convert the pip value into US dollars.';
       });
       return;
     }

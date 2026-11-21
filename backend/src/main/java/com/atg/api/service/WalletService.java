@@ -47,7 +47,12 @@ public class WalletService {
         AppSettings s = settings();
         if (req.adminFeePct() != null) s.setAdminFeePct(req.adminFeePct());
         if (req.withdrawFeePct() != null) s.setWithdrawFeePct(req.withdrawFeePct());
-        if (req.minDeposit() != null) s.setMinDeposit(req.minDeposit());
+        if (req.minDeposit() != null) {
+            if (req.minDeposit().compareTo(BigDecimal.valueOf(5)) < 0) {
+                throw bad("Minimum deposit cannot be below $5");
+            }
+            s.setMinDeposit(req.minDeposit());
+        }
         if (req.maxDeposit() != null) s.setMaxDeposit(req.maxDeposit());
         if (req.minWithdraw() != null) s.setMinWithdraw(req.minWithdraw());
         if (req.fact() != null) s.setFact(req.fact());
@@ -62,14 +67,15 @@ public class WalletService {
         }
         String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
             case "ecocash" -> "EcoCash";
-            case "cash" -> "Cash";
-            case "smilecash" -> "SmileCash";
-            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+            default -> throw bad("Choose EcoCash");
         };
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
-        if (amount.compareTo(s.getMinDeposit()) < 0) {
-            throw bad("Minimum deposit is $" + s.getMinDeposit());
+        BigDecimal minimum = s.getMinDeposit().compareTo(BigDecimal.valueOf(5)) < 0
+                ? BigDecimal.valueOf(5)
+                : s.getMinDeposit();
+        if (amount.compareTo(minimum) < 0) {
+            throw bad("Minimum deposit is $" + minimum);
         }
         if (amount.compareTo(s.getMaxDeposit()) > 0) {
             throw bad("Maximum deposit is $" + s.getMaxDeposit());
@@ -100,6 +106,9 @@ public class WalletService {
     public WithdrawalRequest createWithdrawal(User user, Dtos.WithdrawReq req) {
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
+        if (!req.payout().trim().equalsIgnoreCase("EcoCash")) {
+            throw bad("Choose EcoCash");
+        }
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
         }

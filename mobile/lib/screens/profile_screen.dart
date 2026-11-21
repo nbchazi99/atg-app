@@ -26,6 +26,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _pendingType;
   VoidCallback? _unbind;
 
+  Future<void> _changeAvatar() async {
+    XFile? image;
+    try {
+      image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+    } catch (_) {
+      if (mounted) {
+        showMessage(
+          context,
+          'Could not open the gallery',
+          'Allow photo access for ATG and try again.',
+        );
+      }
+      return;
+    }
+    if (image == null || !mounted) return;
+    try {
+      final url = await api.uploadImage(image);
+      final user = await api.updateProfile(avatarUrl: url);
+      await session.saveUser(user);
+      if (mounted) await _load();
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message);
+    } catch (_) {
+      if (mounted) showToast(context, 'Could not update profile picture');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -131,7 +161,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Sign out?',
-      message: 'Your session on this phone ends. Courses, purchases and requests stay on your account.',
+      message:
+          'Your session on this phone ends. Courses, purchases and requests stay on your account.',
       confirmLabel: 'Sign out',
       cancelLabel: 'Stay',
       destructive: true,
@@ -281,7 +312,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SurfaceCard(
       child: Row(
         children: [
-          AvatarCircle(text: session.initialsText, size: 60),
+          AvatarCircle(
+            text: session.initialsText,
+            size: 60,
+            imageUrl: session.avatarUrl,
+            onTap: _changeAvatar,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

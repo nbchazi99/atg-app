@@ -33,17 +33,6 @@ class _DepositScreenState extends State<DepositScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
-    OptionTile(
-      title: 'Cash',
-      subtitle: 'Pay an ATG agent in cash',
-      badge: '\$',
-    ),
-    OptionTile(
-      title: 'SmileCash',
-      subtitle: 'ZB Wallet, confirmed by code',
-      badge: 'SC',
-      logo: 'assets/images/wallets/smilecash.png',
-    ),
   ];
 
   final _clientId = TextEditingController();

@@ -108,6 +108,16 @@
                 android:paddingEnd="@dimen/screen_pad" />
         </HorizontalScrollView>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartThread"
+            style="@style/Widget.ATG.Button.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/screen_pad"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="@dimen/screen_pad"
+            android:text="Start a new chat" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -155,14 +165,14 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Signal"
+                android:text="Community conversations"
                 android:textColor="@color/gold"
                 android:textSize="13sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Latest activity"
+                android:text="Latest"
                 android:textColor="@color/gold"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -205,7 +215,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:gravity="center"
-                    android:text="Traders are quiet. New posts appear here first."
+                    android:text="No conversations yet. Use Start a new chat above to begin."
                     android:textColor="@color/muted"
                     android:textSize="13sp" />
             </LinearLayout>

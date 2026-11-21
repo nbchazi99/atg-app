@@ -25,7 +25,11 @@ Future<bool> openWebLink(String value) async {
   final uri = _webUri(value.trim());
   if (uri == null) return false;
   try {
-    return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (await canLaunchUrl(uri)) {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (opened) return true;
+    }
+    return await launchUrl(uri, mode: LaunchMode.platformDefault);
   } on Exception catch (error, stackTrace) {
     debugPrint('Could not open link $uri: $error\n$stackTrace');
     return false;

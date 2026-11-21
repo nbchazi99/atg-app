@@ -18,6 +18,27 @@
         android:textColor="@color/muted"
         android:textSize="11sp" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnThreadStatus"
+        style="@style/Widget.ATG.Chip"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginStart="@dimen/screen_pad"
+        android:layout_marginBottom="6dp"
+        android:text="Close conversation"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStartNewThread"
+        style="@style/Widget.ATG.Button.Small"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/screen_pad"
+        android:layout_marginEnd="@dimen/screen_pad"
+        android:layout_marginBottom="6dp"
+        android:text="Start a new chat"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMessages"
         android:layout_width="match_parent"

@@ -22,6 +22,7 @@ class AppUser {
     required this.membership,
     required this.points,
     this.createdAt,
+    this.avatarUrl,
   });
 
   final int id;
@@ -32,6 +33,7 @@ class AppUser {
   final String membership;
   final int points;
   final String? createdAt;
+  final String? avatarUrl;
 
   bool get isAdmin => role == 'ADMIN';
 
@@ -44,6 +46,7 @@ class AppUser {
     membership: _s(json['membership']) ?? 'NONE',
     points: _i(json['points']),
     createdAt: _s(json['createdAt']),
+    avatarUrl: _s(json['avatarUrl']),
   );
 }
 
@@ -55,45 +58,6 @@ class AuthResult {
   factory AuthResult.fromJson(Map<String, dynamic> json) => AuthResult(
     _s(json['token']) ?? '',
     AppUser.fromJson((json['user'] as Map).cast<String, dynamic>()),
-  );
-}
-
-class MarketPair {
-  const MarketPair({
-    required this.id,
-    required this.symbol,
-    required this.name,
-    required this.assetClass,
-    required this.price,
-    required this.changePct,
-    required this.high,
-    required this.low,
-    required this.prevClose,
-    this.updatedAt,
-  });
-
-  final int id;
-  final String symbol;
-  final String name;
-  final String assetClass;
-  final double price;
-  final double changePct;
-  final double high;
-  final double low;
-  final double prevClose;
-  final String? updatedAt;
-
-  factory MarketPair.fromJson(Map<String, dynamic> json) => MarketPair(
-    id: _i(json['id']),
-    symbol: _s(json['symbol']) ?? '',
-    name: _s(json['name']) ?? '',
-    assetClass: _s(json['assetClass']) ?? '',
-    price: _d(json['price']),
-    changePct: _d(json['changePct']),
-    high: _d(json['high']),
-    low: _d(json['low']),
-    prevClose: _d(json['prevClose']),
-    updatedAt: _s(json['updatedAt']),
   );
 }
 
@@ -148,26 +112,6 @@ class Signal {
   );
 }
 
-class PairDetail {
-  const PairDetail({
-    required this.pair,
-    required this.calls,
-    required this.favourite,
-  });
-
-  final MarketPair pair;
-  final List<Signal> calls;
-  final bool favourite;
-
-  factory PairDetail.fromJson(Map<String, dynamic> json) => PairDetail(
-    pair: MarketPair.fromJson((json['pair'] as Map).cast<String, dynamic>()),
-    calls: _l(json['calls'])
-        .map((e) => Signal.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
-    favourite: json['favourite'] == true,
-  );
-}
-
 class HomeData {
   const HomeData({
     required this.name,
@@ -177,7 +121,6 @@ class HomeData {
     required this.promotionBody,
     required this.points,
     required this.liveCount,
-    required this.tickers,
   });
 
   final String name;
@@ -187,7 +130,6 @@ class HomeData {
   final String promotionBody;
   final int points;
   final int liveCount;
-  final List<MarketPair> tickers;
 
   factory HomeData.fromJson(Map<String, dynamic> json) => HomeData(
     name: _s(json['name']) ?? '',
@@ -197,9 +139,6 @@ class HomeData {
     promotionBody: _s(json['promotionBody']) ?? '',
     points: _i(json['points']),
     liveCount: _i(json['liveCount']),
-    tickers: _l(json['tickers'])
-        .map((e) => MarketPair.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
   );
 }
 
@@ -247,7 +186,10 @@ class FeedItem {
     required this.roomName,
     required this.participants,
     required this.open,
+    this.createdById,
+    this.createdByName = '',
     this.createdAt,
+    this.lastActivityAt,
   });
 
   final int id;
@@ -259,7 +201,10 @@ class FeedItem {
   final String roomName;
   final int participants;
   final bool open;
+  final int? createdById;
+  final String createdByName;
   final String? createdAt;
+  final String? lastActivityAt;
 
   bool get isBuy => side == 'BUY';
 
@@ -273,7 +218,10 @@ class FeedItem {
     roomName: _s(json['roomName']) ?? '',
     participants: _i(json['participants']),
     open: json['open'] == true,
+    createdById: json['createdById'] == null ? null : _i(json['createdById']),
+    createdByName: _s(json['createdByName']) ?? '',
     createdAt: _s(json['createdAt']),
+    lastActivityAt: _s(json['lastActivityAt']),
   );
 }
 
@@ -281,22 +229,31 @@ class RoomMessage {
   const RoomMessage({
     required this.id,
     required this.roomId,
+    this.authorId,
     required this.author,
+    this.authorAvatarUrl,
     required this.text,
+    this.attachmentUrl,
     this.createdAt,
   });
 
   final int id;
   final int roomId;
+  final int? authorId;
   final String author;
+  final String? authorAvatarUrl;
   final String text;
+  final String? attachmentUrl;
   final String? createdAt;
 
   factory RoomMessage.fromJson(Map<String, dynamic> json) => RoomMessage(
     id: _i(json['id']),
     roomId: _i(json['roomId']),
+    authorId: json['authorId'] == null ? null : _i(json['authorId']),
     author: _s(json['author']) ?? '',
+    authorAvatarUrl: _s(json['authorAvatarUrl']),
     text: _s(json['text']) ?? '',
+    attachmentUrl: _s(json['attachmentUrl']),
     createdAt: _s(json['createdAt']),
   );
 }
@@ -543,6 +500,8 @@ class Lesson {
     required this.title,
     required this.content,
     required this.videoUrl,
+    this.materialUrl,
+    this.imageUrl,
     required this.durationMin,
     required this.orderIndex,
   });
@@ -552,6 +511,8 @@ class Lesson {
   final String title;
   final String content;
   final String videoUrl;
+  final String? materialUrl;
+  final String? imageUrl;
   final int durationMin;
   final int orderIndex;
 
@@ -561,8 +522,40 @@ class Lesson {
     title: _s(json['title']) ?? 'Lesson',
     content: _s(json['content']) ?? '',
     videoUrl: _s(json['videoUrl']) ?? '',
+    materialUrl: _s(json['materialUrl']),
+    imageUrl: _s(json['imageUrl']),
     durationMin: _i(json['durationMin']),
     orderIndex: _i(json['orderIndex']),
+  );
+}
+
+class AcademyComment {
+  const AcademyComment({
+    required this.id,
+    required this.courseId,
+    this.lessonId,
+    this.authorId,
+    required this.authorName,
+    required this.text,
+    this.createdAt,
+  });
+
+  final int id;
+  final int courseId;
+  final int? lessonId;
+  final int? authorId;
+  final String authorName;
+  final String text;
+  final String? createdAt;
+
+  factory AcademyComment.fromJson(Map<String, dynamic> json) => AcademyComment(
+    id: _i(json['id']),
+    courseId: _i(json['courseId']),
+    lessonId: json['lessonId'] == null ? null : _i(json['lessonId']),
+    authorId: json['authorId'] == null ? null : _i(json['authorId']),
+    authorName: _s(json['authorName']) ?? '',
+    text: _s(json['text']) ?? '',
+    createdAt: _s(json['createdAt']),
   );
 }
 

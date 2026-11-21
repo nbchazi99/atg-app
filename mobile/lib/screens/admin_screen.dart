@@ -1592,7 +1592,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
   final _subtitle = TextEditingController();
   final _description = TextEditingController();
   final _price = TextEditingController();
-  final _lessons = TextEditingController();
+  final List<_LessonEditorFields> _lessons = [_LessonEditorFields()];
 
   String _level = 'Beginner';
   String _imageUrl = '';
@@ -1604,31 +1604,85 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
     _subtitle.dispose();
     _description.dispose();
     _price.dispose();
-    _lessons.dispose();
+    for (final lesson in _lessons) {
+      lesson.dispose();
+    }
     super.dispose();
   }
 
   List<Map<String, Object?>> _parseLessons() {
     final items = <Map<String, Object?>>[];
-    for (final line in _lessons.text.split(RegExp(r'\r?\n'))) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      final parts = trimmed.split('|');
-      final title = parts[0].trim();
+    for (final lesson in _lessons) {
+      final title = lesson.title.text.trim();
       if (title.isEmpty) continue;
-      final duration = parts.length > 1
-          ? parseAmount(parts[1], 10).round()
-          : 10;
-      final content = parts.length > 2 ? parts[2].trim() : '';
-      final video = parts.length > 3 ? parts[3].trim() : '';
+      final duration = int.tryParse(lesson.duration.text.trim()) ?? 10;
       items.add({
         'title': title,
         'durationMin': duration,
-        'content': content,
-        if (video.isNotEmpty) 'videoUrl': video,
+        'content': lesson.content.text.trim(),
+        if (lesson.video.text.trim().isNotEmpty)
+          'videoUrl': lesson.video.text.trim(),
+        if (lesson.material.text.trim().isNotEmpty)
+          'materialUrl': lesson.material.text.trim(),
+        if (lesson.imageUrl.isNotEmpty) 'imageUrl': lesson.imageUrl,
       });
     }
     return items;
+  }
+
+  Future<void> _pickLessonImage(_LessonEditorFields lesson) async {
+    if (lesson.uploadingImage) return;
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (file == null || !mounted) return;
+      setState(() => lesson.uploadingImage = true);
+      final url = await api.uploadImage(file);
+      if (!mounted) return;
+      setState(() {
+        lesson.imageUrl = url;
+        lesson.uploadingImage = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => lesson.uploadingImage = false);
+      showMessage(context, 'Could not upload lesson picture', e.message);
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Could not upload Academy lesson picture: $error\n$stackTrace',
+      );
+      if (!mounted) return;
+      setState(() => lesson.uploadingImage = false);
+      showToast(context, 'Could not upload lesson picture. Try again.');
+    }
+  }
+
+  Future<void> _pickLessonVideo(_LessonEditorFields lesson) async {
+    if (lesson.uploadingVideo) return;
+    try {
+      final file = await ImagePicker().pickVideo(source: ImageSource.gallery);
+      if (file == null || !mounted) return;
+      setState(() => lesson.uploadingVideo = true);
+      final url = await api.uploadVideo(file);
+      if (!mounted) return;
+      setState(() {
+        lesson.video.text = url;
+        lesson.uploadingVideo = false;
+      });
+      showToast(context, 'Lesson video uploaded');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => lesson.uploadingVideo = false);
+      showMessage(context, 'Could not upload lesson video', e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not upload Academy lesson video: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() => lesson.uploadingVideo = false);
+      showToast(context, 'Could not upload lesson video. Try again.');
+    }
   }
 
   Future<void> _pickCover() async {
@@ -1680,6 +1734,31 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
     final price = double.tryParse(_price.text.trim());
     if (price == null || !price.isFinite || price < 0) {
       showToast(context, 'Enter a valid non-negative course price');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) => lesson.uploadingImage || lesson.uploadingVideo,
+    )) {
+      showToast(context, 'Wait for lesson media to finish uploading');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) =>
+          lesson.title.text.trim().isEmpty &&
+          (lesson.content.text.trim().isNotEmpty ||
+              lesson.video.text.trim().isNotEmpty ||
+              lesson.material.text.trim().isNotEmpty ||
+              lesson.imageUrl.isNotEmpty),
+    )) {
+      showToast(context, 'Add a title to each lesson with content');
+      return;
+    }
+    if (_lessons.any(
+      (lesson) =>
+          lesson.title.text.trim().isNotEmpty &&
+          (int.tryParse(lesson.duration.text.trim()) ?? 0) <= 0,
+    )) {
+      showToast(context, 'Enter a positive whole number for lesson duration');
       return;
     }
     Navigator.of(context).pop(
@@ -1806,20 +1885,147 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
             style: AtgText.small.copyWith(fontSize: 11.5),
           ),
           const SizedBox(height: 14),
-          AtgField(
-            controller: _lessons,
-            label: 'Lessons (title | minutes | content | video URL)',
-            maxLines: 8,
-            minLines: 5,
-            alignLabelWithHint: true,
+          Row(
+            children: [
+              const Expanded(child: SectionLabel('LESSONS')),
+              TextButton.icon(
+                onPressed: () =>
+                    setState(() => _lessons.add(_LessonEditorFields())),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add lesson'),
+              ),
+            ],
           ),
+          for (var index = 0; index < _lessons.length; index++) ...[
+            const SizedBox(height: 8),
+            _buildLessonEditor(index, _lessons[index]),
+          ],
           const SizedBox(height: 18),
           PrimaryButton(
             label: 'Create course',
-            onPressed: _uploadingCover ? null : _create,
+            onPressed:
+                _uploadingCover ||
+                    _lessons.any(
+                      (lesson) =>
+                          lesson.uploadingImage || lesson.uploadingVideo,
+                    )
+                ? null
+                : _create,
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildLessonEditor(int index, _LessonEditorFields lesson) {
+    return SurfaceCard(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text('Lesson ${index + 1}', style: AtgText.h3)),
+              if (_lessons.length > 1)
+                IconButton(
+                  tooltip: 'Remove lesson',
+                  onPressed: lesson.uploadingImage || lesson.uploadingVideo
+                      ? null
+                      : () => setState(() {
+                          _lessons.removeAt(index).dispose();
+                        }),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+            ],
+          ),
+          AtgField(
+            controller: lesson.title,
+            label: 'Lesson title',
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.duration,
+            label: 'Duration (minutes)',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.content,
+            label: 'Lesson notes (links are clickable)',
+            minLines: 3,
+            maxLines: 7,
+            alignLabelWithHint: true,
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.video,
+            label: 'YouTube or video URL',
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 6),
+          OutlineButton(
+            label: lesson.uploadingVideo
+                ? 'Uploading video…'
+                : 'Upload video (up to 50 MB)',
+            icon: Icons.video_library_outlined,
+            onPressed: lesson.uploadingVideo || lesson.uploadingImage
+                ? null
+                : () => _pickLessonVideo(lesson),
+          ),
+          const SizedBox(height: 8),
+          AtgField(
+            controller: lesson.material,
+            label: 'PDF or learning-material link',
+            keyboardType: TextInputType.url,
+          ),
+          const SizedBox(height: 8),
+          if (lesson.imageUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                mediaUrl(lesson.imageUrl),
+                height: 150,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+          OutlineButton(
+            label: lesson.uploadingImage
+                ? 'Uploading picture…'
+                : lesson.imageUrl.isEmpty
+                ? 'Add lesson picture'
+                : 'Change lesson picture',
+            icon: Icons.image_outlined,
+            onPressed: lesson.uploadingImage || lesson.uploadingVideo
+                ? null
+                : () => _pickLessonImage(lesson),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LessonEditorFields {
+  final title = TextEditingController();
+  final duration = TextEditingController(text: '10');
+  final content = TextEditingController();
+  final video = TextEditingController();
+  final material = TextEditingController();
+  String imageUrl = '';
+  bool uploadingImage = false;
+  bool uploadingVideo = false;
+
+  void dispose() {
+    title.dispose();
+    duration.dispose();
+    content.dispose();
+    video.dispose();
+    material.dispose();
   }
 }

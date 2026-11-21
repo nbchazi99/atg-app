@@ -10,6 +10,7 @@ import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import '../widgets/academy_discussion.dart';
 import 'lesson_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
@@ -251,6 +252,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                             ],
                           ],
+                          const SizedBox(height: 22),
+                          AcademyDiscussion(
+                            courseId: detail.course.id,
+                            title: 'Course discussion',
+                          ),
                         ],
                       ),
               ),

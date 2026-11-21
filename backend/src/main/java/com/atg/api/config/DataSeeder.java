@@ -41,7 +41,8 @@ public class DataSeeder implements CommandLineRunner {
         boolean saveSettings = existingSettings.isEmpty();
         if (!currentSettings.isDepositMinimumMigrated()) {
             if (currentSettings.getMinDeposit() == null
-                    || currentSettings.getMinDeposit().compareTo(BigDecimal.valueOf(12.50)) == 0) {
+                    || currentSettings.getMinDeposit().compareTo(BigDecimal.valueOf(12.50)) == 0
+                    || currentSettings.getMinDeposit().compareTo(BigDecimal.valueOf(5)) < 0) {
                 currentSettings.setMinDeposit(BigDecimal.valueOf(5));
             }
             currentSettings.setDepositMinimumMigrated(true);
@@ -75,7 +76,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private void seedRooms() {
         List<Room> existingRooms = new ArrayList<>(rooms.findAll());
-        ensureRoom(existingRooms, "Community", "Open chat for all ATG traders.");
+        ensureRoom(existingRooms, "Community", "Chat with all signed-in ATG members.");
         ensureRoom(existingRooms, "Deriv VIP", "Private signals and chat for Deriv VIP members.");
         ensureRoom(existingRooms, "Weltrade VIP", "Private signals and chat for Weltrade VIP members.");
     }

@@ -14,7 +14,10 @@ public class RoomPost {
     private String preview;
     private int participants = 0;
     private boolean open = true;
+    private Long createdById;
+    private String createdByName;
     private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
+    private LocalDateTime lastActivityAt;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -32,6 +35,12 @@ public class RoomPost {
     public void setParticipants(int participants) { this.participants = participants; }
     public boolean isOpen() { return open; }
     public void setOpen(boolean open) { this.open = open; }
+    public Long getCreatedById() { return createdById; }
+    public void setCreatedById(Long createdById) { this.createdById = createdById; }
+    public String getCreatedByName() { return createdByName; }
+    public void setCreatedByName(String createdByName) { this.createdByName = createdByName; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getLastActivityAt() { return lastActivityAt; }
+    public void setLastActivityAt(LocalDateTime lastActivityAt) { this.lastActivityAt = lastActivityAt; }
 }

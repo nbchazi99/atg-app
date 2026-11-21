@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api.dart';
@@ -20,13 +22,15 @@ class RoomsScreen extends StatefulWidget {
 }
 
 class _RoomsScreenState extends State<RoomsScreen> {
-  static const _filters = ['open', 'closed', 'all'];
+  static const _filters = ['open', 'closed', 'latest'];
   static const _labels = ['Open', 'Closed', 'Latest'];
 
   int _filter = 0;
   List<Room> _rooms = const [];
   List<FeedItem> _feed = const [];
   bool _loading = true;
+  String? _roomsError;
+  String? _feedError;
   int _request = 0;
   VoidCallback? _unbind;
 
@@ -45,22 +49,47 @@ class _RoomsScreenState extends State<RoomsScreen> {
 
   Future<void> _load() async {
     final request = ++_request;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _roomsError = null;
+      _feedError = null;
+    });
+    final roomsFuture = api.rooms();
+    final feedFuture = api.feed(_filters[_filter]);
     try {
-      final results = await Future.wait([
-        api.rooms(),
-        api.feed(_filters[_filter]),
-      ]);
+      final rooms = await roomsFuture;
       if (!mounted || request != _request) return;
       setState(() {
-        _rooms = results[0] as List<Room>;
-        _feed = results[1] as List<FeedItem>;
-        _loading = false;
+        _rooms = rooms;
       });
     } on ApiException catch (e) {
       if (!mounted || request != _request) return;
-      setState(() => _loading = false);
-      showToast(context, e.message);
+      setState(() => _roomsError = e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not load chat rooms: $error\n$stackTrace');
+      if (!mounted || request != _request) return;
+      setState(() => _roomsError = 'Could not load chat rooms. Try again.');
+    }
+
+    try {
+      final feed = await feedFuture;
+      if (!mounted || request != _request) return;
+      setState(() {
+        _feed = feed;
+      });
+    } on ApiException catch (e) {
+      if (!mounted || request != _request) return;
+      setState(() => _feedError = e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not load community activity: $error\n$stackTrace');
+      if (!mounted || request != _request) return;
+      setState(
+        () => _feedError = 'Could not load community activity. Try again.',
+      );
+    } finally {
+      if (mounted && request == _request) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -76,7 +105,13 @@ class _RoomsScreenState extends State<RoomsScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RoomChatScreen(roomId: room.id, roomName: room.name),
+        builder: (_) => RoomChatScreen(
+          roomId: room.id,
+          roomName: room.name,
+          onStartThread: room.name.toLowerCase() == 'community'
+              ? () => unawaited(_startThread())
+              : null,
+        ),
       ),
     );
   }
@@ -93,18 +128,151 @@ class _RoomsScreenState extends State<RoomsScreen> {
         break;
       }
     }
-    if (room != null) {
+    if (room != null && room.locked) {
       _openRoom(room);
+      return;
+    }
+    if (item.createdById == null) {
+      if (room != null) {
+        _openRoom(room);
+      } else {
+        final roomName = item.roomName.isEmpty ? 'Community' : item.roomName;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RoomChatScreen(
+              roomId: roomId,
+              roomName: roomName,
+              onStartThread: roomName.toLowerCase() == 'community'
+                  ? () => unawaited(_startThread())
+                  : null,
+            ),
+          ),
+        );
+      }
       return;
     }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomChatScreen(
           roomId: roomId,
-          roomName: item.roomName.isEmpty ? 'Room' : item.roomName,
+          roomName: item.roomName.isEmpty ? 'Community' : item.roomName,
+          threadId: item.id,
+          threadTitle: item.title,
+          threadOpen: item.open,
+          canManageThread: session.isAdmin || item.createdById == session.id,
         ),
       ),
     );
+  }
+
+  Future<void> _startThread() async {
+    final titleController = TextEditingController();
+    final messageController = TextEditingController();
+    String? validationError;
+    final draft = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Start a conversation'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  maxLength: 100,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: atgInputDecoration(hint: 'Conversation title'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: messageController,
+                  maxLength: 2000,
+                  minLines: 3,
+                  maxLines: 5,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: atgInputDecoration(
+                    hint: 'What would you like to discuss?',
+                  ),
+                ),
+                if (validationError != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      validationError!,
+                      style: const TextStyle(
+                        color: AtgColors.redText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final title = titleController.text.trim();
+                final message = messageController.text.trim();
+                if (title.isEmpty || message.isEmpty) {
+                  setDialogState(
+                    () =>
+                        validationError = 'Add a title and your first message.',
+                  );
+                  return;
+                }
+                Navigator.of(dialogContext)
+                    .pop({'title': title, 'message': message});
+              },
+              child: const Text('Start chat'),
+            ),
+          ],
+        ),
+      ),
+    );
+    titleController.dispose();
+    messageController.dispose();
+    if (draft == null || !mounted) return;
+
+    try {
+      final thread = await api.createThread(
+        title: draft['title']!,
+        message: draft['message']!,
+      );
+      if (!mounted) return;
+      setState(() => _filter = 0);
+      unawaited(_load());
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RoomChatScreen(
+            roomId: thread.roomId,
+            roomName: thread.roomName,
+            threadId: thread.id,
+            threadTitle: thread.title,
+            threadOpen: thread.open,
+            canManageThread: true,
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        showToast(
+          context,
+          e.status == 404
+              ? 'The Community chat service needs a server update before chats can be started.'
+              : e.message,
+        );
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Could not start community conversation: $error\n$stackTrace');
+      if (mounted) {
+        showToast(context, 'Could not start the conversation. Try again.');
+      }
+    }
   }
 
   @override
@@ -124,20 +292,29 @@ class _RoomsScreenState extends State<RoomsScreen> {
               ).push(MaterialPageRoute(builder: (_) => const ProfileScreen())),
             ),
             if (_rooms.isEmpty)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 2, 16, 0),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
                 child: SurfaceCard(
-                  padding: EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(14),
                   child: Row(
                     children: [
-                      AtgLogo(size: 40),
-                      SizedBox(width: 12),
+                      const AtgLogo(size: 40),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Chat rooms are not available yet.',
+                          _roomsError ??
+                              (_loading
+                                  ? 'Loading chat rooms…'
+                                  : 'Start a new chat below. Community will be set up automatically.'),
                           style: AtgText.bodySmall,
                         ),
                       ),
+                      if (_roomsError != null)
+                        IconButton(
+                          tooltip: 'Retry loading rooms',
+                          onPressed: _load,
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
                     ],
                   ),
                 ),
@@ -204,6 +381,17 @@ class _RoomsScreenState extends State<RoomsScreen> {
                 ),
               ),
             Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _startThread,
+                  icon: const Icon(Icons.add_comment_outlined),
+                  label: const Text('Start a new chat'),
+                ),
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: AtgChipRow(
                 labels: _labels,
@@ -217,18 +405,12 @@ class _RoomsScreenState extends State<RoomsScreen> {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Row(
-                children: [
-                  Text(
-                    'Signal',
-                    style: TextStyle(fontSize: 13, color: AtgColors.gold),
-                  ),
-                  Spacer(),
-                  Text(
-                    'Latest activity',
-                    style: TextStyle(fontSize: 13, color: AtgColors.gold),
-                  ),
-                ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Community conversations',
+                  style: TextStyle(fontSize: 13, color: AtgColors.gold),
+                ),
               ),
             ),
             Expanded(
@@ -245,12 +427,26 @@ class _RoomsScreenState extends State<RoomsScreen> {
                     ? ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.only(top: 30),
-                        children: const [
+                        children: [
                           EmptyState(
-                            title: 'No activity',
-                            message: 'Traders are quiet. New posts appear here first.',
-                            icon: Icons.forum_outlined,
+                            title: _feedError == null
+                                ? 'No conversations yet'
+                                : 'Could not load activity',
+                            message: _feedError ?? 'Use Start a new chat above to begin the first conversation.',
+                            icon: _feedError == null
+                                ? Icons.forum_outlined
+                                : Icons.cloud_off_outlined,
                           ),
+                          if (_feedError != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
+                              child: OutlineButton(
+                                label: 'Try again',
+                                onPressed: _load,
+                              ),
+                            ),
                         ],
                       )
                     : ListView.builder(

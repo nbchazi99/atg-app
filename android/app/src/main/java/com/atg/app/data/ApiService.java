@@ -45,11 +45,23 @@ public interface ApiService {
     @GET("api/rooms/feed")
     Call<List<Models.FeedItem>> feed(@Query("filter") String filter);
 
+    @POST("api/rooms/{id}/threads")
+    Call<Models.FeedItem> createThread(@Path("id") long roomId, @Body Models.ThreadReq body);
+
+    @POST("api/rooms/community/threads")
+    Call<Models.FeedItem> createCommunityThread(@Body Models.ThreadReq body);
+
+    @PATCH("api/rooms/{roomId}/threads/{threadId}")
+    Call<Models.FeedItem> setThreadOpen(@Path("roomId") long roomId,
+                                        @Path("threadId") long threadId,
+                                        @Body Models.ThreadStateReq body);
+
     @GET("api/rooms/{id}/messages")
-    Call<List<Models.RoomMessage>> messages(@Path("id") long roomId);
+    Call<List<Models.RoomMessage>> messages(@Path("id") long roomId, @Query("threadId") Long threadId);
 
     @POST("api/rooms/{id}/messages")
-    Call<Models.RoomMessage> sendMessage(@Path("id") long roomId, @Body Models.TextReq body);
+    Call<Models.RoomMessage> sendMessage(@Path("id") long roomId, @Query("threadId") Long threadId,
+                                         @Body Models.TextReq body);
 
     @GET("api/wallet")
     Call<Models.WalletRes> wallet();

@@ -79,7 +79,10 @@ class Api {
     if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
 
     if (response.statusCode == 401) {
-      throw const ApiException('Your session ended. Sign in again.', 401);
+      final message = method == 'POST' && path == 'api/auth/login'
+          ? 'Email or password is incorrect.'
+          : 'Your session ended. Sign in again.';
+      throw ApiException(message, 401);
     }
     final message = decoded is Map && decoded['error'] is String
         ? decoded['error'] as String
@@ -115,8 +118,41 @@ class Api {
     return AuthResult.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  Future<void> requestPasswordReset(String email) async {
+    await _send(
+      'POST',
+      'api/auth/password-reset/request',
+      body: {'email': email.trim()},
+    );
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    await _send(
+      'POST',
+      'api/auth/password-reset/confirm',
+      body: {'email': email.trim(), 'code': code, 'password': password},
+    );
+  }
+
   Future<AppUser> me() async {
     final data = await _send('GET', 'api/me');
+    return AppUser.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<AppUser> updateProfile({
+    String? name,
+    String? phone,
+    String? avatarUrl,
+  }) async {
+    final body = <String, String>{};
+    if (name != null) body['name'] = name;
+    if (phone != null) body['phone'] = phone;
+    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+    final data = await _send('PUT', 'api/me', body: body);
     return AppUser.fromJson((data as Map).cast<String, dynamic>());
   }
 
@@ -140,31 +176,6 @@ class Api {
       },
     );
     return _parseList(data, Signal.fromJson);
-  }
-
-  Future<List<MarketPair>> markets(String category) async {
-    final data = await _send(
-      'GET',
-      'api/markets',
-      query: {'category': category},
-    );
-    return _parseList(data, MarketPair.fromJson);
-  }
-
-  Future<PairDetail> pair(String symbol) async {
-    final data = await _send(
-      'GET',
-      'api/markets/${Uri.encodeComponent(symbol)}',
-    );
-    return PairDetail.fromJson((data as Map).cast<String, dynamic>());
-  }
-
-  Future<bool> toggleFavourite(String symbol) async {
-    final data = await _send(
-      'POST',
-      'api/markets/${Uri.encodeComponent(symbol)}/favourite',
-    );
-    return data is Map && data['favourite'] == true;
   }
 
   Future<List<Room>> rooms() async {
@@ -193,18 +204,57 @@ class Api {
     return _parseList(data, FeedItem.fromJson);
   }
 
-  Future<List<RoomMessage>> messages(int roomId) async {
-    final data = await _send('GET', 'api/rooms/$roomId/messages');
+  Future<FeedItem> createThread({
+    required String title,
+    required String message,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/rooms/community/threads',
+      body: {'title': title, 'message': message},
+    );
+    return FeedItem.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<FeedItem> setThreadOpen({
+    required int roomId,
+    required int threadId,
+    required bool open,
+  }) async {
+    final data = await _send(
+      'PATCH',
+      'api/rooms/$roomId/threads/$threadId',
+      body: {'open': open},
+    );
+    return FeedItem.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<RoomMessage>> messages(int roomId, {int? threadId}) async {
+    final data = await _send(
+      'GET',
+      'api/rooms/$roomId/messages',
+      query: threadId == null ? null : {'threadId': '$threadId'},
+    );
     return _parseList(data, RoomMessage.fromJson);
   }
 
-  Future<RoomMessage> sendMessage(int roomId, String text) async {
+  Future<RoomMessage> sendMessage(
+    int roomId,
+    String text, {
+    int? threadId,
+    String? attachmentUrl,
+  }) async {
     final data = await _send(
       'POST',
       'api/rooms/$roomId/messages',
-      body: {'text': text},
+      query: threadId == null ? null : {'threadId': '$threadId'},
+      body: {'text': text, 'attachmentUrl': ?attachmentUrl},
     );
     return RoomMessage.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<void> deleteRoomMessage(int roomId, int messageId) async {
+    await _send('DELETE', 'api/admin/rooms/$roomId/messages/$messageId');
   }
 
   Future<WalletData> wallet() async {
@@ -257,6 +307,14 @@ class Api {
   }
 
   Future<String> uploadImage(XFile file) async {
+    return _uploadMedia(file, video: false);
+  }
+
+  Future<String> uploadVideo(XFile file) async {
+    return _uploadMedia(file, video: true);
+  }
+
+  Future<String> _uploadMedia(XFile file, {required bool video}) async {
     final uri = Uri.parse('${session.server}api/uploads');
     final request = http.MultipartRequest('POST', uri);
     final token = session.token;
@@ -264,9 +322,19 @@ class Api {
       request.headers['Authorization'] = 'Bearer $token';
     }
 
-    final name = file.name.isEmpty ? 'proof.jpg' : file.name;
+    final name = file.name.isEmpty
+        ? (video ? 'lesson.mp4' : 'proof.jpg')
+        : file.name;
     final lower = name.toLowerCase();
-    final mime = lower.endsWith('.png')
+    final mime = video
+        ? lower.endsWith('.webm')
+              ? 'video/webm'
+              : lower.endsWith('.mov')
+              ? 'video/quicktime'
+              : lower.endsWith('.m4v')
+              ? 'video/x-m4v'
+              : 'video/mp4'
+        : lower.endsWith('.png')
         ? 'image/png'
         : lower.endsWith('.webp')
         ? 'image/webp'
@@ -301,7 +369,7 @@ class Api {
       }
       final message = decoded is Map && decoded['error'] is String
           ? decoded['error'] as String
-          : 'Could not upload that image (${response.statusCode})';
+          : 'Could not upload that ${video ? 'video' : 'image'} (${response.statusCode})';
       throw ApiException(message, response.statusCode);
     } on ApiException {
       rethrow;
@@ -326,6 +394,29 @@ class Api {
       'api/courses/$courseId/complete',
       body: {'lessonId': lessonId},
     );
+  }
+
+  Future<List<AcademyComment>> academyComments(
+    int courseId, {
+    int? lessonId,
+  }) async {
+    final path = lessonId == null
+        ? 'api/courses/$courseId/comments'
+        : 'api/courses/$courseId/lessons/$lessonId/comments';
+    final data = await _send('GET', path);
+    return _parseList(data, AcademyComment.fromJson);
+  }
+
+  Future<AcademyComment> addAcademyComment(
+    int courseId,
+    String text, {
+    int? lessonId,
+  }) async {
+    final path = lessonId == null
+        ? 'api/courses/$courseId/comments'
+        : 'api/courses/$courseId/lessons/$lessonId/comments';
+    final data = await _send('POST', path, body: {'text': text});
+    return AcademyComment.fromJson((data as Map).cast<String, dynamic>());
   }
 
   Future<void> enrollInFreeCourse(int courseId) async {

@@ -14,13 +14,15 @@ reference implementation.
 - Home: greeting, points, live signals, promo card, quick actions, daily fact, referral card
   and a Weltrade account-registration card (steps and partner link).
 - Signals: Live / Open / Inner / Closed filters, full level detail (entry, stop, targets, rule, participants).
-- Community: open Community chat + private Deriv VIP and Weltrade VIP rooms, open/closed/all feed, room chat.
+- Community: shared Community chat + private Deriv VIP and Weltrade VIP rooms. Members can start
+  separate conversations, browse Open / Closed / Latest, and continue each conversation in its own chat.
   VIP rooms, their feed posts and VIP-labelled signals stay locked until the matching membership is approved.
 - Wallet: balance history, pending request counts, deposit and withdrawal entry points.
-- Deposit: Weltrade only, $5 minimum, and EcoCash, Cash or SmileCash payment methods.
+- Deposit: Weltrade only, $5 minimum, and EcoCash payment method.
 - Withdrawal: four steps — payout, source and amount, proof upload, done.
-- Academy: courses with progress, lessons with completion, downloadable lesson notes (`.txt` export),
-  and optional video links that open in the device's video app or browser. Course purchase by payment proof.
+- Academy: courses with progress, lesson pictures and notes, YouTube/video links or uploaded videos
+  (up to 50 MB), clickable learning links, downloadable lesson notes (`.txt` export), and course- and
+  lesson-level discussions. Course purchase by payment proof.
 - Tools: glossary (22 terms) and pip calculator.
 - Profile: membership, purchases, transaction history, server setting, admin entry, sign out.
 
@@ -151,6 +153,10 @@ API. On an empty database the server creates the administrator from the `ADMIN_E
 unset it starts with no admin and logs a warning. An admin replaces their own login from
 **Admin → Account**, which writes to the database and keeps the session signed in.
 
+Forgot-password codes are delivered over SMTP. Configure `MAIL_HOST`, `MAIL_PORT`,
+`MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM` in the Render dashboard. The reset code expires
+after 15 minutes, can be requested again after 60 seconds, and is limited to five guesses.
+
 ## Business rules
 
 - **Deposit** — a 10% admin fee is added on top: `$25.00 + $2.50 = $27.50` paid. Minimum `$5.00`,
@@ -160,10 +166,13 @@ unset it starts with no admin and logs a warning. An admin replaces their own lo
 - Every deposit, withdrawal, course purchase and VIP purchase is **reviewed manually** by an admin.
   Approving settles the wallet transaction and applies the membership or course enrolment.
 - VIP membership costs `$30.00`; course prices come from the course record.
+- **Community chat** is shared by all signed-in members and appears before the VIP rooms.
+- Community conversations are visible to signed-in members; creators and admins can close or reopen
+  them. Closed conversations remain readable but do not accept new messages.
 - VIP rooms are enforced server-side: without the matching membership the room list marks them
   `locked`, their posts and VIP-labelled signals are hidden from the feed, and messages return `403`.
   Admins bypass the lock.
-- Deposits are accepted only for Weltrade accounts, using EcoCash, Cash or SmileCash.
+- Deposits are accepted only for Weltrade accounts, using EcoCash.
 - Fees and limits are stored in `app_settings` and can be changed live from **Admin → Settings**.
 - Money is stored as `BigDecimal` in the API; the client only formats it.
 
@@ -199,13 +208,15 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - Auth: `POST /auth/login`, `POST /auth/register`
 - Me / home: `GET /me`, `PUT /me`, `GET /home`, `GET /settings/public`
 - Signals: `GET /signals?status=&symbol=`
-- Legacy market API (no Markets screen in the shipping Flutter app):
-  `GET /markets?category=forex|metals|crypto|favourites`, `GET /markets/{symbol}`,
-  `POST /markets/{symbol}/favourite`
-- Rooms: `GET /rooms`, `GET /rooms/feed?filter=open|closed|all`, `GET|POST /rooms/{id}/messages`
+- Rooms: `GET /rooms`, `GET /rooms/feed?filter=open|closed|latest|all`,
+  `POST /rooms/community/threads` (creates Community if missing),
+  `POST /rooms/{id}/threads`, `PATCH /rooms/{id}/threads/{threadId}`,
+  `GET|POST /rooms/{id}/messages?threadId={threadId}` (omit `threadId` for the room-wide chat)
 - Wallet: `GET /wallet`, `GET|POST /deposits`, `GET|POST /withdrawals`
-- Uploads: `POST /uploads` (multipart `file`)
-- Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`, `GET|POST /purchases`
+- Uploads: `POST /uploads` (multipart `file`; images and supported videos)
+- Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`,
+  `GET|POST /courses/{id}/comments`, `GET|POST /courses/{id}/lessons/{lessonId}/comments`,
+  `GET|POST /purchases`
 - Admin: `GET /admin/users`, `PATCH /admin/users/{id}/membership`, `GET /admin/requests`,
   `POST /admin/deposits/{id}/decide`, `POST /admin/withdrawals/{id}/decide`,
   `POST /admin/purchases/{id}/decide`, `GET|POST /admin/signals`, `PUT|DELETE /admin/signals/{id}`,

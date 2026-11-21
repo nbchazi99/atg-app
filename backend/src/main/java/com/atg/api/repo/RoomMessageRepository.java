@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 @Repository
 public class RoomMessageRepository extends AbstractFirestoreStore<RoomMessage> {
@@ -18,6 +19,14 @@ public class RoomMessageRepository extends AbstractFirestoreStore<RoomMessage> {
 
     public List<RoomMessage> findByRoomIdOrderByCreatedAtAsc(Long roomId) {
         List<RoomMessage> messages = queryWhere("roomId", roomId);
+        messages.removeIf(message -> message.getThreadId() != null);
+        messages.sort(Comparator.comparing(RoomMessage::getCreatedAt));
+        return messages;
+    }
+
+    public List<RoomMessage> findByRoomIdAndThreadIdOrderByCreatedAtAsc(Long roomId, Long threadId) {
+        List<RoomMessage> messages = queryWhere("roomId", roomId);
+        messages.removeIf(message -> !Objects.equals(message.getThreadId(), threadId));
         messages.sort(Comparator.comparing(RoomMessage::getCreatedAt));
         return messages;
     }

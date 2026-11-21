@@ -22,11 +22,12 @@ public class JwtService {
         this.ttlMillis = ttlHours * 3600_000L;
     }
 
-    public String generate(String email, String role) {
+    public String generate(String email, String role, int tokenVersion) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(email)
                 .claim("role", role)
+                .claim("ver", tokenVersion)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ttlMillis))
                 .signWith(key)
@@ -34,8 +35,16 @@ public class JwtService {
     }
 
     public String subject(String token) {
-        Claims claims = Jwts.parser().verifyWith(key).build()
+        return claims(token).getSubject();
+    }
+
+    public int tokenVersion(String token) {
+        Object version = claims(token).get("ver");
+        return version instanceof Number number ? number.intValue() : 0;
+    }
+
+    private Claims claims(String token) {
+        return Jwts.parser().verifyWith(key).build()
                 .parseSignedClaims(token).getPayload();
-        return claims.getSubject();
     }
 }

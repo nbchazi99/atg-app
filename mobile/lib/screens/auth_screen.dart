@@ -4,6 +4,7 @@ import '../api.dart';
 import '../app_state.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'password_reset_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -197,6 +198,22 @@ class _AuthScreenState extends State<AuthScreen> {
                     autofillHints: const [AutofillHints.password],
                     onSubmitted: (_) => _submit(),
                   ),
+                  if (!_register)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _loading
+                            ? null
+                            : () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PasswordResetScreen(
+                                      initialEmail: _email.text.trim(),
+                                    ),
+                                  ),
+                                ),
+                        child: const Text('Forgot password?'),
+                      ),
+                    ),
                   const SizedBox(height: 20),
                   PrimaryButton(
                     label: _register ? 'Create account' : 'Sign in',

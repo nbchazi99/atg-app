@@ -42,6 +42,10 @@ public class MeController extends BaseController {
         User user = me();
         if (body.get("name") != null && !body.get("name").isBlank()) user.setName(body.get("name").trim());
         if (body.get("phone") != null) user.setPhone(body.get("phone").trim());
+        if (body.containsKey("avatarUrl")) {
+            String avatarUrl = body.get("avatarUrl");
+            user.setAvatarUrl(avatarUrl == null ? null : avatarUrl.trim());
+        }
         users.save(user);
         realtime.publish(RealtimeHub.USERS, java.util.Map.of("userId", user.getId(), "kind", "profile"));
         return Dtos.UserView.of(user);

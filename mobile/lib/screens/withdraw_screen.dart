@@ -24,13 +24,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
-    OptionTile(
-      title: 'SmileCash',
-      subtitle: 'Mobile money',
-      badge: 'SC',
-      tag: 'No fee',
-      logo: 'assets/images/wallets/smilecash.png',
-    ),
   ];
 
   static const _sources = [
@@ -40,11 +33,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'W',
       badgeColor: AtgColors.greenText,
       tag: 'Common',
-    ),
-    OptionTile(
-      title: 'Crypto withdrawal',
-      subtitle: 'You sent USDT from your own wallet to ATG.',
-      badge: 'C',
     ),
   ];
 
@@ -224,25 +212,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   String get _clientLabel => switch (_source) {
-    1 => 'USDT wallet address you sent from',
     _ => 'Weltrade Client ID',
   };
 
   String get _clientHint => switch (_source) {
-    1 => 'The address the USDT left. Double-check every character.',
     _ => 'In your Weltrade cabinet, under your name. It is not your MT5 login.',
   };
 
   String get _instructionTitle => switch (_source) {
-    1 => 'Withdrawing through crypto',
     _ => 'Withdrawing through Weltrade',
   };
 
   String get _instructionBody => switch (_source) {
-    1 =>
-      '1. Send USDT to the ATG wallet address the desk gives you.\n\n'
-          '2. When the transfer confirms, screenshot it.\n\n'
-          '3. Attach that screenshot and paste the sending wallet address.',
     _ =>
       '1. In Weltrade, start a withdrawal to the "ATG" agent.\n\n'
           '2. When it completes, screenshot the confirmation.\n\n'

@@ -108,6 +108,7 @@ public class CourseController extends BaseController {
         preview.setTitle(lesson.getTitle());
         preview.setDurationMin(lesson.getDurationMin());
         preview.setOrderIndex(lesson.getOrderIndex());
+        preview.setImageUrl(lesson.getImageUrl());
         return preview;
     }
 
