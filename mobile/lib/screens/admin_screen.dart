@@ -432,7 +432,8 @@ class _AdminScreenState extends State<AdminScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Delete ${course.title}?',
-      message: 'Lessons and course access are removed. Enrolled traders lose the course.',
+      message:
+          'Lessons and course access are removed. Enrolled traders lose the course.',
       confirmLabel: 'Delete',
       cancelLabel: 'Keep',
       destructive: true,

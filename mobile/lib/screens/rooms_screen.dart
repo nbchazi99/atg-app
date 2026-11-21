@@ -223,7 +223,8 @@ class _RoomsScreenState extends State<RoomsScreen> {
                         children: const [
                           EmptyState(
                             title: 'No activity',
-                            message: 'Traders are quiet. New posts appear here first.',
+                            message:
+                                'Traders are quiet. New posts appear here first.',
                             icon: Icons.forum_outlined,
                           ),
                         ],

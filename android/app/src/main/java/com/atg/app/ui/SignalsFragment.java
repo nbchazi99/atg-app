@@ -29,7 +29,6 @@ import retrofit2.Response;
 public class SignalsFragment extends Fragment {
 
     private SignalsAdapter adapter;
-    private TickerAdapter tickerAdapter;
     private SwipeRefreshLayout swipe;
     private View empty;
     private TextView subtitle;
@@ -66,11 +65,6 @@ public class SignalsFragment extends Fragment {
         chipOpen.setOnClickListener(v -> select(chipOpen, "OPEN"));
         chipInner.setOnClickListener(v -> select(chipInner, "INNER"));
         chipClosed.setOnClickListener(v -> select(chipClosed, "CLOSED"));
-
-        RecyclerView tickers = view.findViewById(R.id.rvSignalTickers);
-        tickerAdapter = new TickerAdapter();
-        tickers.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        tickers.setAdapter(tickerAdapter);
 
         RecyclerView list = view.findViewById(R.id.rvSignals);
         adapter = new SignalsAdapter(signal -> SignalDetailActivity.start(requireContext(), signal));
@@ -123,7 +117,6 @@ public class SignalsFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<Models.HomeRes> call, @NonNull Response<Models.HomeRes> response) {
                 if (!isAdded() || response.body() == null) return;
-                tickerAdapter.setItems(response.body().tickers);
                 subtitle.setText(response.body().liveCount + " live now");
             }
 

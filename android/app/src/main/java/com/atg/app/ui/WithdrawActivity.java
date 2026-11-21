@@ -123,8 +123,6 @@ public class WithdrawActivity extends AppCompatActivity {
         tvFiledUnder.setText("Filed under " + ApiClient.session().name() + ", " + ApiClient.session().email() + ".");
 
         payouts.add(new Adapters.Option("EcoCash", "Mobile money", "EC"));
-        payouts.add(new Adapters.Option("SmileCash", "Mobile money", "SC").tag("No fee"));
-        payouts.add(new Adapters.Option("Cash", "Collect at the office", "CA"));
 
         sources.add(new Adapters.Option("Weltrade withdrawal", "You withdrew to the ATG agent on Weltrade.", "W").color("#1B7A3D"));
         sources.add(new Adapters.Option("Deriv withdrawal", "You withdrew to the ATG agent on Deriv.", "D").color("#B3261E"));
@@ -194,7 +192,7 @@ public class WithdrawActivity extends AppCompatActivity {
     }
 
     private void updatePayoutFields() {
-        boolean mobileMoney = payoutAdapter.selectedIndex() < 2;
+        boolean mobileMoney = payoutAdapter.selectedIndex() == 0;
         tilPayoutMobile.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
         tvPayoutHint.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
     }

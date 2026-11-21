@@ -954,47 +954,4 @@ public class Adapters {
         }
     }
 
-    public static class TickerAdapter extends RecyclerView.Adapter<TickerAdapter.Holder> {
-        private final List<Models.MarketPair> items = new ArrayList<>();
-
-        public void setItems(List<Models.MarketPair> data) {
-            items.clear();
-            if (data != null) items.addAll(data);
-            notifyDataSetChanged();
-        }
-
-        @NonNull
-        @Override
-        public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_ticker, parent, false);
-            return new Holder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull Holder h, int position) {
-            Models.MarketPair p = items.get(position);
-            boolean up = p.changePct >= 0;
-            h.symbol.setText(p.symbol);
-            h.price.setText(Ui.price(p.price));
-            h.change.setText(Ui.pct(p.changePct));
-            h.change.setTextColor(ContextCompat.getColor(h.itemView.getContext(),
-                    up ? R.color.green_text : R.color.red_text));
-        }
-
-        @Override
-        public int getItemCount() {
-            return items.size();
-        }
-
-        static class Holder extends RecyclerView.ViewHolder {
-            final TextView symbol, price, change;
-
-            Holder(View v) {
-                super(v);
-                symbol = v.findViewById(R.id.tvTickerSymbol);
-                price = v.findViewById(R.id.tvTickerPrice);
-                change = v.findViewById(R.id.tvTickerChange);
-            }
-        }
-    }
 }

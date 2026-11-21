@@ -70,7 +70,9 @@ class _AtgAppState extends State<AtgApp> {
       final user = await state.api.me();
       await state.session.saveUser(user);
     } on ApiException catch (e) {
-      if (e.status == 401) await state.session.logout();
+      if (e.status == 401 || e.status == 403) {
+        await state.session.logout();
+      }
     }
   }
 

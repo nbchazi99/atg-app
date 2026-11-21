@@ -161,9 +161,9 @@ class PairDetail {
 
   factory PairDetail.fromJson(Map<String, dynamic> json) => PairDetail(
     pair: MarketPair.fromJson((json['pair'] as Map).cast<String, dynamic>()),
-    calls: _l(json['calls'])
-        .map((e) => Signal.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
+    calls: _l(
+      json['calls'],
+    ).map((e) => Signal.fromJson((e as Map).cast<String, dynamic>())).toList(),
     favourite: json['favourite'] == true,
   );
 }
@@ -177,7 +177,6 @@ class HomeData {
     required this.promotionBody,
     required this.points,
     required this.liveCount,
-    required this.tickers,
   });
 
   final String name;
@@ -187,7 +186,6 @@ class HomeData {
   final String promotionBody;
   final int points;
   final int liveCount;
-  final List<MarketPair> tickers;
 
   factory HomeData.fromJson(Map<String, dynamic> json) => HomeData(
     name: _s(json['name']) ?? '',
@@ -197,9 +195,6 @@ class HomeData {
     promotionBody: _s(json['promotionBody']) ?? '',
     points: _i(json['points']),
     liveCount: _i(json['liveCount']),
-    tickers: _l(json['tickers'])
-        .map((e) => MarketPair.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
   );
 }
 
@@ -581,9 +576,9 @@ class CourseDetail {
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) => CourseDetail(
     course: Course.fromJson((json['course'] as Map).cast<String, dynamic>()),
-    lessons: _l(json['lessons'])
-        .map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>()))
-        .toList(),
+    lessons: _l(
+      json['lessons'],
+    ).map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>())).toList(),
     enrolled: json['enrolled'] == true,
     completedLessonIds: _l(json['completedLessonIds']).map(_i).toList(),
   );

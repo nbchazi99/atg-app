@@ -83,7 +83,6 @@ public class DepositActivity extends AppCompatActivity {
         wallets.add(new Adapters.Option("Omari", "Mobile money · OneMoney", "OM"));
         wallets.add(new Adapters.Option("InnBucks", "Mobile wallet", "IB"));
         wallets.add(new Adapters.Option("OneMoney", "Mobile money · NetOne", "1M"));
-        wallets.add(new Adapters.Option("SmileCash", "ZB Wallet, confirmed by code", "SC"));
 
         brokerAdapter = new OptionsAdapter(index -> updateBroker());
         walletAdapter = new OptionsAdapter(index -> {

@@ -87,7 +87,8 @@ class _AcademyScreenState extends State<AcademyScreen> {
                           children: const [
                             EmptyState(
                               title: 'No courses yet',
-                              message: 'The desk is preparing the next course. Check back soon.',
+                              message:
+                                  'The desk is preparing the next course. Check back soon.',
                               icon: Icons.school_outlined,
                             ),
                           ],

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class RoomController extends BaseController {
     @GetMapping
     public List<Map<String, Object>> list() {
         User user = me();
-        return rooms.findAll().stream().map(r -> {
+        return ensureCommunityRoom().stream().map(r -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", r.getId());
             m.put("name", r.getName());
@@ -47,6 +48,20 @@ public class RoomController extends BaseController {
             m.put("requiredMembership", requiredMembership(r));
             return m;
         }).toList();
+    }
+
+    private List<Room> ensureCommunityRoom() {
+        List<Room> available = new ArrayList<>(rooms.findAll());
+        boolean communityExists = available.stream()
+                .anyMatch(room -> "Community".equalsIgnoreCase(room.getName()));
+        if (!communityExists) {
+            Room community = new Room();
+            community.setName("Community");
+            community.setDescription("Open chat for all ATG traders.");
+            community.setPreview("");
+            available.add(rooms.save(community));
+        }
+        return available;
     }
 
     @GetMapping("/feed")

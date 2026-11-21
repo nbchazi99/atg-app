@@ -61,8 +61,9 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _openProfile() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   @override
@@ -210,7 +211,8 @@ class _WalletScreenState extends State<WalletScreen> {
                     else if (transactions.isEmpty)
                       const EmptyState(
                         title: 'Nothing yet',
-                        message: 'Deposits and withdrawals show up here, from the app and the website.',
+                        message:
+                            'Deposits and withdrawals show up here, from the app and the website.',
                         icon: Icons.receipt_long_outlined,
                       )
                     else

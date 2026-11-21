@@ -1,5 +1,6 @@
 package com.atg.api.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .headers(h -> h.frameOptions(f -> f.sameOrigin()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(e -> e.authenticationEntryPoint(
+                        (request, response, exception) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/api/settings/public", "/uploads/**", "/error", "/h2-console/**", "/ws").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/markets/ping").permitAll()

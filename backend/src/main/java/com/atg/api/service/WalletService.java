@@ -90,6 +90,9 @@ public class WalletService {
     public WithdrawalRequest createWithdrawal(User user, Dtos.WithdrawReq req) {
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
+        if (!req.payout().trim().equalsIgnoreCase("EcoCash")) {
+            throw bad("Choose EcoCash");
+        }
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
         }

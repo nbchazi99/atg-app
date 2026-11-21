@@ -24,14 +24,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
-    OptionTile(
-      title: 'SmileCash',
-      subtitle: 'Mobile money',
-      badge: 'SC',
-      tag: 'No fee',
-      logo: 'assets/images/wallets/smilecash.png',
-    ),
-    OptionTile(title: 'Cash', subtitle: 'Collect at the office', badge: 'CA'),
   ];
 
   static const _sources = [
@@ -109,8 +101,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   double get _fee => (_enteredAmount * _feePct).round() / 100;
   double get _receive => ((_enteredAmount - _fee) * 100).round() / 100;
   String get _pctLabel => trimNumber(_feePct);
-  bool get _cashPayout => _payout == 2;
-
   void _goTo(int step) {
     setState(() => _step = step);
     if (_scroll.hasClients) {
@@ -123,7 +113,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   bool _validatePayout() {
-    if (!_cashPayout && _payoutMobile.text.trim().isEmpty) {
+    if (_payoutMobile.text.trim().isEmpty) {
       showToast(context, 'Enter the mobile money number');
       return false;
     }
@@ -323,28 +313,17 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         selected: _payout,
         onSelected: (index) => setState(() => _payout = index),
       ),
-      if (!_cashPayout) ...[
-        const SizedBox(height: 16),
-        AtgField(
-          controller: _payoutMobile,
-          label: 'Mobile money number',
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'The number that receives the payout. It can differ from your sign-in number.',
-          style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
-        ),
-      ] else ...[
-        const SizedBox(height: 16),
-        const SurfaceCard(
-          padding: EdgeInsets.all(14),
-          child: Text(
-            'Collect at the ATG office with your ID. The administrator will call you when the cash is ready.',
-            style: AtgText.bodySmall,
-          ),
-        ),
-      ],
+      const SizedBox(height: 16),
+      AtgField(
+        controller: _payoutMobile,
+        label: 'Mobile money number',
+        keyboardType: TextInputType.phone,
+      ),
+      const SizedBox(height: 6),
+      const Text(
+        'The number that receives the payout. It can differ from your sign-in number.',
+        style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
+      ),
       const SizedBox(height: 22),
       PrimaryButton(
         label: 'Continue',

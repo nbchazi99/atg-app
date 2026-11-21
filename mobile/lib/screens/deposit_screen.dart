@@ -61,12 +61,6 @@ class _DepositScreenState extends State<DepositScreen> {
       badge: '1M',
       logo: 'assets/images/wallets/onemoney.png',
     ),
-    OptionTile(
-      title: 'SmileCash',
-      subtitle: 'ZB Wallet, confirmed by code',
-      badge: 'SC',
-      logo: 'assets/images/wallets/smilecash.png',
-    ),
   ];
 
   final _clientId = TextEditingController();
@@ -129,7 +123,8 @@ class _DepositScreenState extends State<DepositScreen> {
 
   String get _clientHint => switch (_broker) {
     1 => 'The nickname shown on your Deriv account, not your email.',
-    2 => 'The wallet that should receive your funds. Double-check every character.',
+    2 =>
+      'The wallet that should receive your funds. Double-check every character.',
     _ => 'In your Weltrade cabinet, under your name. It is not your MT5 login.',
   };
 

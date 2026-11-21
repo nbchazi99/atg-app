@@ -131,7 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Sign out?',
-      message: 'Your session on this phone ends. Courses, purchases and requests stay on your account.',
+      message:
+          'Your session on this phone ends. Courses, purchases and requests stay on your account.',
       confirmLabel: 'Sign out',
       cancelLabel: 'Stay',
       destructive: true,

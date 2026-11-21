@@ -120,8 +120,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _openProfile() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   void _openSignal(Signal signal) {
@@ -398,11 +399,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-              TickerStrip(
-                tickers: home?.tickers ?? const [],
-                onTap: (pair) => _openPair(pair.symbol),
-              ),
               if (_fact.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -613,7 +609,8 @@ class _WeltradeCardState extends State<_WeltradeCard> {
           const SizedBox(height: 14),
           const _WeltradeStep(
             number: '1',
-            text: 'Open a Weltrade account through ATG. It takes about four minutes.',
+            text:
+                'Open a Weltrade account through ATG. It takes about four minutes.',
           ),
           const _WeltradeStep(
             number: '2',

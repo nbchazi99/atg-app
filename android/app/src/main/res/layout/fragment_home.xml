@@ -526,16 +526,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHomeTickers"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/screen_pad"
-                android:layout_marginTop="14dp"
-                android:layout_marginEnd="@dimen/screen_pad"
-                android:clipToPadding="false"
-                android:orientation="horizontal" />
-
             <LinearLayout
                 android:id="@+id/cardFact"
                 android:layout_width="match_parent"

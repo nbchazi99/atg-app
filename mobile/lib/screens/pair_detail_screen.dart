@@ -128,7 +128,8 @@ class _PairDetailScreenState extends State<PairDetailScreen> {
                             if (detail.calls.isEmpty)
                               const EmptyState(
                                 title: 'No calls yet',
-                                message: 'When the desk posts a call on this pair it appears here.',
+                                message:
+                                    'When the desk posts a call on this pair it appears here.',
                                 icon: Icons.bolt_outlined,
                               )
                             else

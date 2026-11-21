@@ -87,7 +87,6 @@ public class Models {
         public String promotionBody;
         public int points;
         public int liveCount;
-        public List<MarketPair> tickers;
     }
 
     public static class Room {

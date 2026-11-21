@@ -27,29 +27,38 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
     try {
       final rooms = await api.rooms();
       if (!mounted) return;
-      setState(() => _opening = false);
       if (rooms.isEmpty) {
         showMessage(
           context,
           'Community',
-          'The community is not open yet. Check back shortly.',
+          'The Community chat is not configured on the server yet. Try again shortly.',
         );
         return;
       }
       Room? target;
-      final label = widget.signal.roomLabel.toLowerCase();
-      for (final room in rooms) {
-        if (label.isNotEmpty && room.name.toLowerCase().contains(label)) {
-          target = room;
-          break;
+      final label = widget.signal.roomLabel.trim().toLowerCase();
+      if (label.isNotEmpty && label != 'open floor') {
+        for (final room in rooms) {
+          if (room.name.toLowerCase().contains(label)) {
+            target = room;
+            break;
+          }
         }
       }
-      target ??= rooms.first;
-      if (target.locked) {
+      if (target == null) {
+        for (final room in rooms) {
+          if (room.name.toLowerCase() == 'community') {
+            target = room;
+            break;
+          }
+        }
+      }
+      final selectedRoom = target ?? rooms.first;
+      if (selectedRoom.locked) {
         showMessage(
           context,
-          target.name,
-          '${membershipLabel(target.requiredMembership)} members only. Buy the membership from your profile, '
+          selectedRoom.name,
+          '${membershipLabel(selectedRoom.requiredMembership)} members only. Buy the membership from your profile, '
           'attach your payment proof, and the administrator unlocks the room after reviewing it.',
         );
         return;
@@ -57,13 +66,22 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) =>
-              RoomChatScreen(roomId: target!.id, roomName: target.name),
+              RoomChatScreen(
+                roomId: selectedRoom.id,
+                roomName: selectedRoom.name,
+              ),
         ),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _opening = false);
       showToast(context, e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not open room chat: $error\n$stackTrace');
+      if (mounted) {
+        showMessage(context, 'Could not open chat', 'Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _opening = false);
     }
   }
 
