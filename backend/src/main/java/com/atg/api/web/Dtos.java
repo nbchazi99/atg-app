@@ -92,5 +92,6 @@ public final class Dtos {
 
     public record SettingsReq(BigDecimal adminFeePct, BigDecimal withdrawFeePct, BigDecimal minDeposit,
                               BigDecimal maxDeposit, BigDecimal minWithdraw, BigDecimal maxWithdraw, String fact,
-                              String promotionTitle, String promotionBody) {}
+                              String promotionTitle, String promotionBody, List<String> depositMethods,
+                              List<String> withdrawalMethods) {}
 }

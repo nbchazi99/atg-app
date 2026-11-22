@@ -1187,9 +1187,7 @@ class FeedRow extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: item.open
-                            ? AtgColors.greenBg
-                            : AtgColors.redBg,
+                        color: item.open ? AtgColors.greenBg : AtgColors.redBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -1253,6 +1251,34 @@ class OptionTile {
   final Color badgeColor;
   final String? tag;
   final String? logo;
+}
+
+OptionTile walletMethodOption(String method) {
+  return switch (method) {
+    'EcoCash' => const OptionTile(
+      title: 'EcoCash',
+      subtitle: 'Mobile money · Econet',
+      badge: 'EC',
+      logo: 'assets/images/wallets/ecocash.png',
+    ),
+    'Cash' => const OptionTile(
+      title: 'Cash',
+      subtitle: 'Cash payment',
+      badge: 'CA',
+    ),
+    'SmileCash' => const OptionTile(
+      title: 'SmileCash',
+      subtitle: 'Mobile money',
+      badge: 'SC',
+    ),
+    _ => OptionTile(
+      title: method,
+      subtitle: 'Payment method',
+      badge: method.length > 1
+          ? method.substring(0, 2).toUpperCase()
+          : method.toUpperCase(),
+    ),
+  };
 }
 
 class OptionList extends StatelessWidget {

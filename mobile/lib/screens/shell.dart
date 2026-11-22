@@ -99,7 +99,7 @@ class _BottomBar extends StatelessWidget {
   static const _icons = <IconData>[
     Icons.home_outlined,
     Icons.bolt_outlined,
-    Icons.school_outlined,
+    Icons.show_chart,
     Icons.forum_outlined,
     Icons.account_balance_wallet_outlined,
   ];
@@ -107,12 +107,12 @@ class _BottomBar extends StatelessWidget {
   static const _selectedIcons = <IconData>[
     Icons.home_rounded,
     Icons.bolt_rounded,
-    Icons.school_rounded,
+    Icons.show_chart,
     Icons.forum_rounded,
     Icons.account_balance_wallet_rounded,
   ];
 
-  static const _labels = ['Home', 'Signals', 'Academy', 'Community', 'Wallet'];
+  static const _labels = ['Home', 'Signals', 'Market', 'Community', 'Wallet'];
 
   @override
   Widget build(BuildContext context) {

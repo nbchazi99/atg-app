@@ -4,6 +4,7 @@ import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
 import '../models.dart';
+import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -26,21 +27,14 @@ class _DepositScreenState extends State<DepositScreen> {
     ),
   ];
 
-  static const _wallets = [
-    OptionTile(
-      title: 'EcoCash',
-      subtitle: 'Mobile money · Econet',
-      badge: 'EC',
-      logo: 'assets/images/wallets/ecocash.png',
-    ),
-  ];
-
   final _clientId = TextEditingController();
   final _amount = TextEditingController();
   final _mobile = TextEditingController();
+  List<OptionTile> _wallets = [walletMethodOption('EcoCash')];
 
   int _broker = 0;
   int _wallet = 0;
+  VoidCallback? _unbind;
   Settings? _settings;
   bool _submitting = false;
   String? _clientError;
@@ -53,10 +47,12 @@ class _DepositScreenState extends State<DepositScreen> {
     _mobile.text = session.phone;
     _amount.addListener(() => setState(() {}));
     _loadSettings();
+    _unbind = realtime.bind({AtgScope.settings}, _loadSettings);
   }
 
   @override
   void dispose() {
+    _unbind?.call();
     _clientId.dispose();
     _amount.dispose();
     _mobile.dispose();
@@ -67,7 +63,11 @@ class _DepositScreenState extends State<DepositScreen> {
     try {
       final settings = await api.settings();
       if (!mounted) return;
-      setState(() => _settings = settings);
+      setState(() {
+        _settings = settings;
+        _wallets = settings.depositMethods.map(walletMethodOption).toList();
+        _wallet = 0;
+      });
     } on ApiException {
       // Defaults below match the server until settings arrive.
     }

@@ -1,8 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:atg_mobile/format.dart';
+import 'package:atg_mobile/models.dart';
 
 void main() {
+  test(
+    'settings use EcoCash defaults when older servers omit payment methods',
+    () {
+      final settings = Settings.fromJson(const {});
+
+      expect(settings.depositMethods, ['EcoCash']);
+      expect(settings.withdrawalMethods, ['EcoCash']);
+    },
+  );
+
+  test('settings parse server-managed payment methods', () {
+    final settings = Settings.fromJson({
+      'depositMethods': ['Cash', 'EcoCash'],
+      'withdrawalMethods': ['SmileCash'],
+    });
+
+    expect(settings.depositMethods, ['Cash', 'EcoCash']);
+    expect(settings.withdrawalMethods, ['SmileCash']);
+  });
+
   test('money groups thousands and keeps two decimals', () {
     expect(money(25), r'$25.00');
     expect(money(1234.5), r'$1,234.50');

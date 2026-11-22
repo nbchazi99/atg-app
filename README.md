@@ -18,8 +18,9 @@ reference implementation.
   separate conversations, browse Open / Closed / Latest, and continue each conversation in its own chat.
   VIP rooms, their feed posts and VIP-labelled signals stay locked until the matching membership is approved.
 - Wallet: balance history, pending request counts, deposit and withdrawal entry points.
-- Deposit: Weltrade only, $5 minimum, and EcoCash payment method.
-- Withdrawal: four steps — payout, source and amount, proof upload, done.
+- Deposit: Weltrade only, $5 minimum; payment methods are server-managed.
+- Withdrawal: four steps — payout, source and amount, proof upload, done; payment methods are
+  server-managed.
 - Academy: courses with progress, lesson pictures and notes, YouTube/video links, and uploaded
   lesson assets (images, video, PDF, Office documents, and audio; up to 250 MB per file), clickable
   learning links, downloadable lesson notes (`.txt` export), and course- and lesson-level discussions.
@@ -34,7 +35,8 @@ reference implementation.
 - Signals: create and delete signals.
 - Courses: create with a required USD price (enter `0` for free), cover image, and lessons with
   uploaded media/files or external links; delete courses.
-- Settings: deposit fee, withdrawal fee, min/max amounts, daily fact, promotion copy.
+- Settings: deposit and withdrawal payment methods, fees, min/max amounts, daily fact and promotion
+  copy. EcoCash is the default; method changes are fetched by open wallet screens in real time.
 
 The server creates the open Community room and separate Deriv VIP and Weltrade VIP rooms when they are
 missing. Signals and courses are published by an administrator; no demo traders are created.

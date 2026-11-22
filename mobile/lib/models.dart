@@ -12,6 +12,17 @@ String? _s(dynamic value) => value == null ? null : '$value';
 
 List<dynamic> _l(dynamic value) => value is List ? value : const [];
 
+const walletPaymentMethods = ['EcoCash', 'Cash', 'SmileCash'];
+
+List<String> _strings(dynamic value, {List<String> fallback = const []}) {
+  final strings = _l(value)
+      .whereType<String>()
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toList();
+  return strings.isEmpty ? fallback : strings;
+}
+
 class AppUser {
   const AppUser({
     required this.id,
@@ -594,6 +605,8 @@ class Settings {
     required this.promotionTitle,
     required this.promotionBody,
     required this.pointsPerReferral,
+    required this.depositMethods,
+    required this.withdrawalMethods,
   });
 
   final double adminFeePct;
@@ -606,6 +619,8 @@ class Settings {
   final String promotionTitle;
   final String promotionBody;
   final int pointsPerReferral;
+  final List<String> depositMethods;
+  final List<String> withdrawalMethods;
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
     adminFeePct: _d(json['adminFeePct']),
@@ -618,6 +633,14 @@ class Settings {
     promotionTitle: _s(json['promotionTitle']) ?? '',
     promotionBody: _s(json['promotionBody']) ?? '',
     pointsPerReferral: _i(json['pointsPerReferral']),
+    depositMethods: _strings(
+      json['depositMethods'],
+      fallback: const ['EcoCash'],
+    ),
+    withdrawalMethods: _strings(
+      json['withdrawalMethods'],
+      fallback: const ['EcoCash'],
+    ),
   );
 }
 

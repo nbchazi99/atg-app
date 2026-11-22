@@ -11,10 +11,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 @Service
 public class WalletService {
+
+    private static final List<String> SUPPORTED_PAYMENT_METHODS = List.of("EcoCash", "Cash", "SmileCash");
 
     private final AppSettingsRepository settingsRepo;
     private final DepositRequestRepository deposits;
@@ -40,7 +44,14 @@ public class WalletService {
     }
 
     public AppSettings settings() {
-        return settingsRepo.findById(1L).orElseGet(() -> settingsRepo.save(new AppSettings()));
+        AppSettings settings = settingsRepo.findById(1L).orElseGet(() -> settingsRepo.save(new AppSettings()));
+        if (settings.getDepositMethods() == null || settings.getDepositMethods().isEmpty()) {
+            settings.setDepositMethods(List.of("EcoCash"));
+        }
+        if (settings.getWithdrawalMethods() == null || settings.getWithdrawalMethods().isEmpty()) {
+            settings.setWithdrawalMethods(List.of("EcoCash"));
+        }
+        return settings;
     }
 
     public AppSettings updateSettings(Dtos.SettingsReq req) {
@@ -70,6 +81,12 @@ public class WalletService {
         if (req.fact() != null) s.setFact(req.fact());
         if (req.promotionTitle() != null) s.setPromotionTitle(req.promotionTitle());
         if (req.promotionBody() != null) s.setPromotionBody(req.promotionBody());
+        if (req.depositMethods() != null) {
+            s.setDepositMethods(normalizePaymentMethods(req.depositMethods(), "deposit"));
+        }
+        if (req.withdrawalMethods() != null) {
+            s.setWithdrawalMethods(normalizePaymentMethods(req.withdrawalMethods(), "withdrawal"));
+        }
         return settingsRepo.save(s);
     }
 
@@ -77,11 +94,8 @@ public class WalletService {
         if (!"Weltrade".equalsIgnoreCase(req.broker().trim())) {
             throw bad("Only Weltrade deposits are supported");
         }
-        String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
-            case "ecocash" -> "EcoCash";
-            default -> throw bad("Choose EcoCash");
-        };
         AppSettings s = settings();
+        String wallet = requireEnabledPaymentMethod(req.wallet(), s.getDepositMethods(), "deposit");
         BigDecimal amount = scale(req.amount());
         BigDecimal minimum = s.getMinDeposit().compareTo(BigDecimal.valueOf(5)) < 0
                 ? BigDecimal.valueOf(5)
@@ -118,10 +132,7 @@ public class WalletService {
     public WithdrawalRequest createWithdrawal(User user, Dtos.WithdrawReq req) {
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
-        String payout = switch (req.payout().trim().toLowerCase(Locale.ROOT)) {
-            case "ecocash" -> "EcoCash";
-            default -> throw bad("Choose EcoCash");
-        };
+        String payout = requireEnabledPaymentMethod(req.payout(), s.getWithdrawalMethods(), "withdrawal");
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());
         }
@@ -267,6 +278,36 @@ public class WalletService {
 
     private static BigDecimal scale(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private List<String> normalizePaymentMethods(List<String> methods, String operation) {
+        if (methods.isEmpty()) {
+            throw bad("At least one " + operation + " payment method must remain enabled");
+        }
+        List<String> normalized = new ArrayList<>();
+        for (String method : methods) {
+            String canonical = supportedPaymentMethod(method);
+            if (!normalized.contains(canonical)) normalized.add(canonical);
+        }
+        return List.copyOf(normalized);
+    }
+
+    private String requireEnabledPaymentMethod(String requested, List<String> enabled, String operation) {
+        String method = supportedPaymentMethod(requested);
+        if (!enabled.contains(method)) {
+            throw bad(method + " is not currently enabled for " + operation);
+        }
+        return method;
+    }
+
+    private String supportedPaymentMethod(String requested) {
+        if (requested == null || requested.isBlank()) {
+            throw bad("Choose a supported payment method");
+        }
+        return SUPPORTED_PAYMENT_METHODS.stream()
+                .filter(method -> method.equalsIgnoreCase(requested.trim()))
+                .findFirst()
+                .orElseThrow(() -> bad("Choose a supported payment method"));
     }
 
     private static ResponseStatusException bad(String message) {

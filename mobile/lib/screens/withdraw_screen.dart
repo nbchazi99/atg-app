@@ -5,6 +5,7 @@ import '../api.dart';
 import '../app_state.dart';
 import '../format.dart';
 import '../models.dart';
+import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -17,15 +18,6 @@ class WithdrawScreen extends StatefulWidget {
 }
 
 class _WithdrawScreenState extends State<WithdrawScreen> {
-  static const _payouts = [
-    OptionTile(
-      title: 'EcoCash',
-      subtitle: 'Mobile money',
-      badge: 'EC',
-      logo: 'assets/images/wallets/ecocash.png',
-    ),
-  ];
-
   static const _sources = [
     OptionTile(
       title: 'Weltrade withdrawal',
@@ -41,10 +33,12 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   final _contactMobile = TextEditingController();
   final _clientId = TextEditingController();
   final _scroll = ScrollController();
+  List<OptionTile> _payouts = [walletMethodOption('EcoCash')];
 
   int _step = 1;
   int _payout = 0;
   int _source = 0;
+  VoidCallback? _unbind;
   Settings? _settings;
   String? _proofUrl;
   String _proofName = 'No screenshot attached yet';
@@ -62,10 +56,12 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     _contactMobile.text = session.phone;
     _amount.addListener(() => setState(() {}));
     _loadSettings();
+    _unbind = realtime.bind({AtgScope.settings}, _loadSettings);
   }
 
   @override
   void dispose() {
+    _unbind?.call();
     _payoutMobile.dispose();
     _amount.dispose();
     _contactMobile.dispose();
@@ -78,7 +74,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     try {
       final settings = await api.settings();
       if (!mounted) return;
-      setState(() => _settings = settings);
+      setState(() {
+        _settings = settings;
+        _payouts = settings.withdrawalMethods.map(walletMethodOption).toList();
+        _payout = 0;
+      });
     } on ApiException {
       // Defaults below match the server until settings arrive.
     }

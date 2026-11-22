@@ -46,6 +46,7 @@ class WalletServiceLimitsTest {
         when(withdrawals.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(deposits.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(transactions.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(settings.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         service = new WalletService(
                 settings, deposits, withdrawals, purchases, transactions, courses, enrollments, users);
         user.setId(7L);
@@ -80,15 +81,54 @@ class WalletServiceLimitsTest {
     }
 
     @Test
-    void rejectsUnsupportedDepositAndWithdrawalMethods() {
+    void rejectsDisabledAndUnknownDepositAndWithdrawalMethods() {
         for (String method : List.of("Cash", "SmileCash", "InnBucks")) {
             assertThatThrownBy(() -> service.createDeposit(user, deposit("5", method)))
                     .isInstanceOf(ResponseStatusException.class)
-                    .hasMessageContaining("Choose EcoCash");
+                    .hasMessageContaining(method.equals("InnBucks")
+                            ? "Choose a supported payment method"
+                            : "not currently enabled for deposit");
             assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", method)))
                     .isInstanceOf(ResponseStatusException.class)
-                    .hasMessageContaining("Choose EcoCash");
+                    .hasMessageContaining(method.equals("InnBucks")
+                            ? "Choose a supported payment method"
+                            : "not currently enabled for withdrawal");
         }
+    }
+
+    @Test
+    void adminCanEnableSupportedMethodsAndTheyAreEnforcedIndependently() {
+        AppSettings updated = service.updateSettings(settingsRequest(
+                List.of(" cash ", "Cash"), List.of("SmileCash")));
+
+        assertThat(updated.getDepositMethods()).containsExactly("Cash");
+        assertThat(updated.getWithdrawalMethods()).containsExactly("SmileCash");
+        assertThat(service.createDeposit(user, deposit("5", "CASH")).getWallet()).isEqualTo("Cash");
+        assertThat(service.createWithdrawal(user, withdrawal("5", "smilecash")).getPayout())
+                .isEqualTo("SmileCash");
+        assertThatThrownBy(() -> service.createDeposit(user, deposit("5", "EcoCash")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("not currently enabled for deposit");
+        assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", "Cash")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("not currently enabled for withdrawal");
+    }
+
+    @Test
+    void rejectsEmptyOrUnsupportedConfiguredMethodLists() {
+        assertThatThrownBy(() -> service.updateSettings(settingsRequest(List.of(), null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("At least one deposit payment method");
+        assertThatThrownBy(() -> service.updateSettings(settingsRequest(List.of("InnBucks"), null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Choose a supported payment method");
+    }
+
+    private static Dtos.SettingsReq settingsRequest(
+            List<String> depositMethods, List<String> withdrawalMethods) {
+        return new Dtos.SettingsReq(
+                null, null, null, null, null, null, null, null, null,
+                depositMethods, withdrawalMethods);
     }
 
     private static Dtos.DepositReq deposit(String amount) {

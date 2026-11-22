@@ -1,6 +1,7 @@
 package com.atg.api.model;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class AppSettings {
 
@@ -18,6 +19,8 @@ public class AppSettings {
     private String promotionTitle = "";
     private String promotionBody = "";
     private int pointsPerReferral = 5;
+    private List<String> depositMethods = List.of("EcoCash");
+    private List<String> withdrawalMethods = List.of("EcoCash");
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -49,4 +52,8 @@ public class AppSettings {
     public void setPromotionBody(String promotionBody) { this.promotionBody = promotionBody; }
     public int getPointsPerReferral() { return pointsPerReferral; }
     public void setPointsPerReferral(int pointsPerReferral) { this.pointsPerReferral = pointsPerReferral; }
+    public List<String> getDepositMethods() { return depositMethods; }
+    public void setDepositMethods(List<String> depositMethods) { this.depositMethods = depositMethods; }
+    public List<String> getWithdrawalMethods() { return withdrawalMethods; }
+    public void setWithdrawalMethods(List<String> withdrawalMethods) { this.withdrawalMethods = withdrawalMethods; }
 }

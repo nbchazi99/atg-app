@@ -45,17 +45,19 @@ public class HomeController extends BaseController {
     @GetMapping("/settings/public")
     public Map<String, Object> settings() {
         AppSettings s = wallet.settings();
-        return Map.of(
-                "adminFeePct", s.getAdminFeePct(),
-                "withdrawFeePct", s.getWithdrawFeePct(),
-                "minDeposit", s.getMinDeposit(),
-                "maxDeposit", s.getMaxDeposit(),
-                "minWithdraw", s.getMinWithdraw(),
-                "maxWithdraw", s.getMaxWithdraw(),
-                "fact", s.getFact(),
-                "promotionTitle", s.getPromotionTitle(),
-                "promotionBody", s.getPromotionBody(),
-                "pointsPerReferral", s.getPointsPerReferral()
-        );
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("adminFeePct", s.getAdminFeePct());
+        res.put("withdrawFeePct", s.getWithdrawFeePct());
+        res.put("minDeposit", s.getMinDeposit());
+        res.put("maxDeposit", s.getMaxDeposit());
+        res.put("minWithdraw", s.getMinWithdraw());
+        res.put("maxWithdraw", s.getMaxWithdraw());
+        res.put("fact", s.getFact());
+        res.put("promotionTitle", s.getPromotionTitle());
+        res.put("promotionBody", s.getPromotionBody());
+        res.put("pointsPerReferral", s.getPointsPerReferral());
+        res.put("depositMethods", s.getDepositMethods());
+        res.put("withdrawalMethods", s.getWithdrawalMethods());
+        return res;
     }
 }

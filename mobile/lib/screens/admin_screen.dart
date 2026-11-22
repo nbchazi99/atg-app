@@ -50,6 +50,8 @@ class _AdminScreenState extends State<AdminScreen> {
   List<Signal> _signals = const [];
   List<Room> _rooms = const [];
   List<Course> _courses = const [];
+  List<String> _depositMethods = ['EcoCash'];
+  List<String> _withdrawalMethods = ['EcoCash'];
   bool _savingSettings = false;
   bool _savingAccount = false;
   VoidCallback? _unbind;
@@ -169,6 +171,27 @@ class _AdminScreenState extends State<AdminScreen> {
     _fact.text = s.fact;
     _promoTitle.text = s.promotionTitle;
     _promoBody.text = s.promotionBody;
+    _depositMethods = List.of(s.depositMethods);
+    _withdrawalMethods = List.of(s.withdrawalMethods);
+  }
+
+  void _toggleWalletMethod({
+    required bool deposit,
+    required String method,
+    required bool enabled,
+  }) {
+    final methods = deposit ? _depositMethods : _withdrawalMethods;
+    if (!enabled && methods.length == 1) {
+      showToast(
+        context,
+        'Keep at least one ${deposit ? 'deposit' : 'withdrawal'} method enabled.',
+      );
+      return;
+    }
+    setState(() {
+      if (enabled && !methods.contains(method)) methods.add(method);
+      if (!enabled) methods.remove(method);
+    });
   }
 
   List<_AdminRequest> get _requestRows {
@@ -494,9 +517,16 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _saveSettings() async {
     if (_savingSettings) return;
+    if (_depositMethods.isEmpty || _withdrawalMethods.isEmpty) {
+      showToast(
+        context,
+        'Keep at least one method enabled for deposits and withdrawals.',
+      );
+      return;
+    }
     setState(() => _savingSettings = true);
     try {
-      await api.updateSettings({
+      final settings = await api.updateSettings({
         'adminFeePct': parseAmount(_adminFee.text, 10),
         'withdrawFeePct': parseAmount(_withdrawFee.text, 7),
         'minDeposit': parseAmount(_minDeposit.text, 5),
@@ -506,8 +536,15 @@ class _AdminScreenState extends State<AdminScreen> {
         'fact': _fact.text.trim(),
         'promotionTitle': _promoTitle.text.trim(),
         'promotionBody': _promoBody.text.trim(),
+        'depositMethods': walletPaymentMethods
+            .where(_depositMethods.contains)
+            .toList(),
+        'withdrawalMethods': walletPaymentMethods
+            .where(_withdrawalMethods.contains)
+            .toList(),
       });
       if (!mounted) return;
+      _fillSettings(settings);
       setState(() => _savingSettings = false);
       showToast(context, 'Settings saved');
     } on ApiException catch (e) {
@@ -987,7 +1024,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   children: const [
                     EmptyState(
                       title: 'No chat rooms',
-                      message: 'Create a room so traders have a place to start chatting.',
+                      message:
+                          'Create a room so traders have a place to start chatting.',
                       icon: Icons.forum_outlined,
                     ),
                   ],
@@ -1223,6 +1261,14 @@ class _AdminScreenState extends State<AdminScreen> {
           maxLines: 3,
           minLines: 2,
         ),
+        const SizedBox(height: 22),
+        const SectionLabel('DEPOSIT METHODS'),
+        const SizedBox(height: 10),
+        _walletMethodsCard(_depositMethods, deposit: true),
+        const SizedBox(height: 16),
+        const SectionLabel('WITHDRAWAL METHODS'),
+        const SizedBox(height: 10),
+        _walletMethodsCard(_withdrawalMethods, deposit: false),
         const SizedBox(height: 18),
         PrimaryButton(
           label: 'Save settings',
@@ -1230,6 +1276,30 @@ class _AdminScreenState extends State<AdminScreen> {
           onPressed: _saveSettings,
         ),
       ],
+    );
+  }
+
+  Widget _walletMethodsCard(List<String> methods, {required bool deposit}) {
+    return SurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      child: Column(
+        children: [
+          for (final method in walletPaymentMethods)
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(method, style: AtgText.body),
+              value: methods.contains(method),
+              onChanged: _savingSettings
+                  ? null
+                  : (enabled) => _toggleWalletMethod(
+                      deposit: deposit,
+                      method: method,
+                      enabled: enabled ?? false,
+                    ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1537,8 +1607,9 @@ class _RoomFormSheetState extends State<_RoomFormSheet> {
       showToast(context, 'Give the chat room a name');
       return;
     }
-    Navigator.of(context)
-        .pop(_RoomDraft(name: name, description: _description.text.trim()));
+    Navigator.of(
+      context,
+    ).pop(_RoomDraft(name: name, description: _description.text.trim()));
   }
 
   @override
