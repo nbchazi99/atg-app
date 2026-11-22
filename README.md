@@ -36,7 +36,9 @@ reference implementation.
 - Courses: create with a required USD price (enter `0` for free), cover image, and lessons with
   uploaded media/files or external links; delete courses.
 - Settings: deposit and withdrawal payment methods, fees, min/max amounts, daily fact and promotion
-  copy. EcoCash is the default; method changes are fetched by open wallet screens in real time.
+  copy. EcoCash is the default; administrators can enable the supported Cash and SmileCash options.
+  Method changes are fetched by open wallet screens in real time. The server controls these settings,
+  not app code; clients need this update installed once before they can use the remote controls.
 
 The server creates the open Community room and separate Deriv VIP and Weltrade VIP rooms when they are
 missing. Signals and courses are published by an administrator; no demo traders are created.
