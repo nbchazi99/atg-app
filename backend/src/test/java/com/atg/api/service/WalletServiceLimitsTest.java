@@ -75,20 +75,20 @@ class WalletServiceLimitsTest {
 
     @Test
     void acceptsOnlyConfiguredDepositAndWithdrawalMethods() {
-        for (String method : List.of("EcoCash", "Cash", "SmileCash")) {
-            assertThat(service.createDeposit(user, deposit("5", method))).isNotNull();
-            assertThat(service.createWithdrawal(user, withdrawal("5", method))).isNotNull();
-        }
+        assertThat(service.createDeposit(user, deposit("5", "EcoCash"))).isNotNull();
+        assertThat(service.createWithdrawal(user, withdrawal("5", "EcoCash"))).isNotNull();
     }
 
     @Test
     void rejectsUnsupportedDepositAndWithdrawalMethods() {
-        assertThatThrownBy(() -> service.createDeposit(user, deposit("5", "InnBucks")))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Choose EcoCash, Cash, or SmileCash");
-        assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", "Other")))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Choose EcoCash, Cash, or SmileCash");
+        for (String method : List.of("Cash", "SmileCash", "InnBucks")) {
+            assertThatThrownBy(() -> service.createDeposit(user, deposit("5", method)))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("Choose EcoCash");
+            assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", method)))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .hasMessageContaining("Choose EcoCash");
+        }
     }
 
     private static Dtos.DepositReq deposit(String amount) {

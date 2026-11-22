@@ -79,9 +79,7 @@ public class WalletService {
         }
         String wallet = switch (req.wallet().trim().toLowerCase(Locale.ROOT)) {
             case "ecocash" -> "EcoCash";
-            case "cash" -> "Cash";
-            case "smilecash" -> "SmileCash";
-            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+            default -> throw bad("Choose EcoCash");
         };
         AppSettings s = settings();
         BigDecimal amount = scale(req.amount());
@@ -122,9 +120,7 @@ public class WalletService {
         BigDecimal amount = scale(req.amount());
         String payout = switch (req.payout().trim().toLowerCase(Locale.ROOT)) {
             case "ecocash" -> "EcoCash";
-            case "cash" -> "Cash";
-            case "smilecash" -> "SmileCash";
-            default -> throw bad("Choose EcoCash, Cash, or SmileCash");
+            default -> throw bad("Choose EcoCash");
         };
         if (amount.compareTo(s.getMinWithdraw()) < 0) {
             throw bad("Minimum withdrawal is $" + s.getMinWithdraw());

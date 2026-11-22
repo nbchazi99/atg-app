@@ -24,12 +24,6 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
-    OptionTile(title: 'Cash', subtitle: 'Cash payment', badge: 'C'),
-    OptionTile(
-      title: 'SmileCash',
-      subtitle: 'SmileCash mobile money',
-      badge: 'SC',
-    ),
   ];
 
   static const _sources = [
@@ -110,8 +104,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   }
 
   bool _validatePayout() {
-    if (_payouts[_payout].title != 'Cash' &&
-        _payoutMobile.text.trim().isEmpty) {
+    if (_payoutMobile.text.trim().isEmpty) {
       showToast(context, 'Enter the mobile money number');
       return false;
     }
@@ -302,18 +295,16 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         onSelected: (index) => setState(() => _payout = index),
       ),
       const SizedBox(height: 16),
-      if (_payouts[_payout].title != 'Cash') ...[
-        AtgField(
-          controller: _payoutMobile,
-          label: 'Mobile money number',
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'The number that receives the payout. It can differ from your sign-in number.',
-          style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
-        ),
-      ],
+      AtgField(
+        controller: _payoutMobile,
+        label: 'Mobile money number',
+        keyboardType: TextInputType.phone,
+      ),
+      const SizedBox(height: 6),
+      const Text(
+        'The number that receives the payout. It can differ from your sign-in number.',
+        style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
+      ),
       const SizedBox(height: 22),
       PrimaryButton(
         label: 'Continue',

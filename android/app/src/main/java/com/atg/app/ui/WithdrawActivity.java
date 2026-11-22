@@ -123,8 +123,6 @@ public class WithdrawActivity extends AppCompatActivity {
         tvFiledUnder.setText("Filed under " + ApiClient.session().name() + ", " + ApiClient.session().email() + ".");
 
         payouts.add(new Adapters.Option("EcoCash", "Mobile money", "EC"));
-        payouts.add(new Adapters.Option("Cash", "Cash payment", "C"));
-        payouts.add(new Adapters.Option("SmileCash", "SmileCash mobile money", "SC"));
 
         sources.add(new Adapters.Option("Weltrade withdrawal", "You withdrew to the ATG agent on Weltrade.", "W").color("#1B7A3D"));
         sources.add(new Adapters.Option("Deriv withdrawal", "You withdrew to the ATG agent on Deriv.", "D").color("#B3261E"));
@@ -194,10 +192,8 @@ public class WithdrawActivity extends AppCompatActivity {
     }
 
     private void updatePayoutFields() {
-        Adapters.Option selected = payoutAdapter.selectedOption();
-        boolean mobileMoney = selected != null && !"Cash".equals(selected.title);
-        tilPayoutMobile.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
-        tvPayoutHint.setVisibility(mobileMoney ? View.VISIBLE : View.GONE);
+        tilPayoutMobile.setVisibility(View.VISIBLE);
+        tvPayoutHint.setVisibility(View.VISIBLE);
     }
 
     private void updateSource() {
@@ -237,8 +233,7 @@ public class WithdrawActivity extends AppCompatActivity {
     }
 
     private boolean validatePayout() {
-        Adapters.Option payout = payoutAdapter.selectedOption();
-        if (payout != null && !"Cash".equals(payout.title) && text(etPayoutMobile).isEmpty()) {
+        if (text(etPayoutMobile).isEmpty()) {
             Ui.toast(this, "Enter the mobile money number");
             return false;
         }

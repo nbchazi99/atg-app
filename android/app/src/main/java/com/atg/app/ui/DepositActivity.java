@@ -75,8 +75,6 @@ public class DepositActivity extends AppCompatActivity {
         brokers.add(new Adapters.Option("Weltrade", "The broker ATG funds and posts every signal against", "W").color("#1B7A3D"));
 
         wallets.add(new Adapters.Option("EcoCash", "Mobile money · Econet", "EC"));
-        wallets.add(new Adapters.Option("Cash", "Cash payment", "C"));
-        wallets.add(new Adapters.Option("SmileCash", "SmileCash mobile money", "SC"));
 
         brokerAdapter = new OptionsAdapter(index -> updateBroker());
         walletAdapter = new OptionsAdapter(index -> {
