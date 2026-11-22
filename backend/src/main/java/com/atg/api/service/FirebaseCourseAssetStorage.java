@@ -24,20 +24,34 @@ import java.util.UUID;
 public class FirebaseCourseAssetStorage {
 
     private static final Logger log = LoggerFactory.getLogger(FirebaseCourseAssetStorage.class);
-    private final Bucket bucket;
+    private final FirebaseApp app;
+    private final String bucketName;
 
     public FirebaseCourseAssetStorage(
             FirebaseApp app,
             @Value("${app.firebase.storage-bucket:}") String bucketName) {
-        if (bucketName == null || bucketName.isBlank()) {
-            throw new IllegalStateException("Firebase Storage bucket is not configured");
-        }
-        this.bucket = StorageClient.getInstance(app).bucket(bucketName);
+        this.app = app;
+        this.bucketName = bucketName;
     }
 
     public String store(MultipartFile file, String extension, String contentType) {
+        if (bucketName == null || bucketName.isBlank()) {
+            log.error("Firebase Storage bucket is not configured; course asset upload is unavailable");
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "Firebase Storage is not configured");
+        }
+
         String objectName = "course-assets/" + UUID.randomUUID() + extension;
         String downloadToken = UUID.randomUUID().toString();
+        Bucket bucket;
+        try {
+            bucket = StorageClient.getInstance(app).bucket(bucketName);
+        } catch (IllegalArgumentException | StorageException error) {
+            log.error("Firebase Storage bucket {} is unavailable for course asset uploads", bucketName, error);
+            throw new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE, "Firebase Storage is unavailable", error);
+        }
+
         BlobInfo blob = BlobInfo.newBuilder(bucket.getName(), objectName)
                 .setContentType(contentType)
                 .setCacheControl("public,max-age=3600")
