@@ -31,7 +31,8 @@ Android app** is kept in `android/` as a reference implementation.
 **Administrator (inside the same app, admin accounts only)**
 
 - Requests: deposits, withdrawals and purchases with approve / reject and a note.
-- Users: change membership (none, Deriv VIP, Weltrade VIP).
+- Users: change membership (none, Deriv VIP, Weltrade VIP) and grant full admin access
+  to another registered user.
 - Signals: create and delete signals.
 - Courses: create with a required USD price (enter `0` for free), cover image, and lessons with
   uploaded media/files or external links; delete courses.
@@ -39,6 +40,8 @@ Android app** is kept in `android/` as a reference implementation.
   copy. EcoCash is the only supported payment method.
   Method changes are fetched by open wallet screens in real time. The server controls these settings,
   not app code; clients need this update installed once before they can use the remote controls.
+- Account: update the administrator's name, email, phone, and password after confirming the current
+  password. The profile picture can be changed from Profile.
 
 The server creates the open Community room and separate Deriv VIP and Weltrade VIP rooms when they are
 missing. Signals and courses are published by an administrator; no demo traders are created.
@@ -177,7 +180,9 @@ There are no demo accounts. Traders register from the sign-in screen against the
 API. On an empty database the server creates the administrator from the `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` environment variables (set in the Render dashboard, never committed); if they are
 unset it starts with no admin and logs a warning. An admin replaces their own login from
-**Admin → Account**, which writes to the database and keeps the session signed in.
+**Admin → Account**, which writes their profile and login changes to the database. From
+**Admin → Users**, they can grant full admin access to an existing account; that person must sign
+in again after the grant.
 
 Forgot-password codes are delivered over SMTP. Configure `MAIL_HOST`, `MAIL_PORT`,
 `MAIL_USERNAME`, `MAIL_PASSWORD`, and `MAIL_FROM` in the Render dashboard. The reset code expires
@@ -244,7 +249,8 @@ All endpoints are under `/api`. Send `Authorization: Bearer <token>`; `/api/admi
 - Academy: `GET /courses`, `GET /courses/{id}`, `POST /courses/{id}/complete`,
   `GET|POST /courses/{id}/comments`, `GET|POST /courses/{id}/lessons/{lessonId}/comments`,
   `GET|POST /purchases`
-- Admin: `GET /admin/users`, `PATCH /admin/users/{id}/membership`, `GET /admin/requests`,
+- Admin: `GET /admin/users`, `POST /admin/users/{id}/assign-admin`,
+  `PATCH /admin/users/{id}/membership`, `PUT /admin/account`, `GET /admin/requests`,
   `POST /admin/deposits/{id}/decide`, `POST /admin/withdrawals/{id}/decide`,
   `POST /admin/purchases/{id}/decide`, `GET|POST /admin/signals`, `PUT|DELETE /admin/signals/{id}`,
   `POST|DELETE /admin/courses`, `GET|PUT /admin/settings`

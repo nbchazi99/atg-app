@@ -30,8 +30,11 @@ public final class Dtos {
 
     public record AdminAccountReq(
             @NotBlank String currentPassword,
-            @Email String email,
-            @Size(min = 6, message = "Password must be at least 6 characters") String password) {}
+            @Size(max = 120) String name,
+            @Size(max = 32) String phone,
+            @Email @Size(max = 254) String email,
+            @Size(min = 6, max = 128, message = "Password must be between 6 and 128 characters")
+            String password) {}
 
     public record UserView(Long id, String name, String email, String phone, String role,
                            int points, String membership, String createdAt, String avatarUrl) {

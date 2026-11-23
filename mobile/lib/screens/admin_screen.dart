@@ -39,6 +39,8 @@ class _AdminScreenState extends State<AdminScreen> {
   final _promoTitle = TextEditingController();
   final _promoBody = TextEditingController();
   final _currentPassword = TextEditingController();
+  final _accountName = TextEditingController();
+  final _accountPhone = TextEditingController();
   final _newEmail = TextEditingController();
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -57,6 +59,9 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   void initState() {
     super.initState();
+    _accountName.text = session.name;
+    _accountPhone.text = session.phone;
+    _newEmail.text = session.email;
     _loadTab();
     _unbind = realtime.bind(
       {
@@ -86,6 +91,8 @@ class _AdminScreenState extends State<AdminScreen> {
     _promoTitle.dispose();
     _promoBody.dispose();
     _currentPassword.dispose();
+    _accountName.dispose();
+    _accountPhone.dispose();
     _newEmail.dispose();
     _newPassword.dispose();
     _confirmPassword.dispose();
@@ -375,6 +382,33 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  Future<void> _assignAdmin(AppUser user) async {
+    final confirmed = await confirmAction(
+      context,
+      title: 'Grant full admin access?',
+      message:
+          'Grant ${user.name} full administrator access? They will be able to manage wallet requests, users, signals, rooms, courses, and settings. They will need to sign in again.',
+      confirmLabel: 'Grant admin access',
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    try {
+      final updated = await api.assignAdmin(user.id);
+      if (!mounted) return;
+      setState(() {
+        _users = _users
+            .map((item) => item.id == updated.id ? updated : item)
+            .toList();
+      });
+      showToast(context, 'Full admin access granted to ${updated.name}');
+    } on ApiException catch (e) {
+      if (mounted) {
+        showMessage(context, 'Could not assign admin access', e.message);
+      }
+    }
+  }
+
   Future<void> _addSignal() async {
     final signal = await showModalBottomSheet<Signal>(
       context: context,
@@ -526,12 +560,17 @@ class _AdminScreenState extends State<AdminScreen> {
       showToast(context, 'Enter your current password');
       return;
     }
+    final name = _accountName.text.trim();
+    if (name.isEmpty) {
+      showToast(context, 'Name cannot be empty');
+      return;
+    }
     final newEmail = _newEmail.text.trim();
-    final newPass = _newPassword.text;
-    if (newEmail.isNotEmpty && !newEmail.contains('@')) {
+    if (!newEmail.contains('@')) {
       showToast(context, 'That does not look like an email');
       return;
     }
+    final newPass = _newPassword.text;
     if (newPass.isNotEmpty && newPass.length < 6) {
       showToast(context, 'New password must be at least 6 characters');
       return;
@@ -544,6 +583,8 @@ class _AdminScreenState extends State<AdminScreen> {
     try {
       final result = await api.updateAdminAccount(
         currentPassword: current,
+        name: name,
+        phone: _accountPhone.text.trim(),
         email: newEmail,
         password: newPass,
       );
@@ -553,15 +594,17 @@ class _AdminScreenState extends State<AdminScreen> {
       setState(() {
         _savingAccount = false;
         _currentPassword.clear();
-        _newEmail.clear();
+        _accountName.text = result.user.name;
+        _accountPhone.text = result.user.phone;
+        _newEmail.text = result.user.email;
         _newPassword.clear();
         _confirmPassword.clear();
       });
-      showToast(context, 'Login credentials updated');
+      showToast(context, 'Admin account updated');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _savingAccount = false);
-      showMessage(context, 'Could not update the credentials', e.message);
+      showMessage(context, 'Could not update the admin account', e.message);
     }
   }
 
@@ -807,6 +850,13 @@ class _AdminScreenState extends State<AdminScreen> {
                     ],
                   ),
                 ),
+                if (!user.isAdmin)
+                  IconButton(
+                    tooltip: 'Grant full admin access',
+                    onPressed: () => _assignAdmin(user),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                    color: AtgColors.gold,
+                  ),
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
@@ -1303,8 +1353,22 @@ class _AdminScreenState extends State<AdminScreen> {
           ),
         ),
         const SizedBox(height: 22),
-        const SectionLabel('CHANGE LOGIN CREDENTIALS'),
+        const SectionLabel('EDIT ACCOUNT DETAILS'),
         const SizedBox(height: 10),
+        AtgField(controller: _accountName, label: 'Name'),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _newEmail,
+          label: 'Email',
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _accountPhone,
+          label: 'Phone',
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 12),
         AtgField(
           controller: _currentPassword,
           label: 'Current password',
@@ -1313,14 +1377,8 @@ class _AdminScreenState extends State<AdminScreen> {
         ),
         const SizedBox(height: 12),
         AtgField(
-          controller: _newEmail,
-          label: 'New email (blank keeps current)',
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 12),
-        AtgField(
           controller: _newPassword,
-          label: 'New password (blank keeps current)',
+          label: 'New password (leave blank to keep current)',
           obscureText: true,
           autofillHints: const [AutofillHints.newPassword],
         ),
@@ -1332,13 +1390,13 @@ class _AdminScreenState extends State<AdminScreen> {
         ),
         const SizedBox(height: 18),
         PrimaryButton(
-          label: 'Save credentials',
+          label: 'Save account changes',
           loading: _savingAccount,
           onPressed: _saveAccount,
         ),
         const SizedBox(height: 10),
         Text(
-          'You stay signed in. Use the new email and password next time you log in.',
+          'Enter your current password to confirm changes. If you change your email or password, use the new credentials next time you log in.',
           style: AtgText.small,
         ),
       ],

@@ -68,6 +68,11 @@ public class AdminController extends BaseController {
         if (!encoder.matches(req.currentPassword(), admin.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Current password is incorrect");
         }
+        if (req.name() != null) {
+            if (req.name().isBlank()) throw bad("Name cannot be empty");
+            admin.setName(req.name().trim());
+        }
+        if (req.phone() != null) admin.setPhone(req.phone().trim());
         String email = req.email() == null || req.email().isBlank() ? null : req.email().trim().toLowerCase();
         if (email != null && !email.equalsIgnoreCase(admin.getEmail())) {
             if (users.existsByEmailIgnoreCase(email)) {
@@ -80,9 +85,24 @@ public class AdminController extends BaseController {
             admin.setTokenVersion(admin.getTokenVersion() + 1);
         }
         users.save(admin);
+        realtime.publish(RealtimeHub.USERS,
+                Map.of("userId", admin.getId(), "kind", "profile"));
         return new Dtos.AuthRes(jwt.generate(
                 admin.getEmail(), admin.getRole().name(), admin.getTokenVersion()),
                 Dtos.UserView.of(admin));
+    }
+
+    @PostMapping("/users/{id}/assign-admin")
+    public Dtos.UserView assignAdmin(@PathVariable Long id) {
+        User user = users.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (user.getRole() != User.Role.ADMIN) {
+            user.setRole(User.Role.ADMIN);
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            users.save(user);
+            realtime.publish(RealtimeHub.USERS, Map.of("userId", user.getId(), "kind", "role"));
+        }
+        return Dtos.UserView.of(user);
     }
 
     @GetMapping("/users")

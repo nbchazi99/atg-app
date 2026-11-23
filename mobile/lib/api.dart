@@ -792,6 +792,11 @@ class Api {
     return AppUser.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  Future<AppUser> assignAdmin(int userId) async {
+    final data = await _send('POST', 'api/admin/users/$userId/assign-admin');
+    return AppUser.fromJson((data as Map).cast<String, dynamic>());
+  }
+
   Future<AdminRequests> adminRequests() async {
     final data = await _send('GET', 'api/admin/requests');
     return AdminRequests.fromJson((data as Map).cast<String, dynamic>());
@@ -877,16 +882,19 @@ class Api {
 
   Future<AuthResult> updateAdminAccount({
     required String currentPassword,
-    String? email,
+    required String name,
+    required String phone,
+    required String email,
     String? password,
   }) async {
-    final trimmedEmail = (email ?? '').trim();
     final data = await _send(
       'PUT',
       'api/admin/account',
       body: {
         'currentPassword': currentPassword,
-        if (trimmedEmail.isNotEmpty) 'email': trimmedEmail,
+        'name': name.trim(),
+        'phone': phone.trim(),
+        'email': email.trim(),
         if ((password ?? '').isNotEmpty) 'password': password,
       },
     );
