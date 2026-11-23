@@ -2,6 +2,7 @@ package com.atg.api.service;
 
 import com.atg.api.model.AppSettings;
 import com.atg.api.model.User;
+import com.atg.api.model.WithdrawalRequest;
 import com.atg.api.repo.AppSettingsRepository;
 import com.atg.api.repo.CourseRepository;
 import com.atg.api.repo.DepositRequestRepository;
