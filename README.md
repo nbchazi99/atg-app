@@ -1,10 +1,10 @@
 # ATG — Accurate Trading Group
 
 Trading education, signals and VIP membership platform, rebuilt from the ZFA screenshot set.
-The shipping client is a **Flutter app that runs on both Android and iOS from one codebase**; the
-backend is **Java Spring Boot** with a single database, so every device sees the same accounts,
-signals, rooms, wallets and requests. The original **Java Android app** is kept in `android/` as a
-reference implementation.
+The shipping client is a **Flutter app that runs on Android, iOS and web from one codebase**; the
+Java Spring Boot API runs on Render and uses Firebase Firestore for shared app data, Firebase Storage
+for uploaded assets, and Firebase Cloud Messaging for push notifications. The original **Java
+Android app** is kept in `android/` as a reference implementation.
 
 ## What is in the box
 
@@ -36,7 +36,7 @@ reference implementation.
 - Courses: create with a required USD price (enter `0` for free), cover image, and lessons with
   uploaded media/files or external links; delete courses.
 - Settings: deposit and withdrawal payment methods, fees, min/max amounts, daily fact and promotion
-  copy. EcoCash is the default; administrators can enable the supported Cash and SmileCash options.
+  copy. EcoCash is the only supported payment method.
   Method changes are fetched by open wallet screens in real time. The server controls these settings,
   not app code; clients need this update installed once before they can use the remote controls.
 
@@ -51,8 +51,9 @@ backend/     Spring Boot API (JWT, JPA, H2 dev / PostgreSQL prod)
 android/     Original Java Android app, kept as a reference implementation
 ```
 
-`mobile/web/` is the standard Flutter web shell. It is not a shipping target; it is how the UI was
-smoke-tested against the live API without a device (`flutter build web --release`).
+`mobile/web/` is the Flutter web shell deployed to Firebase Hosting at
+[`https://atg-app-6908e.web.app`](https://atg-app-6908e.web.app). `firebase.json` publishes the
+production build from `mobile/build/web`.
 
 ## Requirements
 
@@ -75,24 +76,41 @@ A prebuilt jar is also available:
 java -jar build/libs/atg-api-1.0.0.jar
 ```
 
-- Default `dev` profile uses embedded H2 stored in `backend/data/atg`, so there is nothing to install.
-- Uploaded payment proofs go to `backend/uploads` and are served at `/uploads/**`.
-- Course assets are stored in Firebase Storage. Configure `FIREBASE_STORAGE_BUCKET` (defaults to
-  `atg-app-6908e.firebasestorage.app`) and grant the backend service account permission to create
-  objects in that bucket.
+- The API stores users, signals, rooms, wallets and settings in Firebase Firestore.
+- Uploaded course and chat assets use Firebase Storage. Configure `FIREBASE_STORAGE_BUCKET` (defaults
+  to `atg-app-6908e.firebasestorage.app`) and grant the Render service account access to the bucket.
 - API root: `http://localhost:8080/api`.
 
-Production with PostgreSQL:
+## Deploy Flutter web to Firebase Hosting
 
-```bash
-ATG_DB_URL=jdbc:postgresql://localhost:5432/atg \
-ATG_DB_USER=atg \
-ATG_DB_PASSWORD=atg \
-ATG_BASE_URL=https://api.example.com \
-java -jar build/libs/atg-api-1.0.0.jar --spring.profiles.active=prod
+From the repository root, build and deploy the app to the configured Firebase project:
+
+```powershell
+Push-Location mobile
+flutter pub get
+flutter build web --release --web-content-hash
+Pop-Location
+firebase deploy --only hosting --project atg-app-6908e
 ```
 
-`spring.jpa.hibernate.ddl-auto=update` creates the schema on first start.
+The Render API remains at `https://atg-api-5de3.onrender.com/`; deploying Hosting does not move or
+modify the API or Firestore data.
+
+## Distribute Android builds with Firebase App Distribution
+
+Build the APK from `mobile/`, then upload it to the registered Android app:
+
+```powershell
+Push-Location mobile
+flutter build apk --release
+Pop-Location
+firebase appdistribution:distribute mobile/build/app/outputs/flutter-apk/app-release.apk `
+  --app 1:517768547113:android:bce29643d35c5d81bb4538 `
+  --release-notes "ATG Android release"
+```
+
+Add `--testers` or `--groups` to send release invitations. Uploading without those options stores the
+release in App Distribution but does not invite anyone.
 
 ## Run the app (Flutter — Android and iOS)
 
@@ -168,9 +186,9 @@ after 15 minutes, can be requested again after 60 seconds, and is limited to fiv
 ## Business rules
 
 - **Deposit** — a 10% admin fee is added on top: `$25.00 + $2.50 = $27.50` paid. Minimum `$5.00`,
-  maximum `$454.54`.
-- **Withdrawal** — a 7% fee is deducted: `$25.00 − $1.75 = $23.25` received. Minimum `$12.50`;
-  a proof image is required.
+  maximum `$454.00`; Weltrade only, using EcoCash.
+- **Withdrawal** — a 10% fee is deducted: `$25.00 − $2.50 = $22.50` received. Minimum `$5.00`,
+  maximum `$454.00`; a proof image is required.
 - Every deposit, withdrawal, course purchase and VIP purchase is **reviewed manually** by an admin.
   Approving settles the wallet transaction and applies the membership or course enrolment.
 - VIP membership costs `$30.00`; course prices come from the course record.
@@ -180,7 +198,7 @@ after 15 minutes, can be requested again after 60 seconds, and is limited to fiv
 - VIP rooms are enforced server-side: without the matching membership the room list marks them
   `locked`, their posts and VIP-labelled signals are hidden from the feed, and messages return `403`.
   Admins bypass the lock.
-- Deposits are accepted only for Weltrade accounts, using EcoCash.
+- Deposits and withdrawals support EcoCash only; deposits are accepted only for Weltrade accounts.
 - Fees and limits are stored in `app_settings` and can be changed live from **Admin → Settings**.
 - Money is stored as `BigDecimal` in the API; the client only formats it.
 

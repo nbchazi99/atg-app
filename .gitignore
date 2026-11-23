@@ -32,3 +32,6 @@ backend/*.log
 
 # Firebase service account key (never commit)
 backend/keys/
+
+# Firebase CLI deployment cache
+.firebase/
