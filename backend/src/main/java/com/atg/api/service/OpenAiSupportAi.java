@@ -25,21 +25,21 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class GeminiSupportAi {
+public class OpenAiSupportAi {
 
-    private static final Logger log = LoggerFactory.getLogger(GeminiSupportAi.class);
+    private static final Logger log = LoggerFactory.getLogger(OpenAiSupportAi.class);
     private static final String API_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
+            "https://api.openai.com/v1/chat/completions";
 
     private final RestClient client;
     private final ObjectMapper json;
     private final String apiKey;
     private final String model;
 
-    public GeminiSupportAi(
+    public OpenAiSupportAi(
             ObjectMapper json,
-            @Value("${GEMINI_API_KEY:}") String apiKey,
-            @Value("${GEMINI_MODEL:gemini-2.5-flash}") String model) {
+            @Value("${OPENAI_API_KEY:}") String apiKey,
+            @Value("${OPENAI_MODEL:gpt-4o-mini}") String model) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(Duration.ofSeconds(10));
         requestFactory.setReadTimeout(Duration.ofSeconds(45));
@@ -70,36 +70,39 @@ public class GeminiSupportAi {
         }
 
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("systemInstruction", Map.of(
-                "parts", List.of(Map.of("text", systemInstruction(knowledge)))));
-        request.put("contents", contents(history));
-        request.put("generationConfig", Map.of(
-                "temperature", 0.2,
-                "responseMimeType", "application/json"));
+        List<Map<String, String>> requestMessages = new ArrayList<>();
+        requestMessages.add(Map.of(
+                "role", "system",
+                "content", systemInstruction(knowledge)));
+        requestMessages.addAll(contents(history));
+        request.put("model", model);
+        request.put("messages", requestMessages);
+        request.put("temperature", 0.2);
+        request.put("response_format", Map.of("type", "json_object"));
 
         try {
             JsonNode response = client.post()
-                    .uri(API_URL, model)
-                    .header("x-goog-api-key", apiKey)
+                    .uri(API_URL)
+                    .header("Authorization", "Bearer " + apiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
                     .body(JsonNode.class);
             String text = response == null
                     ? null
-                    : response.path("candidates").path(0).path("content")
-                            .path("parts").path(0).path("text").asText(null);
+                    : response.path("choices").path(0).path("message")
+                            .path("content").asText(null);
             if (text == null || text.isBlank()) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_GATEWAY, "The AI assistant returned no answer.");
             }
             return parseAnswer(text);
         } catch (RestClientResponseException error) {
-            log.error("Gemini support request failed with HTTP status {}", error.getStatusCode().value());
+            log.error("OpenAI support request failed with HTTP status {}", error.getStatusCode().value());
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY, "The AI assistant is temporarily unavailable.", error);
         } catch (ResourceAccessException error) {
-            log.error("Gemini support request timed out or could not connect", error);
+            log.error("OpenAI support request timed out or could not connect", error);
             throw new ResponseStatusException(
                     HttpStatus.GATEWAY_TIMEOUT, "The AI assistant timed out. Please try again.", error);
         }
@@ -124,19 +127,19 @@ public class GeminiSupportAi {
                     category,
                     priority);
         } catch (JsonProcessingException error) {
-            log.warn("Gemini returned an answer that did not match the support response schema");
+            log.warn("OpenAI returned an answer that did not match the support response schema");
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY, "The AI assistant returned an invalid answer.", error);
         }
     }
 
-    private static List<Map<String, Object>> contents(List<SupportMessage> history) {
-        List<Map<String, Object>> contents = new ArrayList<>();
+    private static List<Map<String, String>> contents(List<SupportMessage> history) {
+        List<Map<String, String>> contents = new ArrayList<>();
         history.stream().skip(Math.max(0, history.size() - 12L)).forEach(message -> {
-            String role = message.getAuthorType() == SupportMessage.AuthorType.AI ? "model" : "user";
+            String role = message.getAuthorType() == SupportMessage.AuthorType.AI ? "assistant" : "user";
             contents.add(Map.of(
                     "role", role,
-                    "parts", List.of(Map.of("text", redactSensitiveText(message.getText())))));
+                    "content", redactSensitiveText(message.getText())));
         });
         return contents;
     }

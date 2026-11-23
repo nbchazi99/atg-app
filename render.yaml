@@ -21,8 +21,10 @@ services:
         sync: false
       - key: FIREBASE_STORAGE_BUCKET
         value: atg-app-6908e.firebasestorage.app
-      - key: GEMINI_API_KEY
+      - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
       - key: MAIL_HOST
         sync: false
       - key: MAIL_PORT

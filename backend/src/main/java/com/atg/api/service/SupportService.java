@@ -47,7 +47,7 @@ public class SupportService {
     private final SupportMessageRepository messages;
     private final SupportKnowledgeRepository knowledge;
     private final UserRepository users;
-    private final GeminiSupportAi ai;
+    private final OpenAiSupportAi ai;
     private final SupportKnowledgeService knowledgeService;
     private final RealtimeHub realtime;
     private final PushTokenRepository pushTokens;
@@ -60,7 +60,7 @@ public class SupportService {
             SupportMessageRepository messages,
             SupportKnowledgeRepository knowledge,
             UserRepository users,
-            GeminiSupportAi ai,
+            OpenAiSupportAi ai,
             SupportKnowledgeService knowledgeService,
             RealtimeHub realtime,
             PushTokenRepository pushTokens,
