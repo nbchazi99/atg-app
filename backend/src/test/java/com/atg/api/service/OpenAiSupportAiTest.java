@@ -5,6 +5,7 @@ import com.atg.api.web.SupportDtos;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
@@ -12,6 +13,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,6 +22,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OpenAiSupportAiTest {
+
+    @Test
+    void springCanInstantiateServiceUsingItsAutowiredConstructor() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(ObjectMapper.class, () -> new ObjectMapper());
+            context.registerBean(OpenAiSupportAi.class);
+            context.refresh();
+
+            assertNotNull(context.getBean(OpenAiSupportAi.class));
+        }
+    }
 
     @Test
     void answersGeneralQuestionsWhenNoAtgKnowledgeMatches() throws Exception {
