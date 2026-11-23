@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -41,13 +42,15 @@ public class RoomController extends BaseController {
         User user = me();
         return ensureCommunityRoom().stream().map(r -> {
             Map<String, Object> m = new LinkedHashMap<>();
+            boolean canAccess = MembershipAccess.canAccess(
+                    user, MembershipAccess.requiredForRoom(r));
             m.put("id", r.getId());
             m.put("name", r.getName());
             m.put("description", r.getDescription());
-            m.put("preview", r.getPreview());
+            m.put("preview", canAccess ? r.getPreview() : "");
             m.put("unreadCount", r.getUnreadCount());
-            m.put("lastActivityAt", r.getLastActivityAt());
-            m.put("locked", !MembershipAccess.canAccess(user, MembershipAccess.requiredForRoom(r)));
+            m.put("lastActivityAt", canAccess ? r.getLastActivityAt() : null);
+            m.put("locked", !canAccess);
             m.put("requiredMembership", MembershipAccess.requiredForRoom(r));
             return m;
         }).toList();
@@ -166,10 +169,16 @@ public class RoomController extends BaseController {
         }
         String text = req.text() == null ? "" : req.text().trim();
         String attachmentUrl = req.attachmentUrl() == null ? "" : req.attachmentUrl().trim();
+        String attachmentType = req.attachmentType() == null
+                ? null : req.attachmentType().trim().toUpperCase(Locale.ROOT);
         if (text.isEmpty() && attachmentUrl.isEmpty()) {
-            throw bad("Write a message or attach an image");
+            throw bad("Write a message or attach a file");
         }
-        return saveMessage(room, user, threadId, text, attachmentUrl);
+        if (attachmentType != null && !attachmentType.isEmpty()
+                && !List.of("IMAGE", "VIDEO", "AUDIO", "FILE").contains(attachmentType)) {
+            throw bad("Unsupported attachment type");
+        }
+        return saveMessage(room, user, threadId, text, attachmentUrl, attachmentType);
     }
 
     private Room requireAccessibleRoom(Long roomId, User user) {
@@ -193,6 +202,12 @@ public class RoomController extends BaseController {
     }
 
     private RoomMessage saveMessage(Room room, User user, Long threadId, String text, String attachmentUrl) {
+        return saveMessage(room, user, threadId, text, attachmentUrl, null);
+    }
+
+    private RoomMessage saveMessage(
+            Room room, User user, Long threadId, String text,
+            String attachmentUrl, String attachmentType) {
         Long roomId = room.getId();
         RoomMessage m = new RoomMessage();
         m.setRoomId(roomId);
@@ -202,9 +217,10 @@ public class RoomController extends BaseController {
         m.setAuthorAvatarUrl(user.getAvatarUrl());
         m.setText(text);
         m.setAttachmentUrl(attachmentUrl);
+        m.setAttachmentType(attachmentType);
         m.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
         messages.save(m);
-        String preview = text.isEmpty() && attachmentUrl != null ? "Image" : text;
+        String preview = text.isEmpty() && attachmentUrl != null ? "Attachment" : text;
         room.setPreview(preview);
         room.setLastActivityAt(LocalDateTime.now(ZoneOffset.UTC));
         rooms.save(room);

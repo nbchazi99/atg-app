@@ -98,6 +98,29 @@ class RoomControllerTest {
     }
 
     @Test
+    void hidesVipRoomActivityFromMembersWithoutTheMatchingMembership() {
+        Room vip = new Room();
+        vip.setId(2L);
+        vip.setName("Deriv VIP");
+        vip.setPreview("Private Deriv setup");
+        vip.setLastActivityAt(LocalDateTime.now());
+        Room community = new Room();
+        community.setId(1L);
+        community.setName("Community");
+        when(rooms.findAll()).thenReturn(List.of(vip, community));
+
+        Map<String, Object> listedVip = controller.list().stream()
+                .filter(room -> "Deriv VIP".equals(room.get("name")))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(listedVip)
+                .containsEntry("locked", true)
+                .containsEntry("preview", "")
+                .containsEntry("lastActivityAt", null);
+    }
+
+    @Test
     void ordinaryMemberCanSendMessagesToCommunity() {
         Room community = new Room();
         community.setId(1L);
@@ -115,7 +138,7 @@ class RoomControllerTest {
     }
 
     @Test
-    void ordinaryMemberCanSendAnImageWithoutText() {
+    void ordinaryMemberCanSendAnAttachmentWithoutText() {
         Room community = new Room();
         community.setId(1L);
         community.setName("Community");
@@ -124,11 +147,13 @@ class RoomControllerTest {
         when(rooms.save(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RoomMessage sent = controller.send(
-                1L, null, new Dtos.MessageReq("", "https://atg.example/uploads/chart.png"));
+                1L, null, new Dtos.MessageReq(
+                        "", "https://atg.example/uploads/chart.png", "IMAGE"));
 
         assertThat(sent.getText()).isEmpty();
         assertThat(sent.getAttachmentUrl()).isEqualTo("https://atg.example/uploads/chart.png");
-        assertThat(community.getPreview()).isEqualTo("Image");
+        assertThat(sent.getAttachmentType()).isEqualTo("IMAGE");
+        assertThat(community.getPreview()).isEqualTo("Attachment");
         verify(messages).save(sent);
     }
 

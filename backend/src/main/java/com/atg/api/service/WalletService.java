@@ -18,7 +18,7 @@ import java.util.Locale;
 @Service
 public class WalletService {
 
-    private static final List<String> SUPPORTED_PAYMENT_METHODS = List.of("EcoCash", "Cash", "SmileCash");
+    private static final List<String> SUPPORTED_PAYMENT_METHODS = List.of("EcoCash");
 
     private final AppSettingsRepository settingsRepo;
     private final DepositRequestRepository deposits;
@@ -45,13 +45,16 @@ public class WalletService {
 
     public AppSettings settings() {
         AppSettings settings = settingsRepo.findById(1L).orElseGet(() -> settingsRepo.save(new AppSettings()));
-        if (settings.getDepositMethods() == null || settings.getDepositMethods().isEmpty()) {
+        boolean changed = false;
+        if (!List.of("EcoCash").equals(settings.getDepositMethods())) {
             settings.setDepositMethods(List.of("EcoCash"));
+            changed = true;
         }
-        if (settings.getWithdrawalMethods() == null || settings.getWithdrawalMethods().isEmpty()) {
+        if (!List.of("EcoCash").equals(settings.getWithdrawalMethods())) {
             settings.setWithdrawalMethods(List.of("EcoCash"));
+            changed = true;
         }
-        return settings;
+        return changed ? settingsRepo.save(settings) : settings;
     }
 
     public AppSettings updateSettings(Dtos.SettingsReq req) {

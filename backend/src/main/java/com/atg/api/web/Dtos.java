@@ -64,7 +64,12 @@ public final class Dtos {
 
     public record MessageReq(
             @Size(max = 2000, message = "Message must be 2000 characters or fewer") String text,
-            @Size(max = 2048, message = "Image URL is too long") String attachmentUrl) {}
+            @Size(max = 2048, message = "Attachment URL is too long") String attachmentUrl,
+            @Size(max = 16, message = "Attachment type is too long") String attachmentType) {
+        public MessageReq(String text, String attachmentUrl) {
+            this(text, attachmentUrl, null);
+        }
+    }
 
     public record CommunityThreadReq(
             @NotBlank @Size(max = 100, message = "Title must be 100 characters or fewer") String title,

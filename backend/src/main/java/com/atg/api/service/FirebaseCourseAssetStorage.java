@@ -35,13 +35,21 @@ public class FirebaseCourseAssetStorage {
     }
 
     public String store(MultipartFile file, String extension, String contentType) {
+        return store(file, "course-assets", extension, contentType);
+    }
+
+    public String storeChatAttachment(MultipartFile file, String extension, String contentType) {
+        return store(file, "chat-attachments", extension, contentType);
+    }
+
+    private String store(MultipartFile file, String folder, String extension, String contentType) {
         if (bucketName == null || bucketName.isBlank()) {
             log.error("Firebase Storage bucket is not configured; course asset upload is unavailable");
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE, "Firebase Storage is not configured");
         }
 
-        String objectName = "course-assets/" + UUID.randomUUID() + extension;
+        String objectName = folder + "/" + UUID.randomUUID() + extension;
         String downloadToken = UUID.randomUUID().toString();
         Bucket bucket;
         try {

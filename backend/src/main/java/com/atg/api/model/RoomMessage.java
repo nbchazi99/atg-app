@@ -14,6 +14,7 @@ public class RoomMessage {
     private String authorAvatarUrl;
     private String text;
     private String attachmentUrl;
+    private String attachmentType;
     private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     public Long getId() { return id; }
@@ -32,6 +33,8 @@ public class RoomMessage {
     public void setText(String text) { this.text = text; }
     public String getAttachmentUrl() { return attachmentUrl; }
     public void setAttachmentUrl(String attachmentUrl) { this.attachmentUrl = attachmentUrl; }
+    public String getAttachmentType() { return attachmentType; }
+    public void setAttachmentType(String attachmentType) { this.attachmentType = attachmentType; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

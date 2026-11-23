@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class WalletServiceLimitsTest {
@@ -75,6 +76,16 @@ class WalletServiceLimitsTest {
     }
 
     @Test
+    void acceptsDepositsOnlyForWeltrade() {
+        Dtos.DepositReq deriv = new Dtos.DepositReq(
+                "Deriv", "client-1", new BigDecimal("5"), "EcoCash", "0712345678");
+
+        assertThatThrownBy(() -> service.createDeposit(user, deriv))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Only Weltrade deposits are supported");
+    }
+
+    @Test
     void acceptsOnlyConfiguredDepositAndWithdrawalMethods() {
         assertThat(service.createDeposit(user, deposit("5", "EcoCash"))).isNotNull();
         assertThat(service.createWithdrawal(user, withdrawal("5", "EcoCash"))).isNotNull();
@@ -85,33 +96,39 @@ class WalletServiceLimitsTest {
         for (String method : List.of("Cash", "SmileCash", "InnBucks")) {
             assertThatThrownBy(() -> service.createDeposit(user, deposit("5", method)))
                     .isInstanceOf(ResponseStatusException.class)
-                    .hasMessageContaining(method.equals("InnBucks")
-                            ? "Choose a supported payment method"
-                            : "not currently enabled for deposit");
+                    .hasMessageContaining("Choose a supported payment method");
             assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", method)))
                     .isInstanceOf(ResponseStatusException.class)
-                    .hasMessageContaining(method.equals("InnBucks")
-                            ? "Choose a supported payment method"
-                            : "not currently enabled for withdrawal");
+                    .hasMessageContaining("Choose a supported payment method");
         }
     }
 
     @Test
-    void adminCanEnableSupportedMethodsAndTheyAreEnforcedIndependently() {
-        AppSettings updated = service.updateSettings(settingsRequest(
-                List.of(" cash ", "Cash"), List.of("SmileCash")));
+    void adminCanConfigureOnlyEcoCashForDepositsAndWithdrawals() {
+        AppSettings updated = service.updateSettings(
+                settingsRequest(List.of("EcoCash"), List.of("ecocash")));
 
-        assertThat(updated.getDepositMethods()).containsExactly("Cash");
-        assertThat(updated.getWithdrawalMethods()).containsExactly("SmileCash");
-        assertThat(service.createDeposit(user, deposit("5", "CASH")).getWallet()).isEqualTo("Cash");
-        assertThat(service.createWithdrawal(user, withdrawal("5", "smilecash")).getPayout())
-                .isEqualTo("SmileCash");
-        assertThatThrownBy(() -> service.createDeposit(user, deposit("5", "EcoCash")))
+        assertThat(updated.getDepositMethods()).containsExactly("EcoCash");
+        assertThat(updated.getWithdrawalMethods()).containsExactly("EcoCash");
+        assertThat(service.createDeposit(user, deposit("5")).getWallet()).isEqualTo("EcoCash");
+        assertThat(service.createWithdrawal(user, withdrawal("5")).getPayout())
+                .isEqualTo("EcoCash");
+        assertThatThrownBy(() -> service.updateSettings(
+                settingsRequest(List.of("Cash"), List.of("SmileCash"))))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("not currently enabled for deposit");
-        assertThatThrownBy(() -> service.createWithdrawal(user, withdrawal("5", "Cash")))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("not currently enabled for withdrawal");
+                .hasMessageContaining("Choose a supported payment method");
+    }
+
+    @Test
+    void migratesExistingPaymentSettingsToEcoCashOnly() {
+        current.setDepositMethods(List.of("Cash", "SmileCash"));
+        current.setWithdrawalMethods(List.of("SmileCash"));
+
+        AppSettings migrated = service.settings();
+
+        assertThat(migrated.getDepositMethods()).containsExactly("EcoCash");
+        assertThat(migrated.getWithdrawalMethods()).containsExactly("EcoCash");
+        verify(settings).save(current);
     }
 
     @Test

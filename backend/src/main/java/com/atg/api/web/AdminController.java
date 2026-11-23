@@ -22,6 +22,9 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 public class AdminController extends BaseController {
 
+    private static final List<String> SIGNAL_AUDIENCES = List.of(
+            "OPEN FLOOR", "DERIV VIP", "WELTRADE VIP");
+
     private final WalletService wallet;
     private final WalletTransactionRepository transactions;
     private final DepositRequestRepository deposits;
@@ -164,6 +167,9 @@ public class AdminController extends BaseController {
 
     @PostMapping("/signals")
     public Signal createSignal(@RequestBody Dtos.SignalReq req) {
+        if (req.roomLabel() == null || req.roomLabel().isBlank()) {
+            throw bad("Choose OPEN FLOOR, Deriv VIP, or Weltrade VIP for this signal");
+        }
         Signal s = new Signal();
         apply(s, req);
         s.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
@@ -198,7 +204,14 @@ public class AdminController extends BaseController {
         if (req.symbol() != null) s.setSymbol(req.symbol().toUpperCase(Locale.ROOT));
         if (req.side() != null) s.setSide(Signal.Side.valueOf(req.side().toUpperCase(Locale.ROOT)));
         if (req.status() != null) s.setStatus(Signal.Status.valueOf(req.status().toUpperCase(Locale.ROOT)));
-        if (req.roomLabel() != null) s.setRoomLabel(req.roomLabel());
+        if (req.roomLabel() != null) {
+            String audience = req.roomLabel().trim().toUpperCase(Locale.ROOT);
+            s.setRoomLabel(SIGNAL_AUDIENCES.stream()
+                    .filter(option -> option.equals(audience))
+                    .findFirst()
+                    .orElseThrow(() -> bad(
+                            "Choose OPEN FLOOR, Deriv VIP, or Weltrade VIP for this signal")));
+        }
         if (req.entry() != null) s.setEntry(req.entry());
         if (req.stopLoss() != null) s.setStopLoss(req.stopLoss());
         if (req.targets() != null) s.setTargets(req.targets());

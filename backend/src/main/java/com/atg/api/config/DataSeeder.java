@@ -39,6 +39,14 @@ public class DataSeeder implements CommandLineRunner {
         var existingSettings = settings.findById(1L);
         AppSettings currentSettings = existingSettings.orElseGet(AppSettings::new);
         boolean saveSettings = existingSettings.isEmpty();
+        if (!List.of("EcoCash").equals(currentSettings.getDepositMethods())) {
+            currentSettings.setDepositMethods(List.of("EcoCash"));
+            saveSettings = true;
+        }
+        if (!List.of("EcoCash").equals(currentSettings.getWithdrawalMethods())) {
+            currentSettings.setWithdrawalMethods(List.of("EcoCash"));
+            saveSettings = true;
+        }
         if (!currentSettings.isDepositMinimumMigrated()) {
             if (currentSettings.getMinDeposit() == null
                     || currentSettings.getMinDeposit().compareTo(BigDecimal.valueOf(12.50)) == 0
