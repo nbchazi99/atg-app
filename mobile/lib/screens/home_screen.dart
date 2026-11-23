@@ -17,6 +17,8 @@ import 'glossary_screen.dart';
 import 'pip_calculator_screen.dart';
 import 'profile_screen.dart';
 import 'signal_detail_screen.dart';
+import 'settings_screen.dart';
+import 'support_screen.dart';
 import 'withdraw_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -186,6 +188,88 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                child: SurfaceCard(
+                  borderColor: AtgColors.primary,
+                  padding: const EdgeInsets.all(14),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SupportScreen(),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: AtgColors.primarySoft,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          Icons.support_agent_rounded,
+                          color: AtgColors.gold,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ATG AI Help Desk', style: AtgText.h3),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Ask a question or get help with your account.',
+                              style: AtgText.small,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: AtgColors.muted,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: SurfaceCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SettingsScreen(),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.palette_outlined,
+                        color: AtgColors.gold,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text('Appearance', style: AtgText.h3),
+                      ),
+                      Text(
+                        session.isDarkMode ? 'Dark mode on' : 'Light mode',
+                        style: AtgText.small,
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: AtgColors.muted,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               if (!_promoDismissed &&

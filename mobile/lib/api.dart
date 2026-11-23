@@ -901,6 +901,166 @@ class Api {
     return AuthResult.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  Future<List<SupportConversation>> supportConversations() async {
+    final data = await _send('GET', 'api/support/conversations');
+    return _parseList(data, SupportConversation.fromJson);
+  }
+
+  Future<SupportConversation> createSupportConversation() async {
+    final data = await _send('POST', 'api/support/conversations');
+    return SupportConversation.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportConversationDetail> supportConversation(int id) async {
+    final data = await _send('GET', 'api/support/conversations/$id');
+    return SupportConversationDetail.fromJson(
+      (data as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<SupportChatResult> sendSupportMessage(
+    int conversationId,
+    String text,
+  ) async {
+    final data = await _send(
+      'POST',
+      'api/support/conversations/$conversationId/messages',
+      body: {'text': text},
+    );
+    return SupportChatResult.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportTicket> createSupportTicket({
+    required int conversationId,
+    required String contactName,
+    required String phone,
+    required String email,
+    required String preferredContact,
+    required String category,
+    required String subject,
+    required String description,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/support/conversations/$conversationId/tickets',
+      body: {
+        'contactName': contactName,
+        'phone': phone,
+        'email': email.trim().isEmpty ? null : email.trim(),
+        'preferredContact': preferredContact,
+        'category': category,
+        'subject': subject,
+        'description': description,
+      },
+    );
+    return SupportTicket.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<SupportTicket>> supportTickets() async {
+    final data = await _send('GET', 'api/support/tickets');
+    return _parseList(data, SupportTicket.fromJson);
+  }
+
+  Future<SupportTicketDetail> supportTicket(int id) async {
+    final data = await _send('GET', 'api/support/tickets/$id');
+    return SupportTicketDetail.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportMessage> sendSupportTicketMessage(
+    int ticketId,
+    String text,
+  ) async {
+    final data = await _send(
+      'POST',
+      'api/support/tickets/$ticketId/messages',
+      body: {'text': text},
+    );
+    return SupportMessage.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportTicket> resolveSupportTicket(int id) async {
+    final data = await _send('PATCH', 'api/support/tickets/$id/resolve');
+    return SupportTicket.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<SupportTicket>> adminSupportTickets() async {
+    final data = await _send('GET', 'api/admin/support/tickets');
+    return _parseList(data, SupportTicket.fromJson);
+  }
+
+  Future<SupportTicketDetail> adminSupportTicket(int id) async {
+    final data = await _send('GET', 'api/admin/support/tickets/$id');
+    return SupportTicketDetail.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportTicket> updateAdminSupportTicket(
+    int id, {
+    String? status,
+    int? assignedAdminId,
+    bool clearAssignedAdmin = false,
+    String? priority,
+  }) async {
+    final data = await _send(
+      'PATCH',
+      'api/admin/support/tickets/$id',
+      body: {
+        if (status != null) 'status': status,
+        if (assignedAdminId != null) 'assignedAdminId': assignedAdminId,
+        'clearAssignedAdmin': clearAssignedAdmin,
+        if (priority != null) 'priority': priority,
+      },
+    );
+    return SupportTicket.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<SupportMessage> adminSupportReply(
+    int ticketId,
+    String text, {
+    bool internalNote = false,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/admin/support/tickets/$ticketId/messages',
+      body: {'text': text, 'internalNote': internalNote},
+    );
+    return SupportMessage.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<SupportKnowledgeEntry>> supportKnowledge() async {
+    final data = await _send('GET', 'api/admin/support/knowledge');
+    return _parseList(data, SupportKnowledgeEntry.fromJson);
+  }
+
+  Future<SupportKnowledgeEntry> saveSupportKnowledge({
+    int? id,
+    required String title,
+    required String category,
+    required String content,
+    required String keywords,
+    required bool active,
+  }) async {
+    final data = await _send(
+      id == null ? 'POST' : 'PUT',
+      id == null
+          ? 'api/admin/support/knowledge'
+          : 'api/admin/support/knowledge/$id',
+      body: {
+        'title': title,
+        'category': category,
+        'content': content,
+        'keywords': keywords,
+        'active': active,
+      },
+    );
+    return SupportKnowledgeEntry.fromJson(
+      (data as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<void> deleteSupportKnowledge(int id) async {
+    await _send('DELETE', 'api/admin/support/knowledge/$id');
+  }
+
   Future<void> registerPushToken(String token) async {
     await _send(
       'POST',

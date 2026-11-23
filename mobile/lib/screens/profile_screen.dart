@@ -11,6 +11,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import 'admin_screen.dart';
 import 'settings_screen.dart';
+import 'support_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -213,6 +214,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Text(
                                   'Appearance and app preferences.',
                                   style: AtgText.small,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SurfaceCard(
+                            padding: const EdgeInsets.all(14),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SupportScreen(),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.support_agent_rounded,
+                                  color: AtgColors.gold,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Help & Support', style: AtgText.h3),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Chat with ATG AI or follow a support ticket.',
+                                        style: AtgText.small,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AtgColors.muted,
                                 ),
                               ],
                             ),

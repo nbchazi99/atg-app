@@ -10,6 +10,7 @@ import '../realtime.dart';
 import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'admin_support_screen.dart';
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -27,6 +28,7 @@ class _AdminScreenState extends State<AdminScreen> {
     'Courses',
     'Settings',
     'Account',
+    'Support',
   ];
 
   final _adminFee = TextEditingController();
@@ -148,6 +150,10 @@ class _AdminScreenState extends State<AdminScreen> {
           setState(() => _loading = false);
           break;
         case 6:
+          if (!mounted) return;
+          setState(() => _loading = false);
+          break;
+        case 7:
           if (!mounted) return;
           setState(() => _loading = false);
           break;
@@ -651,6 +657,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         4 => _coursesView(),
                         5 => _settingsView(),
                         6 => _accountView(),
+                        7 => const AdminSupportScreen(),
                         _ => _requestsView(),
                       },
               ),

@@ -1,6 +1,10 @@
 package com.atg.api.web;
 
 import com.atg.api.service.FirebaseCourseAssetStorage;
+import com.atg.api.service.SupportService;
+import com.atg.api.model.User;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import com.atg.api.model.Room;
 import com.atg.api.repo.RoomRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,14 +48,24 @@ public class UploadController extends BaseController {
 
     private final FirebaseCourseAssetStorage courseAssetStorage;
     private final RoomRepository rooms;
+    private final SupportService support;
 
     public UploadController(
             com.atg.api.repo.UserRepository users,
             RoomRepository rooms,
             FirebaseCourseAssetStorage courseAssetStorage) {
+        this(users, rooms, courseAssetStorage, null);
+    }
+
+    public UploadController(
+            com.atg.api.repo.UserRepository users,
+            RoomRepository rooms,
+            FirebaseCourseAssetStorage courseAssetStorage,
+            SupportService support) {
         super(users);
         this.rooms = rooms;
         this.courseAssetStorage = courseAssetStorage;
+        this.support = support;
     }
 
     @PostMapping("/uploads")
@@ -81,6 +95,23 @@ public class UploadController extends BaseController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not save the file");
         }
         return Map.of("url", baseUrl + "/uploads/" + stored);
+    }
+
+    @PostMapping("/support/conversations/{conversationId}/attachments")
+    public Map<String, Object> uploadSupportAttachment(
+            @PathVariable Long conversationId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "guestToken", required = false) String guestToken) {
+        User user = currentUserOrNull();
+        if (user == null) {
+            support.validateGuestConversationAttachment(conversationId, guestToken);
+        } else {
+            support.validateUserConversationAttachment(conversationId, user);
+        }
+        String extension = chatAttachmentExtension(file);
+        String url = courseAssetStorage.storeSupportAttachment(
+                file, extension, chatAttachmentContentType(extension));
+        return Map.of("url", url);
     }
 
     @PostMapping("/rooms/{roomId}/attachments")
@@ -137,6 +168,16 @@ public class UploadController extends BaseController {
             case ".flac" -> "audio/flac";
             default -> throw bad("Unsupported chat file type");
         };
+    }
+
+    private User currentUserOrNull() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        return users.findByEmailIgnoreCase(authentication.getName()).orElse(null);
     }
 
     @PostMapping("/admin/course-assets")

@@ -42,6 +42,10 @@ public class FirebaseCourseAssetStorage {
         return store(file, "chat-attachments", extension, contentType);
     }
 
+    public String storeSupportAttachment(MultipartFile file, String extension, String contentType) {
+        return store(file, "support-attachments", extension, contentType);
+    }
+
     private String store(MultipartFile file, String folder, String extension, String contentType) {
         if (bucketName == null || bucketName.isBlank()) {
             log.error("Firebase Storage bucket is not configured; course asset upload is unavailable");

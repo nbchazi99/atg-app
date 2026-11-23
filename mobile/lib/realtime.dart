@@ -228,6 +228,7 @@ abstract final class AtgScope {
   static const users = 'users';
   static const requests = 'requests';
   static const home = 'home';
+  static const support = 'support';
 
   static String room(int roomId) => 'room:$roomId';
   static String wallet(int userId) => 'wallet:$userId';

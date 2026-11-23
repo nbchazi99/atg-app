@@ -48,7 +48,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .exceptionHandling(e -> e.authenticationEntryPoint(
                         (request, response, exception) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/settings/public", "/uploads/**", "/error", "/h2-console/**", "/ws").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/settings/public", "/api/support/guest/**",
+                                "/api/support/conversations/*/attachments",
+                                "/uploads/**", "/error", "/h2-console/**", "/ws").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

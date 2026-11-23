@@ -655,3 +655,253 @@ class AdminRequests {
         .toList(),
   );
 }
+
+class SupportConversation {
+  const SupportConversation({
+    required this.id,
+    required this.topic,
+    required this.status,
+    required this.messageCount,
+    this.guestToken,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final int id;
+  final String topic;
+  final String status;
+  final int messageCount;
+  final String? guestToken;
+  final String? createdAt;
+  final String? updatedAt;
+
+  factory SupportConversation.fromJson(Map<String, dynamic> json) =>
+      SupportConversation(
+        id: _i(json['id']),
+        topic: _s(json['topic']) ?? '',
+        status: _s(json['status']) ?? 'OPEN',
+        messageCount: _i(json['messageCount']),
+        guestToken: _s(json['guestToken']),
+        createdAt: _s(json['createdAt']),
+        updatedAt: _s(json['updatedAt']),
+      );
+}
+
+class SupportMessage {
+  const SupportMessage({
+    required this.id,
+    required this.conversationId,
+    required this.authorName,
+    required this.authorType,
+    required this.text,
+    required this.internalNote,
+    this.ticketId,
+    this.authorId,
+    this.attachmentUrls = const [],
+    this.createdAt,
+  });
+
+  final int id;
+  final int conversationId;
+  final int? ticketId;
+  final int? authorId;
+  final String authorName;
+  final String authorType;
+  final String text;
+  final List<String> attachmentUrls;
+  final bool internalNote;
+  final String? createdAt;
+
+  factory SupportMessage.fromJson(Map<String, dynamic> json) => SupportMessage(
+    id: _i(json['id']),
+    conversationId: _i(json['conversationId']),
+    ticketId: json['ticketId'] == null ? null : _i(json['ticketId']),
+    authorId: json['authorId'] == null ? null : _i(json['authorId']),
+    authorName: _s(json['authorName']) ?? '',
+    authorType: _s(json['authorType']) ?? 'USER',
+    text: _s(json['text']) ?? '',
+    attachmentUrls: _l(json['attachmentUrls']).map((item) => '$item').toList(),
+    internalNote: json['internalNote'] == true,
+    createdAt: _s(json['createdAt']),
+  );
+}
+
+class SupportConversationDetail {
+  const SupportConversationDetail({
+    required this.conversation,
+    required this.messages,
+  });
+
+  final SupportConversation conversation;
+  final List<SupportMessage> messages;
+
+  factory SupportConversationDetail.fromJson(Map<String, dynamic> json) =>
+      SupportConversationDetail(
+        conversation: SupportConversation.fromJson(
+          (json['conversation'] as Map).cast<String, dynamic>(),
+        ),
+        messages: _l(json['messages'])
+            .map(
+              (item) =>
+                  SupportMessage.fromJson((item as Map).cast<String, dynamic>()),
+            )
+            .toList(),
+      );
+}
+
+class SupportChatResult {
+  const SupportChatResult({
+    required this.conversation,
+    required this.userMessage,
+    required this.assistantMessage,
+    required this.needsHuman,
+    this.ticket,
+  });
+
+  final SupportConversation conversation;
+  final SupportMessage userMessage;
+  final SupportMessage assistantMessage;
+  final bool needsHuman;
+  final SupportTicket? ticket;
+
+  factory SupportChatResult.fromJson(Map<String, dynamic> json) =>
+      SupportChatResult(
+        conversation: SupportConversation.fromJson(
+          (json['conversation'] as Map).cast<String, dynamic>(),
+        ),
+        userMessage: SupportMessage.fromJson(
+          (json['userMessage'] as Map).cast<String, dynamic>(),
+        ),
+        assistantMessage: SupportMessage.fromJson(
+          (json['assistantMessage'] as Map).cast<String, dynamic>(),
+        ),
+        needsHuman: json['needsHuman'] == true,
+        ticket: json['ticket'] is Map
+            ? SupportTicket.fromJson(
+                (json['ticket'] as Map).cast<String, dynamic>(),
+              )
+            : null,
+      );
+}
+
+class SupportTicket {
+  const SupportTicket({
+    required this.id,
+    required this.ticketNumber,
+    required this.conversationId,
+    required this.contactName,
+    required this.phone,
+    required this.category,
+    required this.subject,
+    required this.description,
+    required this.priority,
+    required this.status,
+    this.userId,
+    this.email,
+    this.preferredContact,
+    this.assignedAdminId,
+    this.assignedAdminName,
+    this.createdAt,
+    this.updatedAt,
+    this.resolvedAt,
+  });
+
+  final int id;
+  final String ticketNumber;
+  final int conversationId;
+  final int? userId;
+  final String contactName;
+  final String phone;
+  final String? email;
+  final String? preferredContact;
+  final String category;
+  final String subject;
+  final String description;
+  final String priority;
+  final String status;
+  final int? assignedAdminId;
+  final String? assignedAdminName;
+  final String? createdAt;
+  final String? updatedAt;
+  final String? resolvedAt;
+
+  factory SupportTicket.fromJson(Map<String, dynamic> json) => SupportTicket(
+    id: _i(json['id']),
+    ticketNumber: _s(json['ticketNumber']) ?? '',
+    conversationId: _i(json['conversationId']),
+    userId: json['userId'] == null ? null : _i(json['userId']),
+    contactName: _s(json['contactName']) ?? '',
+    phone: _s(json['phone']) ?? '',
+    email: _s(json['email']),
+    preferredContact: _s(json['preferredContact']),
+    category: _s(json['category']) ?? 'GENERAL',
+    subject: _s(json['subject']) ?? '',
+    description: _s(json['description']) ?? '',
+    priority: _s(json['priority']) ?? 'NORMAL',
+    status: _s(json['status']) ?? 'OPEN',
+    assignedAdminId: json['assignedAdminId'] == null
+        ? null
+        : _i(json['assignedAdminId']),
+    assignedAdminName: _s(json['assignedAdminName']),
+    createdAt: _s(json['createdAt']),
+    updatedAt: _s(json['updatedAt']),
+    resolvedAt: _s(json['resolvedAt']),
+  );
+}
+
+class SupportTicketDetail {
+  const SupportTicketDetail({required this.ticket, required this.messages});
+
+  final SupportTicket ticket;
+  final List<SupportMessage> messages;
+
+  factory SupportTicketDetail.fromJson(Map<String, dynamic> json) =>
+      SupportTicketDetail(
+        ticket: SupportTicket.fromJson(
+          (json['ticket'] as Map).cast<String, dynamic>(),
+        ),
+        messages: _l(json['messages'])
+            .map(
+              (item) =>
+                  SupportMessage.fromJson((item as Map).cast<String, dynamic>()),
+            )
+            .toList(),
+      );
+}
+
+class SupportKnowledgeEntry {
+  const SupportKnowledgeEntry({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.content,
+    required this.keywords,
+    required this.active,
+    this.updatedBy,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final int id;
+  final String title;
+  final String category;
+  final String content;
+  final String keywords;
+  final bool active;
+  final int? updatedBy;
+  final String? createdAt;
+  final String? updatedAt;
+
+  factory SupportKnowledgeEntry.fromJson(Map<String, dynamic> json) =>
+      SupportKnowledgeEntry(
+        id: _i(json['id']),
+        title: _s(json['title']) ?? '',
+        category: _s(json['category']) ?? 'GENERAL',
+        content: _s(json['content']) ?? '',
+        keywords: _s(json['keywords']) ?? '',
+        active: json['active'] == true,
+        updatedBy: json['updatedBy'] == null ? null : _i(json['updatedBy']),
+        createdAt: _s(json['createdAt']),
+        updatedAt: _s(json['updatedAt']),
+      );
+}

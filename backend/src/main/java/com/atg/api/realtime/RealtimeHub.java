@@ -39,6 +39,7 @@ public class RealtimeHub extends TextWebSocketHandler {
     public static final String REQUESTS = "requests";
     public static final String WALLET = "wallet";
     public static final String HOME = "home";
+    public static final String SUPPORT = "support";
 
     private final JwtService jwt;
     private final UserRepository users;
@@ -61,6 +62,10 @@ public class RealtimeHub extends TextWebSocketHandler {
 
     public static String homeScope(Long userId) {
         return HOME + ":" + userId;
+    }
+
+    public static String supportScope(Long userId) {
+        return SUPPORT + ":" + userId;
     }
 
     /** Wallet + home + admin queue invalidation for one user's request. */
