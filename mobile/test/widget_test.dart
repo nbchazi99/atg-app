@@ -57,6 +57,12 @@ void main() {
     expect(settings.withdrawalMethods, ['EcoCash']);
   });
 
+  test('settings default a missing withdrawal fee to ten percent', () {
+    final settings = Settings.fromJson(const {});
+
+    expect(settings.withdrawFeePct, 10);
+  });
+
   test('settings ignore legacy payment methods from the server', () {
     final settings = Settings.fromJson({
       'depositMethods': ['Cash', 'EcoCash'],
