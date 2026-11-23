@@ -319,7 +319,7 @@ class _SupportScreenState extends State<SupportScreen> {
           child: _messages.isEmpty
               ? const Center(
                   child: Text(
-                    'Ask a question about your ATG account, payments or courses.',
+                    'Ask about ATG or any general question. Account-specific issues may need the support team.',
                     textAlign: TextAlign.center,
                     style: AtgText.bodySmall,
                   ),
