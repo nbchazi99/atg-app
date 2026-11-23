@@ -82,8 +82,9 @@ java -jar build/libs/atg-api-1.0.0.jar
 - The API stores users, signals, rooms, wallets and settings in Firebase Firestore.
 - Uploaded course and chat assets use Firebase Storage. Configure `FIREBASE_STORAGE_BUCKET` (defaults
   to `atg-app-6908e.firebasestorage.app`) and grant the Render service account access to the bucket.
-- The AI support assistant uses OpenAI GPT. Set `OPENAI_API_KEY` in the Render environment; never
-  commit the key to the repository.
+- The AI support assistant uses OpenAI GPT for general questions and ATG support. ATG-specific answers
+  use approved support information; account-specific details may be escalated. Set `OPENAI_API_KEY`
+  in the Render environment; never commit the key to the repository.
 - API root: `http://localhost:8080/api`.
 
 ## Deploy Flutter web to Firebase Hosting
