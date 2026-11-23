@@ -5,6 +5,7 @@ import com.atg.api.repo.RoomRepository;
 import com.atg.api.model.Room;
 import com.atg.api.model.User;
 import com.atg.api.service.FirebaseCourseAssetStorage;
+import com.atg.api.service.SupportService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,8 @@ class UploadControllerTest {
     private final UserRepository users = mock(UserRepository.class);
     private final RoomRepository rooms = mock(RoomRepository.class);
     private final FirebaseCourseAssetStorage storage = mock(FirebaseCourseAssetStorage.class);
-    private final UploadController controller = new UploadController(users, rooms, storage);
+    private final SupportService support = mock(SupportService.class);
+    private final UploadController controller = new UploadController(users, rooms, storage, support);
     private final User member = new User();
 
     @BeforeEach

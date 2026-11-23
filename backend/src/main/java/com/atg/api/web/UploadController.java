@@ -53,13 +53,6 @@ public class UploadController extends BaseController {
     public UploadController(
             com.atg.api.repo.UserRepository users,
             RoomRepository rooms,
-            FirebaseCourseAssetStorage courseAssetStorage) {
-        this(users, rooms, courseAssetStorage, null);
-    }
-
-    public UploadController(
-            com.atg.api.repo.UserRepository users,
-            RoomRepository rooms,
             FirebaseCourseAssetStorage courseAssetStorage,
             SupportService support) {
         super(users);
