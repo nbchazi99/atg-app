@@ -109,7 +109,7 @@ class _LessonScreenState extends State<LessonScreen> {
     final lesson = widget.lesson;
 
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -182,7 +182,7 @@ class _LessonScreenState extends State<LessonScreen> {
                       title: 'Lesson comments',
                     ),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       'Progress is saved to your ATG account, so it follows you to the website and any other phone.',
                       style: TextStyle(
                         fontSize: 11,

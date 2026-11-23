@@ -10,6 +10,7 @@ import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'admin_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -161,8 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Sign out?',
-      message:
-          'Your session on this phone ends. Courses, purchases and requests stay on your account.',
+      message: 'Your session on this phone ends. Courses, purchases and requests stay on your account.',
       confirmLabel: 'Sign out',
       cancelLabel: 'Stay',
       destructive: true,
@@ -176,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -189,6 +189,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                   children: [
                     _identityCard(),
+                    SurfaceCard(
+                      padding: const EdgeInsets.all(14),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SettingsScreen(),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.settings_outlined,
+                            color: AtgColors.gold,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Settings', style: AtgText.h3),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Appearance and app preferences.',
+                                  style: AtgText.small,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: AtgColors.muted,
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 14),
                     _membershipCard(),
                     if (session.isAdmin) ...[
@@ -200,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             builder: (_) => const AdminScreen(),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(
                               Icons.shield_outlined,
@@ -293,7 +328,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: _logout,
                     ),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       'Education and signals only. No financial advice.',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 10.5, color: AtgColors.muted),
@@ -424,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           if (_ordering) ...[
             const SizedBox(height: 12),
-            const Row(
+            Row(
               children: [
                 SizedBox(
                   width: 16,
@@ -483,13 +518,13 @@ class _MembershipOption extends StatelessWidget {
                   width: 28,
                   height: 28,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AtgColors.primarySoft,
                     shape: BoxShape.circle,
                   ),
                   child: Text(
                     badge,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                       color: AtgColors.gold,
@@ -502,7 +537,7 @@ class _MembershipOption extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
                       color: AtgColors.ink,
@@ -571,7 +606,7 @@ class _PurchaseRow extends StatelessWidget {
               ),
               Text(
                 money(purchase.amount),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: AtgColors.ink,

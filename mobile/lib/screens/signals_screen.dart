@@ -64,9 +64,8 @@ class _SignalsScreenState extends State<SignalsScreen> {
   }
 
   void _openProfile() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   @override
@@ -98,7 +97,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: AtgColors.primary,
-                backgroundColor: AtgColors.surface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 onRefresh: _load,
                 child: _loading && _items.isEmpty
                     ? ListView(
@@ -112,8 +111,7 @@ class _SignalsScreenState extends State<SignalsScreen> {
                         children: const [
                           EmptyState(
                             title: 'Nothing here yet',
-                            message:
-                                'Signals appear here as soon as the floor posts them.',
+                            message: 'Signals appear here as soon as the floor posts them.',
                             icon: Icons.bolt_outlined,
                           ),
                         ],

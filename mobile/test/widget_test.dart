@@ -1,27 +1,70 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atg_mobile/format.dart';
 import 'package:atg_mobile/models.dart';
+import 'package:atg_mobile/session.dart';
+import 'package:atg_mobile/theme.dart';
 
 void main() {
-  test(
-    'settings use EcoCash defaults when older servers omit payment methods',
-    () {
-      final settings = Settings.fromJson(const {});
+  test('dark theme keeps primary text high contrast against its surface', () {
+    final theme = atgTheme(darkMode: true);
+    final backgroundLuminance = theme.scaffoldBackgroundColor
+        .computeLuminance();
+    final textLuminance = theme.colorScheme.onSurface.computeLuminance();
+    final contrastRatio = (textLuminance + 0.05) / (backgroundLuminance + 0.05);
 
-      expect(settings.depositMethods, ['EcoCash']);
-      expect(settings.withdrawalMethods, ['EcoCash']);
-    },
-  );
+    expect(theme.brightness, Brightness.dark);
+    expect(contrastRatio, greaterThan(7));
+    atgTheme(darkMode: false);
+  });
 
-  test('settings parse server-managed payment methods', () {
+  test('dark theme keeps text legible on colored controls', () {
+    final scheme = atgTheme(darkMode: true).colorScheme;
+    final foregrounds = [
+      (scheme.primary, scheme.onPrimary),
+      (scheme.secondary, scheme.onSecondary),
+      (scheme.tertiary, scheme.onTertiary),
+      (scheme.error, scheme.onError),
+    ];
+
+    for (final (background, foreground) in foregrounds) {
+      final lighter = background.computeLuminance();
+      final darker = foreground.computeLuminance();
+      final contrastRatio = (lighter + 0.05) / (darker + 0.05);
+
+      expect(contrastRatio, greaterThan(4.5));
+    }
+    atgTheme(darkMode: false);
+  });
+
+  test('dark mode preference persists independently of sign-out', () async {
+    SharedPreferences.setMockInitialValues({});
+    final session = await Session.load();
+
+    expect(session.isDarkMode, isFalse);
+    await session.saveDarkMode(true);
+    await session.logout();
+
+    expect(session.isDarkMode, isTrue);
+  });
+
+  test('settings keep EcoCash as the only supported payment method', () {
+    final settings = Settings.fromJson(const {});
+
+    expect(settings.depositMethods, ['EcoCash']);
+    expect(settings.withdrawalMethods, ['EcoCash']);
+  });
+
+  test('settings ignore legacy payment methods from the server', () {
     final settings = Settings.fromJson({
       'depositMethods': ['Cash', 'EcoCash'],
       'withdrawalMethods': ['SmileCash'],
     });
 
-    expect(settings.depositMethods, ['Cash', 'EcoCash']);
-    expect(settings.withdrawalMethods, ['SmileCash']);
+    expect(settings.depositMethods, ['EcoCash']);
+    expect(settings.withdrawalMethods, ['EcoCash']);
   });
 
   test('money groups thousands and keeps two decimals', () {

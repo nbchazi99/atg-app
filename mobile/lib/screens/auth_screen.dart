@@ -104,6 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -113,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       AtgLogo(size: 52),
                       SizedBox(width: 12),
@@ -205,12 +206,12 @@ class _AuthScreenState extends State<AuthScreen> {
                         onPressed: _loading
                             ? null
                             : () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => PasswordResetScreen(
-                                      initialEmail: _email.text.trim(),
-                                    ),
+                                MaterialPageRoute(
+                                  builder: (_) => PasswordResetScreen(
+                                    initialEmail: _email.text.trim(),
                                   ),
                                 ),
+                              ),
                         child: const Text('Forgot password?'),
                       ),
                     ),
@@ -221,7 +222,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     onPressed: _submit,
                   ),
                   const SizedBox(height: 24),
-                  const Center(
+                  Center(
                     child: Text(
                       'Trading involves risk. ATG is an education and signals platform, not a broker.',
                       textAlign: TextAlign.center,

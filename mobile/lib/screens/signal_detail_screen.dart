@@ -66,11 +66,10 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
       }
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) =>
-              RoomChatScreen(
-                roomId: selectedRoom.id,
-                roomName: selectedRoom.name,
-              ),
+          builder: (_) => RoomChatScreen(
+            roomId: selectedRoom.id,
+            roomName: selectedRoom.name,
+          ),
         ),
       );
     } on ApiException catch (e) {
@@ -91,7 +90,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
     final signal = widget.signal;
 
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -178,7 +177,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                             ),
                             child: Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.gavel_outlined,
                                   size: 16,
                                   color: AtgColors.gold,
@@ -203,7 +202,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                           const SizedBox(height: 14),
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.people_outline_rounded,
                                 size: 15,
                                 color: AtgColors.muted,
@@ -243,7 +242,7 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                             style: AtgText.bodySmall,
                           ),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Education and signals only. No financial advice.',
                             style: TextStyle(
                               fontSize: 10.5,
@@ -302,7 +301,7 @@ class _Level extends StatelessWidget {
           value.trim().isEmpty ? fallback : value,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13.5,
             color: AtgColors.ink,
             height: 1.35,

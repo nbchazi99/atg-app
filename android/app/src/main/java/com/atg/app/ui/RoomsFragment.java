@@ -4,11 +4,9 @@ import com.atg.app.ui.Adapters.*;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -75,8 +73,6 @@ public class RoomsFragment extends Fragment {
         chipOpen.setOnClickListener(v -> choose(chipOpen, "open"));
         chipClosed.setOnClickListener(v -> choose(chipClosed, "closed"));
         chipAll.setOnClickListener(v -> choose(chipAll, "latest"));
-        view.findViewById(R.id.btnStartThread).setOnClickListener(v -> startThread());
-
         RecyclerView list = view.findViewById(R.id.rvFeed);
         adapter = new FeedAdapter(item -> {
             long id = item.roomId > 0 ? item.roomId : mainRoomId;
@@ -122,80 +118,6 @@ public class RoomsFragment extends Fragment {
         Ui.setChip(chipClosed, chip == chipClosed);
         Ui.setChip(chipAll, chip == chipAll);
         load();
-    }
-
-    private void startThread() {
-        EditText title = new EditText(requireContext());
-        title.setHint("Conversation title");
-        title.setSingleLine(true);
-        title.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        EditText message = new EditText(requireContext());
-        message.setHint("What would you like to discuss?");
-        message.setMinLines(3);
-        message.setMaxLines(5);
-        message.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        LinearLayout form = new LinearLayout(requireContext());
-        form.setOrientation(LinearLayout.VERTICAL);
-        int sidePadding = dp(24);
-        form.setPadding(sidePadding, dp(8), sidePadding, 0);
-        form.addView(title);
-        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        messageParams.topMargin = dp(12);
-        form.addView(message, messageParams);
-
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Start a conversation")
-                .setView(form)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Start chat", null)
-                .create();
-        dialog.setOnShowListener(ignored -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(button -> {
-                    String conversationTitle = title.getText().toString().trim();
-                    String firstMessage = message.getText().toString().trim();
-                    if (conversationTitle.isEmpty()) {
-                        title.setError("Add a conversation title");
-                        return;
-                    }
-                    if (firstMessage.isEmpty()) {
-                        message.setError("Add your first message");
-                        return;
-                    }
-                    android.widget.Button startButton =
-                            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
-                    startButton.setEnabled(false);
-                    ApiClient.api().createCommunityThread(
-                            new Models.ThreadReq(conversationTitle, firstMessage))
-                            .enqueue(new Callback<>() {
-                                @Override
-                                public void onResponse(@NonNull Call<Models.FeedItem> call,
-                                                       @NonNull Response<Models.FeedItem> response) {
-                                    if (!isAdded()) return;
-                                    if (!response.isSuccessful() || response.body() == null) {
-                                        startButton.setEnabled(true);
-                                        Ui.toast(requireContext(), ApiClient.errorMessage(response));
-                                        return;
-                                    }
-                                    dialog.dismiss();
-                                    filter = "open";
-                                    Ui.setChip(chipOpen, true);
-                                    Ui.setChip(chipClosed, false);
-                                    Ui.setChip(chipAll, false);
-                                    load();
-                                    RoomDetailActivity.startThread(requireContext(), response.body());
-                                }
-
-                                @Override
-                                public void onFailure(@NonNull Call<Models.FeedItem> call, @NonNull Throwable t) {
-                                    if (!isAdded()) return;
-                                    startButton.setEnabled(true);
-                                    Ui.toast(requireContext(), ApiClient.connectionMessage(t));
-                                }
-                            });
-                }));
-        dialog.show();
     }
 
     private void load() {

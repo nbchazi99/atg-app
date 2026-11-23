@@ -18,7 +18,7 @@ class WithdrawScreen extends StatefulWidget {
 }
 
 class _WithdrawScreenState extends State<WithdrawScreen> {
-  static const _sources = [
+  static final _sources = [
     OptionTile(
       title: 'Weltrade withdrawal',
       subtitle: 'You withdrew to the ATG agent on Weltrade.',
@@ -76,7 +76,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       if (!mounted) return;
       setState(() {
         _settings = settings;
-        _payouts = settings.withdrawalMethods.map(walletMethodOption).toList();
+        _payouts = [walletMethodOption('EcoCash')];
         _payout = 0;
       });
     } on ApiException {
@@ -84,7 +84,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     }
   }
 
-  double get _feePct => _settings?.withdrawFeePct ?? 7;
+  double get _feePct => _settings?.withdrawFeePct ?? 10;
   double get _min => _settings?.minWithdraw ?? 5;
   double get _max => _settings?.maxWithdraw ?? 454;
   double get _enteredAmount => parseAmount(_amount.text);
@@ -244,7 +244,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         if (_step > 1 && _step < 4) _goTo(_step - 1);
       },
       child: Scaffold(
-        backgroundColor: AtgColors.bg,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
           bottom: false,
           child: PageBody(
@@ -301,7 +301,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         keyboardType: TextInputType.phone,
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'The number that receives the payout. It can differ from your sign-in number.',
         style: TextStyle(fontSize: 11.5, color: AtgColors.muted, height: 1.4),
       ),
@@ -455,7 +455,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                 ),
               ),
               if (_uploading)
-                const SizedBox(
+                SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
@@ -466,7 +466,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
               else
                 Text(
                   _proofUrl == null ? 'Choose' : 'Change',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AtgColors.gold,
                     fontWeight: FontWeight.w800,
@@ -528,15 +528,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         width: 64,
         height: 64,
         alignment: Alignment.center,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AtgColors.greenBg,
           shape: BoxShape.circle,
         ),
-        child: const Icon(
-          Icons.check_rounded,
-          size: 34,
-          color: AtgColors.greenText,
-        ),
+        child: Icon(Icons.check_rounded, size: 34, color: AtgColors.greenText),
       ),
       const SizedBox(height: 18),
       const Text(

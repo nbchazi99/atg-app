@@ -75,7 +75,7 @@ public class HomeFragment extends Fragment {
         view.findViewById(R.id.actWithdraw).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), WithdrawActivity.class)));
         view.findViewById(R.id.actRooms).setOnClickListener(v -> openTab(R.id.nav_rooms));
-        view.findViewById(R.id.actCalls).setOnClickListener(v -> openTab(R.id.nav_signals));
+        view.findViewById(R.id.actSignals).setOnClickListener(v -> openTab(R.id.nav_signals));
 
         view.findViewById(R.id.toolPip).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PipCalculatorActivity.class)));

@@ -12,17 +12,6 @@ String? _s(dynamic value) => value == null ? null : '$value';
 
 List<dynamic> _l(dynamic value) => value is List ? value : const [];
 
-const walletPaymentMethods = ['EcoCash', 'Cash', 'SmileCash'];
-
-List<String> _strings(dynamic value, {List<String> fallback = const []}) {
-  final strings = _l(value)
-      .whereType<String>()
-      .map((item) => item.trim())
-      .where((item) => item.isNotEmpty)
-      .toList();
-  return strings.isEmpty ? fallback : strings;
-}
-
 class AppUser {
   const AppUser({
     required this.id,
@@ -245,6 +234,7 @@ class RoomMessage {
     this.authorAvatarUrl,
     required this.text,
     this.attachmentUrl,
+    this.attachmentType,
     this.createdAt,
   });
 
@@ -255,6 +245,7 @@ class RoomMessage {
   final String? authorAvatarUrl;
   final String text;
   final String? attachmentUrl;
+  final String? attachmentType;
   final String? createdAt;
 
   factory RoomMessage.fromJson(Map<String, dynamic> json) => RoomMessage(
@@ -265,6 +256,7 @@ class RoomMessage {
     authorAvatarUrl: _s(json['authorAvatarUrl']),
     text: _s(json['text']) ?? '',
     attachmentUrl: _s(json['attachmentUrl']),
+    attachmentType: _s(json['attachmentType']),
     createdAt: _s(json['createdAt']),
   );
 }
@@ -585,9 +577,9 @@ class CourseDetail {
 
   factory CourseDetail.fromJson(Map<String, dynamic> json) => CourseDetail(
     course: Course.fromJson((json['course'] as Map).cast<String, dynamic>()),
-    lessons: _l(
-      json['lessons'],
-    ).map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>())).toList(),
+    lessons: _l(json['lessons'])
+        .map((e) => Lesson.fromJson((e as Map).cast<String, dynamic>()))
+        .toList(),
     enrolled: json['enrolled'] == true,
     completedLessonIds: _l(json['completedLessonIds']).map(_i).toList(),
   );
@@ -624,7 +616,9 @@ class Settings {
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
     adminFeePct: _d(json['adminFeePct']),
-    withdrawFeePct: _d(json['withdrawFeePct']),
+    withdrawFeePct: json['withdrawFeePct'] == null
+        ? 10
+        : _d(json['withdrawFeePct']),
     minDeposit: _d(json['minDeposit']),
     maxDeposit: _d(json['maxDeposit']),
     minWithdraw: _d(json['minWithdraw']),
@@ -633,14 +627,8 @@ class Settings {
     promotionTitle: _s(json['promotionTitle']) ?? '',
     promotionBody: _s(json['promotionBody']) ?? '',
     pointsPerReferral: _i(json['pointsPerReferral']),
-    depositMethods: _strings(
-      json['depositMethods'],
-      fallback: const ['EcoCash'],
-    ),
-    withdrawalMethods: _strings(
-      json['withdrawalMethods'],
-      fallback: const ['EcoCash'],
-    ),
+    depositMethods: const ['EcoCash'],
+    withdrawalMethods: const ['EcoCash'],
   );
 }
 

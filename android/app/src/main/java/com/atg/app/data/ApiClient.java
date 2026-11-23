@@ -10,8 +10,10 @@ import androidx.annotation.NonNull;
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.io.File;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
+import java.util.Locale;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -37,8 +39,8 @@ public final class ApiClient {
         session = new Session(context);
         http = new OkHttpClient.Builder()
                 .connectTimeout(20, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(3, TimeUnit.MINUTES)
+                .writeTimeout(3, TimeUnit.MINUTES)
                 .addInterceptor(chain -> {
                     var builder = chain.request().newBuilder();
                     String token = session.token();
@@ -115,6 +117,97 @@ public final class ApiClient {
             service.upload(part).enqueue(new Callback<Models.UploadRes>() {
                 @Override
                 public void onResponse(@NonNull Call<Models.UploadRes> call, @NonNull Response<Models.UploadRes> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        callback.ok(response.body().url);
+                    } else {
+                        callback.fail(errorMessage(response));
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<Models.UploadRes> call, @NonNull Throwable t) {
+                    callback.fail(connectionMessage(t));
+                }
+            });
+        } catch (Exception e) {
+            callback.fail("Could not read that file");
+        }
+    }
+
+    public static void uploadRoomAttachment(
+            Context context, long roomId, Uri uri, UploadCallback callback) {
+        try {
+            String name = "attachment";
+            String mime = context.getContentResolver().getType(uri);
+            long size = -1;
+            Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null) {
+                int nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                int sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE);
+                if (cursor.moveToFirst()) {
+                    if (nameIndex >= 0) {
+                        String display = cursor.getString(nameIndex);
+                        if (display != null) name = display;
+                    }
+                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                        size = cursor.getLong(sizeIndex);
+                    }
+                }
+                cursor.close();
+            }
+            if (size < 0 && "file".equals(uri.getScheme()) && uri.getPath() != null) {
+                size = new File(uri.getPath()).length();
+            }
+            if (size <= 0) {
+                callback.fail("Could not determine the selected file size");
+                return;
+            }
+            if (size > 80L * 1024 * 1024) {
+                callback.fail("Chat files must be 80 MB or smaller");
+                return;
+            }
+            if (mime == null) {
+                String extension = name.substring(name.lastIndexOf('.') + 1)
+                        .toLowerCase(Locale.ROOT);
+                mime = android.webkit.MimeTypeMap.getSingleton()
+                        .getMimeTypeFromExtension(extension);
+            }
+            if (mime == null) mime = "application/octet-stream";
+            final String contentType = mime;
+            final long contentLength = size;
+            final String filename = name;
+            InputStream input = context.getContentResolver().openInputStream(uri);
+            if (input == null) {
+                callback.fail("Could not read that file");
+                return;
+            }
+            RequestBody body = new RequestBody() {
+                @Override
+                public MediaType contentType() {
+                    return MediaType.parse(contentType);
+                }
+
+                @Override
+                public long contentLength() {
+                    return contentLength;
+                }
+
+                @Override
+                public void writeTo(@NonNull okio.BufferedSink sink) throws IOException {
+                    try (InputStream stream = input) {
+                        byte[] buffer = new byte[8192];
+                        int read;
+                        while ((read = stream.read(buffer)) != -1) {
+                            sink.write(buffer, 0, read);
+                        }
+                    }
+                }
+            };
+            MultipartBody.Part part = MultipartBody.Part.createFormData("file", filename, body);
+            service.uploadRoomAttachment(roomId, part).enqueue(new Callback<Models.UploadRes>() {
+                @Override
+                public void onResponse(@NonNull Call<Models.UploadRes> call,
+                                       @NonNull Response<Models.UploadRes> response) {
                     if (response.isSuccessful() && response.body() != null) {
                         callback.ok(response.body().url);
                     } else {

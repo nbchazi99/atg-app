@@ -64,6 +64,10 @@ public class Adapters {
         void delete(Models.Course course);
     }
 
+    public interface OnMessageAttachment {
+        void open(Models.RoomMessage message);
+    }
+
     public static final class Option {
         public String title;
         public String subtitle;
@@ -318,9 +322,11 @@ public class Adapters {
     public static class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Holder> {
         private final List<Models.RoomMessage> items = new ArrayList<>();
         private final String selfName;
+        private final OnMessageAttachment attachmentListener;
 
-        public MessagesAdapter(String selfName) {
+        public MessagesAdapter(String selfName, OnMessageAttachment attachmentListener) {
             this.selfName = selfName;
+            this.attachmentListener = attachmentListener;
         }
 
         public void setItems(List<Models.RoomMessage> data) {
@@ -348,6 +354,22 @@ public class Adapters {
             h.author.setText(m.author);
             h.text.setText(m.text);
             Ui.enableWebLinks(h.text);
+            boolean hasAttachment = m.attachmentUrl != null && !m.attachmentUrl.isBlank();
+            h.attachment.setVisibility(hasAttachment ? View.VISIBLE : View.GONE);
+            if (hasAttachment) {
+                String lowerUrl = m.attachmentUrl.toLowerCase(Locale.ROOT);
+                boolean audio = "AUDIO".equalsIgnoreCase(m.attachmentType)
+                        || lowerUrl.endsWith(".mp3") || lowerUrl.endsWith(".wav")
+                        || lowerUrl.endsWith(".m4a") || lowerUrl.endsWith(".aac")
+                        || lowerUrl.endsWith(".ogg") || lowerUrl.endsWith(".opus")
+                        || lowerUrl.endsWith(".flac");
+                h.attachment.setText(audio ? "▶  Play voice note" : "Open attachment");
+                h.attachment.setOnClickListener(v -> {
+                    if (attachmentListener != null) attachmentListener.open(m);
+                });
+            } else {
+                h.attachment.setOnClickListener(null);
+            }
             h.time.setText(Ui.timeAgo(m.createdAt));
             h.bubble.setBackgroundResource(own ? R.drawable.bg_bubble_out : R.drawable.bg_bubble_in);
             LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) h.bubble.getLayoutParams();
@@ -364,13 +386,14 @@ public class Adapters {
         }
 
         static class Holder extends RecyclerView.ViewHolder {
-            final TextView author, text, time;
+            final TextView author, text, attachment, time;
             final LinearLayout bubble, root;
 
             Holder(View v) {
                 super(v);
                 author = v.findViewById(R.id.tvMsgAuthor);
                 text = v.findViewById(R.id.tvMsgText);
+                attachment = v.findViewById(R.id.tvMsgAttachment);
                 time = v.findViewById(R.id.tvMsgTime);
                 bubble = v.findViewById(R.id.bubble);
                 root = (LinearLayout) v;

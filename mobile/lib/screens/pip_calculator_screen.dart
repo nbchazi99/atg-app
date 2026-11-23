@@ -73,8 +73,7 @@ class _PipCalculatorScreenState extends State<PipCalculatorScreen> {
     if (yen && currentPrice <= 0) {
       setState(() {
         _value = '—';
-        _detail =
-            'Yen pairs are quoted in yen, so enter the current price to convert the pip value into US dollars.';
+        _detail = 'Yen pairs are quoted in yen, so enter the current price to convert the pip value into US dollars.';
       });
       return;
     }
@@ -101,7 +100,7 @@ class _PipCalculatorScreenState extends State<PipCalculatorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -120,7 +119,7 @@ class _PipCalculatorScreenState extends State<PipCalculatorScreen> {
                         children: [
                           Text(
                             _value,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.w800,
                               color: AtgColors.ink,
@@ -164,7 +163,7 @@ class _PipCalculatorScreenState extends State<PipCalculatorScreen> {
                       onPressed: _calculate,
                     ),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       'Pip value is an estimate. Your broker may price instruments slightly differently. '
                       'This tool is for education, not advice.',
                       style: TextStyle(

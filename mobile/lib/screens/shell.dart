@@ -56,6 +56,7 @@ class _AppShellState extends State<AppShell> {
     ];
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: IndexedStack(index: _index, children: pages),
       floatingActionButton: AnimatedSwitcher(
         duration: const Duration(milliseconds: 180),
@@ -69,7 +70,7 @@ class _AppShellState extends State<AppShell> {
                 key: const ValueKey('atg-chat'),
                 tooltip: 'Open the community',
                 backgroundColor: AtgColors.primary,
-                foregroundColor: AtgColors.ink,
+                foregroundColor: AtgColors.primaryForeground,
                 elevation: 2,
                 shape: const CircleBorder(),
                 onPressed: () => _select(3),
@@ -99,7 +100,7 @@ class _BottomBar extends StatelessWidget {
   static const _icons = <IconData>[
     Icons.home_outlined,
     Icons.bolt_outlined,
-    Icons.show_chart,
+    Icons.school_outlined,
     Icons.forum_outlined,
     Icons.account_balance_wallet_outlined,
   ];
@@ -107,18 +108,18 @@ class _BottomBar extends StatelessWidget {
   static const _selectedIcons = <IconData>[
     Icons.home_rounded,
     Icons.bolt_rounded,
-    Icons.show_chart,
+    Icons.school_rounded,
     Icons.forum_rounded,
     Icons.account_balance_wallet_rounded,
   ];
 
-  static const _labels = ['Home', 'Signals', 'Market', 'Community', 'Wallet'];
+  static const _labels = ['Home', 'Signals', 'Academy', 'Community', 'Wallet'];
 
   @override
   Widget build(BuildContext context) {
     if (Theme.of(context).platform == TargetPlatform.iOS) {
       return Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AtgColors.surface,
           border: Border(top: BorderSide(color: AtgColors.stroke)),
         ),
@@ -146,7 +147,7 @@ class _BottomBar extends StatelessWidget {
     }
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AtgColors.surface,
         border: Border(top: BorderSide(color: AtgColors.stroke)),
       ),

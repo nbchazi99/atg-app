@@ -126,10 +126,7 @@ class _AcademyDiscussionState extends State<AcademyDiscussion> {
                       maxLength: 2000,
                       textCapitalization: TextCapitalization.sentences,
                       textInputAction: TextInputAction.newline,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AtgColors.ink,
-                      ),
+                      style: TextStyle(fontSize: 14, color: AtgColors.ink),
                       decoration: atgInputDecoration(
                         hint: 'Share a comment or link',
                       ).copyWith(counterText: ''),
@@ -179,7 +176,7 @@ class _AcademyDiscussionState extends State<AcademyDiscussion> {
                       Expanded(
                         child: Text(
                           comment.authorName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AtgColors.gold,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,

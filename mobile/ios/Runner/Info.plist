@@ -34,6 +34,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>ATG uses the camera when you photograph a payment proof.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ATG uses the microphone to record voice notes in chat.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>ATG needs photo access so you can attach payment proofs for deposits, withdrawals, courses and VIP membership.</string>
 	<key>NSLocalNetworkUsageDescription</key>

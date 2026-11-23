@@ -104,6 +104,8 @@ public class Models {
         public Long authorId;
         public String author;
         public String text;
+        public String attachmentUrl;
+        public String attachmentType;
         public String createdAt;
     }
 
@@ -127,9 +129,21 @@ public class Models {
 
     public static class TextReq {
         public String text;
+        public String attachmentUrl;
+        public String attachmentType;
 
         public TextReq(String text) {
+            this(text, null, null);
+        }
+
+        public TextReq(String text, String attachmentUrl) {
+            this(text, attachmentUrl, null);
+        }
+
+        public TextReq(String text, String attachmentUrl, String attachmentType) {
             this.text = text;
+            this.attachmentUrl = attachmentUrl;
+            this.attachmentType = attachmentType;
         }
     }
 

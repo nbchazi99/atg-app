@@ -110,6 +110,7 @@ class AvatarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground = Theme.of(context).colorScheme.onSurface;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -117,7 +118,7 @@ class AvatarCircle extends StatelessWidget {
         width: size,
         height: size,
         alignment: Alignment.center,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: AtgColors.primarySoft,
           shape: BoxShape.circle,
         ),
@@ -134,7 +135,7 @@ class AvatarCircle extends StatelessWidget {
                       style: TextStyle(
                         fontSize: size * 0.34,
                         fontWeight: FontWeight.w800,
-                        color: AtgColors.ink,
+                        color: foreground,
                       ),
                     ),
                   ),
@@ -145,7 +146,7 @@ class AvatarCircle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: size * 0.34,
                   fontWeight: FontWeight.w800,
-                  color: AtgColors.ink,
+                  color: foreground,
                 ),
               ),
       ),
@@ -160,6 +161,7 @@ class PointsPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).colorScheme.secondary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -169,14 +171,14 @@ class PointsPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star_rounded, size: 13, color: AtgColors.gold),
+          Icon(Icons.star_rounded, size: 13, color: accent),
           const SizedBox(width: 4),
           Text(
             '$points',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: AtgColors.gold,
+              color: accent,
             ),
           ),
         ],
@@ -198,13 +200,14 @@ class _RoundIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurfaceVariant;
     final button = InkWell(
       onTap: onTap ?? () {},
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
         width: 38,
         height: 38,
-        child: Icon(icon, size: 21, color: AtgColors.inkSoft),
+        child: Icon(icon, size: 21, color: color),
       ),
     );
     return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
@@ -220,13 +223,14 @@ class BrandHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final foreground = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 10, 6),
       child: Row(
         children: [
           const AtgLogo(size: 32),
           const SizedBox(width: 9),
-          const Expanded(
+          Expanded(
             child: Text(
               'ACCURATE TRADING GROUP',
               maxLines: 1,
@@ -237,7 +241,7 @@ class BrandHeader extends StatelessWidget {
                 fontSize: 11,
                 letterSpacing: 0.8,
                 fontWeight: FontWeight.w700,
-                color: AtgColors.ink,
+                color: foreground,
               ),
             ),
           ),
@@ -356,8 +360,8 @@ class SurfaceCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.margin,
     this.onTap,
-    this.borderColor = AtgColors.stroke,
-    this.color = AtgColors.surface,
+    this.borderColor,
+    this.color,
     this.radius = 18,
   });
 
@@ -365,19 +369,20 @@ class SurfaceCard extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
-  final Color borderColor;
-  final Color color;
+  final Color? borderColor;
+  final Color? color;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final content = Container(
       width: double.infinity,
       margin: margin,
       padding: padding,
       decoration: cardDecoration(
-        color: color,
-        border: borderColor,
+        color: color ?? theme.colorScheme.surface,
+        border: borderColor ?? theme.colorScheme.outlineVariant,
         radius: radius,
       ),
       child: child,
@@ -392,13 +397,14 @@ class SurfaceCard extends StatelessWidget {
 }
 
 class SectionLabel extends StatelessWidget {
-  const SectionLabel(this.text, {super.key, this.color = AtgColors.gold});
+  const SectionLabel(this.text, {super.key, this.color});
 
   final String text;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? Theme.of(context).colorScheme.secondary;
     return Text(text, style: AtgText.label.copyWith(color: color));
   }
 }
@@ -407,22 +413,25 @@ class AtgPill extends StatelessWidget {
   const AtgPill({
     super.key,
     required this.text,
-    this.background = AtgColors.greyChip,
-    this.foreground = AtgColors.muted,
+    this.background,
+    this.foreground,
     this.leadingDot = false,
     this.fontSize = 10,
     this.icon,
   });
 
   final String text;
-  final Color background;
-  final Color foreground;
+  final Color? background;
+  final Color? foreground;
   final bool leadingDot;
   final double fontSize;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final background = this.background ?? colorScheme.surfaceContainerHighest;
+    final foreground = this.foreground ?? colorScheme.onSurfaceVariant;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -485,31 +494,32 @@ class LivePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AtgPill(
+    final colorScheme = Theme.of(context).colorScheme;
+    return AtgPill(
       text: 'LIVE',
-      background: AtgColors.greenBg,
-      foreground: AtgColors.greenText,
+      background: colorScheme.tertiaryContainer,
+      foreground: colorScheme.onTertiaryContainer,
       leadingDot: true,
     );
   }
 }
 
-({Color bg, Color fg}) statusPalette(String? status) {
+({Color bg, Color fg}) statusPalette(String? status, ColorScheme colors) {
   switch ((status ?? '').toUpperCase()) {
     case 'APPROVED':
     case 'COMPLETED':
     case 'LIVE':
     case 'ACTIVE':
-      return (bg: AtgColors.greenBg, fg: AtgColors.greenText);
+      return (bg: colors.tertiaryContainer, fg: colors.onTertiaryContainer);
     case 'REJECTED':
     case 'SELL':
-      return (bg: AtgColors.redBg, fg: AtgColors.redText);
+      return (bg: colors.errorContainer, fg: colors.onErrorContainer);
     case 'PENDING':
     case 'BUY':
     case 'OPEN':
-      return (bg: AtgColors.primarySoft, fg: AtgColors.gold);
+      return (bg: colors.primaryContainer, fg: colors.onPrimaryContainer);
     default:
-      return (bg: AtgColors.greyChip, fg: AtgColors.muted);
+      return (bg: colors.surfaceContainerHighest, fg: colors.onSurfaceVariant);
   }
 }
 
@@ -521,7 +531,7 @@ class StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = statusPalette(status);
+    final palette = statusPalette(status, Theme.of(context).colorScheme);
     return AtgPill(
       text: status,
       background: palette.bg,
@@ -626,6 +636,7 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: height,
       width: double.infinity,
@@ -633,9 +644,9 @@ class PrimaryButton extends StatelessWidget {
         onPressed: loading ? null : onPressed,
         style: FilledButton.styleFrom(
           backgroundColor: AtgColors.primary,
-          foregroundColor: AtgColors.ink,
+          foregroundColor: colorScheme.onPrimary,
           disabledBackgroundColor: AtgColors.primary.withValues(alpha: 0.45),
-          disabledForegroundColor: AtgColors.ink.withValues(alpha: 0.6),
+          disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -643,12 +654,12 @@ class PrimaryButton extends StatelessWidget {
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
         ),
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.2,
-                  color: AtgColors.ink,
+                  color: colorScheme.onPrimary,
                 ),
               )
             : Row(
@@ -679,26 +690,27 @@ class OutlineButton extends StatelessWidget {
     required this.onPressed,
     this.height = 50,
     this.icon,
-    this.foreground = AtgColors.ink,
+    this.foreground,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final double height;
   final IconData? icon;
-  final Color foreground;
+  final Color? foreground;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: height,
       width: double.infinity,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: foreground,
-          backgroundColor: AtgColors.surface,
-          side: const BorderSide(color: AtgColors.stroke),
+          foregroundColor: foreground ?? colorScheme.onSurface,
+          backgroundColor: colorScheme.surface,
+          side: BorderSide(color: colorScheme.outline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -742,16 +754,16 @@ InputDecoration atgInputDecoration({
     labelText: label,
     hintText: hint,
     alignLabelWithHint: alignLabelWithHint,
-    labelStyle: const TextStyle(color: AtgColors.muted, fontSize: 14),
-    floatingLabelStyle: const TextStyle(
+    labelStyle: TextStyle(color: AtgColors.muted, fontSize: 14),
+    floatingLabelStyle: TextStyle(
       color: AtgColors.gold,
       fontSize: 13,
       fontWeight: FontWeight.w600,
     ),
-    hintStyle: const TextStyle(color: AtgColors.muted, fontSize: 14),
+    hintStyle: TextStyle(color: AtgColors.muted, fontSize: 14),
     suffixIcon: suffixIcon,
     errorText: errorText,
-    errorStyle: const TextStyle(color: AtgColors.redText, fontSize: 11.5),
+    errorStyle: TextStyle(color: AtgColors.redText, fontSize: 11.5),
     border: border(AtgColors.stroke),
     enabledBorder: border(AtgColors.stroke),
     focusedBorder: border(AtgColors.gold, 1.5),
@@ -798,6 +810,7 @@ class AtgField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
     return TextField(
       controller: controller,
       obscureText: obscureText,
@@ -809,7 +822,7 @@ class AtgField extends StatelessWidget {
       onChanged: onChanged,
       onSubmitted: onSubmitted,
       autofillHints: autofillHints,
-      style: const TextStyle(fontSize: 14.5, color: AtgColors.ink),
+      style: TextStyle(fontSize: 14.5, color: color),
       decoration: atgInputDecoration(
         label: label,
         hint: hint,
@@ -835,6 +848,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 44),
       child: Column(
@@ -843,11 +857,11 @@ class EmptyState extends StatelessWidget {
           Container(
             width: 52,
             height: 52,
-            decoration: const BoxDecoration(
-              color: AtgColors.primarySoft,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AtgColors.gold, size: 24),
+            child: Icon(icon, color: colorScheme.secondary, size: 24),
           ),
           const SizedBox(height: 14),
           Text(
@@ -874,16 +888,14 @@ class LoadingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.secondary;
     return Padding(
       padding: EdgeInsets.all(padding),
-      child: const Center(
+      child: Center(
         child: SizedBox(
           width: 24,
           height: 24,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.4,
-            color: AtgColors.gold,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 2.4, color: color),
         ),
       ),
     );
@@ -981,6 +993,7 @@ class _Level extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.onSurface;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -990,11 +1003,7 @@ class _Level extends StatelessWidget {
           value.isEmpty ? '—' : value,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AtgColors.ink,
-            height: 1.3,
-          ),
+          style: TextStyle(fontSize: 13, color: color, height: 1.3),
         ),
       ],
     );
@@ -1006,11 +1015,12 @@ class _LevelDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.outlineVariant;
     return Container(
       width: 1,
       height: 34,
       margin: const EdgeInsets.only(left: 10, right: 12),
-      color: AtgColors.strokeSoft,
+      color: color,
     );
   }
 }
@@ -1022,6 +1032,7 @@ class CourseCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (url.isEmpty) return const SizedBox.shrink();
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -1032,12 +1043,12 @@ class CourseCover extends StatelessWidget {
           fit: BoxFit.cover,
           filterQuality: FilterQuality.high,
           errorBuilder: (_, _, _) => Container(
-            color: AtgColors.primarySoft,
+            color: colorScheme.primaryContainer,
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.school_outlined,
               size: 26,
-              color: AtgColors.gold,
+              color: colorScheme.secondary,
             ),
           ),
         ),
@@ -1096,7 +1107,7 @@ class TxRow extends StatelessWidget {
                       tx.description,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AtgColors.ink,
@@ -1113,7 +1124,7 @@ class TxRow extends StatelessWidget {
                 children: [
                   Text(
                     money(tx.amount),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                       color: AtgColors.ink,
@@ -1155,11 +1166,7 @@ class FeedRow extends StatelessWidget {
               color: AtgColors.primary.withValues(alpha: 0.14),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.forum_outlined,
-              size: 19,
-              color: AtgColors.gold,
-            ),
+            child: Icon(Icons.forum_outlined, size: 19, color: AtgColors.gold),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1173,7 +1180,7 @@ class FeedRow extends StatelessWidget {
                         item.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.w700,
                           color: AtgColors.ink,
@@ -1240,7 +1247,7 @@ class OptionTile {
     required this.title,
     required this.subtitle,
     required this.badge,
-    this.badgeColor = AtgColors.ink,
+    this.badgeColor,
     this.tag,
     this.logo,
   });
@@ -1248,7 +1255,7 @@ class OptionTile {
   final String title;
   final String subtitle;
   final String badge;
-  final Color badgeColor;
+  final Color? badgeColor;
   final String? tag;
   final String? logo;
 }
@@ -1261,22 +1268,10 @@ OptionTile walletMethodOption(String method) {
       badge: 'EC',
       logo: 'assets/images/wallets/ecocash.png',
     ),
-    'Cash' => const OptionTile(
-      title: 'Cash',
-      subtitle: 'Cash payment',
-      badge: 'CA',
-    ),
-    'SmileCash' => const OptionTile(
-      title: 'SmileCash',
-      subtitle: 'Mobile money',
-      badge: 'SC',
-    ),
-    _ => OptionTile(
-      title: method,
-      subtitle: 'Payment method',
-      badge: method.length > 1
-          ? method.substring(0, 2).toUpperCase()
-          : method.toUpperCase(),
+    _ => throw ArgumentError.value(
+      method,
+      'method',
+      'Unsupported payment method',
     ),
   };
 }
@@ -1339,7 +1334,9 @@ class OptionList extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
-                                  color: options[i].badgeColor,
+                                  color:
+                                      options[i].badgeColor ??
+                                      Theme.of(context).colorScheme.onSurface,
                                 ),
                               )
                             : ClipRRect(
@@ -1367,7 +1364,9 @@ class OptionList extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w800,
-                            color: options[i].badgeColor,
+                            color:
+                                options[i].badgeColor ??
+                                Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -1383,7 +1382,7 @@ class OptionList extends StatelessWidget {
                                   options[i].title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
                                     color: AtgColors.ink,
@@ -1473,7 +1472,7 @@ Future<void> showMessage(
           onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text(
             action,
-            style: const TextStyle(
+            style: TextStyle(
               color: AtgColors.gold,
               fontWeight: FontWeight.w800,
             ),
@@ -1505,7 +1504,7 @@ Future<bool> confirmAction(
           onPressed: () => Navigator.of(dialogContext).pop(false),
           child: Text(
             cancelLabel,
-            style: const TextStyle(
+            style: TextStyle(
               color: AtgColors.muted,
               fontWeight: FontWeight.w700,
             ),

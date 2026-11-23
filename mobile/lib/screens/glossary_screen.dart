@@ -110,7 +110,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
               .toList();
 
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -126,7 +126,7 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
                   style: const TextStyle(fontSize: 14),
                   decoration: atgInputDecoration(hint: 'Search a term')
                       .copyWith(
-                        prefixIcon: const Icon(
+                        prefixIcon: Icon(
                           Icons.search_rounded,
                           size: 20,
                           color: AtgColors.muted,

@@ -119,9 +119,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _openProfile() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   void _openSignal(Signal signal) {
@@ -155,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         maxWidth: 820,
         child: RefreshIndicator(
           color: AtgColors.primary,
-          backgroundColor: AtgColors.surface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           onRefresh: () => _load(silent: true),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -180,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     const SizedBox(height: 2),
                     Text(
                       liveLine,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 19,
                         color: AtgColors.inkSoft,
                         height: 1.3,
@@ -202,13 +201,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.info_outline_rounded,
                               size: 16,
                               color: AtgColors.redText,
                             ),
                             const SizedBox(width: 6),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'IMPORTANT',
                                 style: TextStyle(
@@ -225,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               onTap: () =>
                                   setState(() => _promoDismissed = true),
                               borderRadius: BorderRadius.circular(16),
-                              child: const Padding(
+                              child: Padding(
                                 padding: EdgeInsets.all(4),
                                 child: Icon(
                                   Icons.close_rounded,
@@ -285,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AtgColors.greenText,
                           shape: BoxShape.circle,
                         ),
@@ -404,11 +403,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Container(
                           width: 38,
                           height: 38,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AtgColors.primarySoft,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.lightbulb_outline_rounded,
                             size: 19,
                             color: AtgColors.gold,
@@ -425,7 +424,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
                           size: 20,
                           color: AtgColors.muted,
@@ -450,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               onTap: () =>
                                   setState(() => _inviteDismissed = true),
                               borderRadius: BorderRadius.circular(16),
-                              child: const Padding(
+                              child: Padding(
                                 padding: EdgeInsets.all(4),
                                 child: Icon(
                                   Icons.close_rounded,
@@ -496,7 +495,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   children: [
                     const AtgLogo(size: 20),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'POWERED BY ATG · ACCURATE TRADING GROUP',
                         style: TextStyle(
@@ -511,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.fromLTRB(16, 12, 16, 16),
                 child: Text(
                   'Education and signals only. No financial advice.',
@@ -559,6 +558,7 @@ class _WeltradeCardState extends State<_WeltradeCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SurfaceCard(
       borderColor: AtgColors.primary,
       padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
@@ -588,14 +588,14 @@ class _WeltradeCardState extends State<_WeltradeCard> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'WELTRADE',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   fontStyle: FontStyle.italic,
                   letterSpacing: 2.2,
-                  color: AtgColors.ink,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
@@ -603,8 +603,7 @@ class _WeltradeCardState extends State<_WeltradeCard> {
           const SizedBox(height: 14),
           const _WeltradeStep(
             number: '1',
-            text:
-                'Open a Weltrade account through ATG. It takes about four minutes.',
+            text: 'Open a Weltrade account through ATG. It takes about four minutes.',
           ),
           const _WeltradeStep(
             number: '2',
@@ -623,7 +622,7 @@ class _WeltradeCardState extends State<_WeltradeCard> {
               onPressed: _opening ? null : _open,
               style: FilledButton.styleFrom(
                 backgroundColor: AtgColors.primary,
-                foregroundColor: AtgColors.ink,
+                foregroundColor: colorScheme.onPrimary,
                 disabledBackgroundColor: AtgColors.primary.withValues(
                   alpha: 0.45,
                 ),
@@ -637,12 +636,12 @@ class _WeltradeCardState extends State<_WeltradeCard> {
                 ),
               ),
               child: _opening
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AtgColors.ink,
+                        color: colorScheme.onPrimary,
                       ),
                     )
                   : const Row(
@@ -656,10 +655,14 @@ class _WeltradeCardState extends State<_WeltradeCard> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Opens Weltrade in your browser. ATG is an official partner and the account stays yours.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, height: 1.4, color: AtgColors.muted),
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.4,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 12),
         ],
@@ -681,6 +684,7 @@ class _WeltradeStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.only(bottom: last ? 0 : 10),
       child: Row(
@@ -690,16 +694,16 @@ class _WeltradeStep extends StatelessWidget {
             width: 22,
             height: 22,
             alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AtgColors.greyChip,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
             child: Text(
               number,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
-                color: AtgColors.ink,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -707,10 +711,10 @@ class _WeltradeStep extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.45,
-                color: AtgColors.inkSoft,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -748,10 +752,7 @@ class _QuickAction extends StatelessWidget {
                 child: Icon(icon, size: 22, color: AtgColors.ink),
               ),
               const SizedBox(height: 7),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 12, color: AtgColors.ink),
-              ),
+              Text(label, style: TextStyle(fontSize: 12, color: AtgColors.ink)),
             ],
           ),
         ),
@@ -784,7 +785,7 @@ class _ToolCard extends StatelessWidget {
             Container(
               width: 38,
               height: 38,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AtgColors.primarySoft,
                 shape: BoxShape.circle,
               ),
@@ -795,7 +796,7 @@ class _ToolCard extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, color: AtgColors.ink),
+              style: TextStyle(fontSize: 12, color: AtgColors.ink),
             ),
           ],
         ),

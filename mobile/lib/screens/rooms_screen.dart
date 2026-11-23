@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../api.dart';
@@ -105,13 +103,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RoomChatScreen(
-          roomId: room.id,
-          roomName: room.name,
-          onStartThread: room.name.toLowerCase() == 'community'
-              ? () => unawaited(_startThread())
-              : null,
-        ),
+        builder: (_) => RoomChatScreen(roomId: room.id, roomName: room.name),
       ),
     );
   }
@@ -139,13 +131,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
         final roomName = item.roomName.isEmpty ? 'Community' : item.roomName;
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => RoomChatScreen(
-              roomId: roomId,
-              roomName: roomName,
-              onStartThread: roomName.toLowerCase() == 'community'
-                  ? () => unawaited(_startThread())
-                  : null,
-            ),
+            builder: (_) => RoomChatScreen(roomId: roomId, roomName: roomName),
           ),
         );
       }
@@ -163,117 +149,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _startThread() async {
-    final titleController = TextEditingController();
-    final messageController = TextEditingController();
-    String? validationError;
-    final draft = await showDialog<Map<String, String>>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Start a conversation'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  maxLength: 100,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: atgInputDecoration(hint: 'Conversation title'),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: messageController,
-                  maxLength: 2000,
-                  minLines: 3,
-                  maxLines: 5,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: atgInputDecoration(
-                    hint: 'What would you like to discuss?',
-                  ),
-                ),
-                if (validationError != null)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      validationError!,
-                      style: const TextStyle(
-                        color: AtgColors.redText,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final title = titleController.text.trim();
-                final message = messageController.text.trim();
-                if (title.isEmpty || message.isEmpty) {
-                  setDialogState(
-                    () =>
-                        validationError = 'Add a title and your first message.',
-                  );
-                  return;
-                }
-                Navigator.of(
-                  dialogContext,
-                ).pop({'title': title, 'message': message});
-              },
-              child: const Text('Start chat'),
-            ),
-          ],
-        ),
-      ),
-    );
-    titleController.dispose();
-    messageController.dispose();
-    if (draft == null || !mounted) return;
-
-    try {
-      final thread = await api.createThread(
-        title: draft['title']!,
-        message: draft['message']!,
-      );
-      if (!mounted) return;
-      setState(() => _filter = 0);
-      unawaited(_load());
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => RoomChatScreen(
-            roomId: thread.roomId,
-            roomName: thread.roomName,
-            threadId: thread.id,
-            threadTitle: thread.title,
-            threadOpen: thread.open,
-            canManageThread: true,
-          ),
-        ),
-      );
-    } on ApiException catch (e) {
-      if (mounted) {
-        showToast(
-          context,
-          e.status == 404
-              ? 'The Community chat service needs a server update before chats can be started.'
-              : e.message,
-        );
-      }
-    } catch (error, stackTrace) {
-      debugPrint('Could not start community conversation: $error\n$stackTrace');
-      if (mounted) {
-        showToast(context, 'Could not start the conversation. Try again.');
-      }
-    }
   }
 
   @override
@@ -306,7 +181,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                           _roomsError ??
                               (_loading
                                   ? 'Loading chat rooms…'
-                                  : 'Start a new chat below. Community will be set up automatically.'),
+                                  : 'Community will be set up automatically.'),
                           style: AtgText.bodySmall,
                         ),
                       ),
@@ -349,7 +224,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                                   ),
                                 ),
                                 if (room.locked)
-                                  const Icon(
+                                  Icon(
                                     Icons.lock_outline_rounded,
                                     size: 15,
                                     color: AtgColors.gold,
@@ -382,17 +257,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _startThread,
-                  icon: const Icon(Icons.add_comment_outlined),
-                  label: const Text('Start a new chat'),
-                ),
-              ),
-            ),
-            Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
               child: AtgChipRow(
                 labels: _labels,
@@ -404,7 +268,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                 },
               ),
             ),
-            const Padding(
+            Padding(
               padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
@@ -417,7 +281,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: AtgColors.primary,
-                backgroundColor: AtgColors.surface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 onRefresh: _load,
                 child: _loading && _feed.isEmpty
                     ? ListView(
@@ -435,7 +299,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                                 : 'Could not load activity',
                             message:
                                 _feedError ??
-                                'Use Start a new chat above to begin the first conversation.',
+                                'Open Community to start chatting.',
                             icon: _feedError == null
                                 ? Icons.forum_outlined
                                 : Icons.cloud_off_outlined,

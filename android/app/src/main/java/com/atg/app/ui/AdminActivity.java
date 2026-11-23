@@ -358,6 +358,14 @@ public class AdminActivity extends AppCompatActivity {
         targets.setText("Not given");
         rule.setText("M10 rule");
         participants.setText("1");
+        room.setFocusable(false);
+        room.setOnClickListener(v -> {
+            String[] audiences = {"OPEN FLOOR", "Deriv VIP", "Weltrade VIP"};
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Signal audience")
+                    .setItems(audiences, (dialog, index) -> room.setText(audiences[index]))
+                    .show();
+        });
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle("New signal")
@@ -411,7 +419,7 @@ public class AdminActivity extends AppCompatActivity {
     private void confirmDeleteSignal(Models.Signal signal) {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Delete " + signal.title + "?")
-                .setMessage("The call disappears for every trader on the floor.")
+                .setMessage("The signal disappears for every trader on the floor.")
                 .setNegativeButton("Keep", null)
                 .setPositiveButton("Delete", (d, w) -> ApiClient.api().deleteSignal(signal.id)
                         .enqueue(new Callback<>() {
@@ -588,7 +596,7 @@ public class AdminActivity extends AppCompatActivity {
     private void saveSettings() {
         Models.SettingsReq req = new Models.SettingsReq();
         req.adminFeePct = Ui.parseAmount(text((EditText) findViewById(R.id.etAdminFee)), 12);
-        req.withdrawFeePct = Ui.parseAmount(text((EditText) findViewById(R.id.etWithdrawFee)), 7);
+        req.withdrawFeePct = Ui.parseAmount(text((EditText) findViewById(R.id.etWithdrawFee)), 10);
         req.minDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMinDeposit)), 5);
         req.maxDeposit = Ui.parseAmount(text((EditText) findViewById(R.id.etMaxDeposit)), 454);
         req.minWithdraw = Ui.parseAmount(text((EditText) findViewById(R.id.etMinWithdraw)), 5);

@@ -109,7 +109,7 @@ class _LinkedTextState extends State<LinkedText> {
       spans.add(
         TextSpan(
           text: link,
-          style: const TextStyle(
+          style: TextStyle(
             color: AtgColors.gold,
             decoration: TextDecoration.underline,
           ),

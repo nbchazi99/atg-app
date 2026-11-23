@@ -44,3 +44,17 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       # ATG_BASE_URL defaults to RENDER_EXTERNAL_URL in application-prod.properties.
+  - type: web
+    name: atg-app-web
+    runtime: static
+    buildCommand: |
+      git clone --depth 1 --branch 3.50.1 https://github.com/flutter/flutter.git /tmp/flutter-sdk
+      /tmp/flutter-sdk/bin/flutter config --no-analytics
+      cd mobile
+      /tmp/flutter-sdk/bin/flutter pub get
+      /tmp/flutter-sdk/bin/flutter build web --release --no-pub
+    staticPublishPath: ./mobile/build/web
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

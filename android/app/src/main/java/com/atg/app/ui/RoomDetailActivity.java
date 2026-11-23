@@ -2,21 +2,26 @@ package com.atg.app.ui;
 
 import com.atg.app.ui.Adapters.*;
 
+import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Bundle;
-import android.text.InputFilter;
-import android.text.InputType;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -24,9 +29,11 @@ import com.atg.app.R;
 import com.atg.app.data.ApiClient;
 import com.atg.app.data.Models;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -40,6 +47,9 @@ public class RoomDetailActivity extends AppCompatActivity {
     private static final String EXTRA_THREAD_TITLE = "threadTitle";
     private static final String EXTRA_THREAD_OPEN = "threadOpen";
     private static final String EXTRA_THREAD_AUTHOR_ID = "threadAuthorId";
+    private static final int REQUEST_ATTACHMENT = 4101;
+    private static final int REQUEST_RECORD_AUDIO = 4102;
+    private static final long MAX_ATTACHMENT_BYTES = 80L * 1024 * 1024;
 
     private long roomId;
     private long threadId;
@@ -49,7 +59,14 @@ public class RoomDetailActivity extends AppCompatActivity {
     private RecyclerView list;
     private EditText input;
     private MaterialButton send;
+    private MaterialButton attach;
+    private MaterialButton voice;
     private boolean sending;
+    private boolean uploadingAttachment;
+    private boolean recording;
+    private MediaRecorder recorder;
+    private File recordingFile;
+    private MediaPlayer audioPlayer;
     private final Handler refreshHandler = new Handler(Looper.getMainLooper());
     private final Runnable refreshMessages = new Runnable() {
         @Override
@@ -100,7 +117,6 @@ public class RoomDetailActivity extends AppCompatActivity {
 
         TextView roomInfo = findViewById(R.id.tvRoomInfo);
         MaterialButton threadStatus = findViewById(R.id.btnThreadStatus);
-        MaterialButton startNewThread = findViewById(R.id.btnStartNewThread);
         if (threadId > 0) {
             long authorId = getIntent().getLongExtra(EXTRA_THREAD_AUTHOR_ID, -1);
             canManageThread = ApiClient.session().isAdmin() || authorId == ApiClient.session().id();
@@ -108,13 +124,10 @@ public class RoomDetailActivity extends AppCompatActivity {
             threadStatus.setOnClickListener(v -> toggleThread());
         } else {
             roomInfo.setText("Everyone here follows the same signals. Be kind.");
-            boolean isCommunity = "Community".equalsIgnoreCase(roomName);
-            startNewThread.setVisibility(isCommunity ? View.VISIBLE : View.GONE);
-            startNewThread.setOnClickListener(v -> showCreateThreadDialog());
         }
 
         list = findViewById(R.id.rvMessages);
-        adapter = new MessagesAdapter(ApiClient.session().name());
+        adapter = new MessagesAdapter(ApiClient.session().name(), this::openAttachment);
         LinearLayoutManager layout = new LinearLayoutManager(this);
         layout.setStackFromEnd(true);
         list.setLayoutManager(layout);
@@ -122,7 +135,11 @@ public class RoomDetailActivity extends AppCompatActivity {
 
         input = findViewById(R.id.etMessage);
         send = findViewById(R.id.btnSend);
+        attach = findViewById(R.id.btnAttach);
+        voice = findViewById(R.id.btnVoice);
         send.setOnClickListener(v -> sendMessage());
+        attach.setOnClickListener(v -> pickAttachment());
+        voice.setOnClickListener(v -> toggleVoiceRecording());
         if (threadId > 0) updateThreadState(roomInfo, threadStatus);
 
         load(false);
@@ -137,6 +154,7 @@ public class RoomDetailActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         refreshHandler.removeCallbacks(refreshMessages);
+        releaseAudioPlayer();
         super.onPause();
     }
 
@@ -168,17 +186,25 @@ public class RoomDetailActivity extends AppCompatActivity {
     }
 
     private void sendMessage() {
+        sendMessage(null, null);
+    }
+
+    private void sendMessage(String attachmentUrl) {
+        sendMessage(attachmentUrl, null);
+    }
+
+    private void sendMessage(String attachmentUrl, String attachmentType) {
         String text = input.getText() == null ? "" : input.getText().toString().trim();
-        if (text.isEmpty() || sending) return;
+        if ((text.isEmpty() && attachmentUrl == null) || sending) return;
         sending = true;
         send.setEnabled(false);
         ApiClient.api().sendMessage(roomId, threadId > 0 ? threadId : null,
-                new Models.TextReq(text)).enqueue(new Callback<>() {
+                new Models.TextReq(text, attachmentUrl, attachmentType)).enqueue(new Callback<>() {
             @Override
             public void onResponse(@NonNull Call<Models.RoomMessage> call,
                                    @NonNull Response<Models.RoomMessage> response) {
                 sending = false;
-                send.setEnabled(true);
+                updateComposerControls();
                 if (response.isSuccessful() && response.body() != null) {
                     input.setText("");
                     adapter.append(response.body());
@@ -191,10 +217,233 @@ public class RoomDetailActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NonNull Call<Models.RoomMessage> call, @NonNull Throwable t) {
                 sending = false;
-                send.setEnabled(true);
+                updateComposerControls();
                 Ui.toast(RoomDetailActivity.this, ApiClient.connectionMessage(t));
             }
         });
+    }
+
+    private void pickAttachment() {
+        if (uploadingAttachment || recording || !threadOpen) return;
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                "image/*", "video/*", "audio/*", "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.ms-powerpoint",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        });
+        startActivityForResult(intent, REQUEST_ATTACHMENT);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_ATTACHMENT && resultCode == RESULT_OK
+                && data != null && data.getData() != null) {
+            uploadAttachment(data.getData(), null);
+        }
+    }
+
+    private void uploadAttachment(Uri uri, String attachmentType) {
+        uploadingAttachment = true;
+        updateComposerControls();
+        ApiClient.uploadRoomAttachment(this, roomId, uri, new ApiClient.UploadCallback() {
+            @Override
+            public void ok(String url) {
+                uploadingAttachment = false;
+                updateComposerControls();
+                if (recordingFile != null) recordingFile.delete();
+                recordingFile = null;
+                sendMessage(url, attachmentType);
+            }
+
+            @Override
+            public void fail(String message) {
+                uploadingAttachment = false;
+                updateComposerControls();
+                if (recordingFile != null) recordingFile.delete();
+                recordingFile = null;
+                Ui.toast(RoomDetailActivity.this, message);
+            }
+        });
+    }
+
+    private void toggleVoiceRecording() {
+        if (uploadingAttachment || sending || !threadOpen) return;
+        if (recording) {
+            stopVoiceRecording();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
+            return;
+        }
+        startVoiceRecording();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_RECORD_AUDIO) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startVoiceRecording();
+            } else {
+                Ui.toast(this, "Microphone permission is required to record voice notes");
+            }
+        }
+    }
+
+    private void startVoiceRecording() {
+        recordingFile = new File(getCacheDir(),
+                "voice-" + System.currentTimeMillis() + ".m4a");
+        try {
+            recorder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    ? new MediaRecorder(this) : new MediaRecorder();
+            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            recorder.setOutputFile(recordingFile.getAbsolutePath());
+            recorder.setMaxFileSize(MAX_ATTACHMENT_BYTES);
+            recorder.setOnInfoListener((mediaRecorder, what, extra) -> {
+                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
+                    stopVoiceRecording();
+                }
+            });
+            recorder.prepare();
+            recorder.start();
+            recording = true;
+            voice.setText("Stop");
+            attach.setEnabled(false);
+            send.setEnabled(false);
+        } catch (IOException | RuntimeException e) {
+            releaseRecorder();
+            recordingFile.delete();
+            recordingFile = null;
+            Ui.toast(this, "Could not start recording");
+        }
+    }
+
+    private void stopVoiceRecording() {
+        boolean saved = false;
+        try {
+            if (recorder != null) {
+                recorder.stop();
+                saved = true;
+            }
+        } catch (RuntimeException e) {
+            Ui.toast(this, "The voice note was too short to save");
+        } finally {
+            releaseRecorder();
+            recording = false;
+            updateComposerControls();
+        }
+        if (saved && recordingFile != null && recordingFile.length() > 0) {
+            uploadAttachment(Uri.fromFile(recordingFile), "AUDIO");
+        } else if (recordingFile != null) {
+            recordingFile.delete();
+            recordingFile = null;
+        }
+    }
+
+    private void updateComposerControls() {
+        boolean enabled = threadOpen && !sending && !uploadingAttachment;
+        input.setEnabled(enabled);
+        send.setEnabled(enabled && !recording);
+        attach.setEnabled(enabled && !recording);
+        voice.setEnabled(enabled);
+        voice.setText(recording ? "Stop" : "Voice");
+    }
+
+    private void openAttachment(Models.RoomMessage message) {
+        String url = message.attachmentUrl;
+        if (url == null || url.isBlank()) return;
+        if ("AUDIO".equalsIgnoreCase(message.attachmentType) || isAudio(url)) {
+            playAudio(url);
+            return;
+        }
+        String extension = android.webkit.MimeTypeMap.getFileExtensionFromUrl(url)
+                .toLowerCase(Locale.ROOT);
+        String mime = android.webkit.MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(extension);
+        if (mime == null) mime = "*/*";
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(Uri.parse(url), mime);
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Ui.toast(this, "No app is available to open this attachment");
+        }
+    }
+
+    private boolean isAudio(String url) {
+        String lower = url.toLowerCase(Locale.ROOT);
+        return lower.endsWith(".mp3") || lower.endsWith(".wav")
+                || lower.endsWith(".m4a") || lower.endsWith(".aac")
+                || lower.endsWith(".ogg") || lower.endsWith(".opus")
+                || lower.endsWith(".flac");
+    }
+
+    private void playAudio(String url) {
+        releaseAudioPlayer();
+        try {
+            audioPlayer = new MediaPlayer();
+            audioPlayer.setDataSource(url);
+            audioPlayer.setOnPreparedListener(MediaPlayer::start);
+            audioPlayer.setOnCompletionListener(player -> releaseAudioPlayer());
+            audioPlayer.setOnErrorListener((player, what, extra) -> {
+                releaseAudioPlayer();
+                Ui.toast(this, "Could not play this audio file");
+                return true;
+            });
+            audioPlayer.prepareAsync();
+        } catch (IOException | RuntimeException e) {
+            releaseAudioPlayer();
+            Ui.toast(this, "Could not play this audio file");
+        }
+    }
+
+    private void releaseAudioPlayer() {
+        if (audioPlayer != null) {
+            audioPlayer.release();
+            audioPlayer = null;
+        }
+    }
+
+    private void releaseRecorder() {
+        if (recorder != null) {
+            try {
+                recorder.reset();
+            } catch (RuntimeException ignored) {
+            }
+            recorder.release();
+            recorder = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (recording) {
+            try {
+                if (recorder != null) recorder.stop();
+            } catch (RuntimeException ignored) {
+            }
+            recording = false;
+        }
+        if (recordingFile != null) {
+            recordingFile.delete();
+            recordingFile = null;
+        }
+        releaseRecorder();
+        releaseAudioPlayer();
+        super.onDestroy();
     }
 
     private void toggleThread() {
@@ -227,79 +476,8 @@ public class RoomDetailActivity extends AppCompatActivity {
         roomInfo.setText(threadOpen
                 ? "Open conversation · Members can send and receive messages."
                 : "Closed conversation · Members can still read messages.");
-        input.setEnabled(threadOpen);
-        send.setEnabled(threadOpen);
+        updateComposerControls();
         status.setText(threadOpen ? "Close conversation" : "Reopen conversation");
     }
 
-    private void showCreateThreadDialog() {
-        EditText title = new EditText(this);
-        title.setHint("Conversation title");
-        title.setSingleLine(true);
-        title.setFilters(new InputFilter[]{new InputFilter.LengthFilter(100)});
-        title.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        EditText message = new EditText(this);
-        message.setHint("What would you like to discuss?");
-        message.setMinLines(3);
-        message.setMaxLines(5);
-        message.setFilters(new InputFilter[]{new InputFilter.LengthFilter(2000)});
-        message.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
-                | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        LinearLayout form = new LinearLayout(this);
-        form.setOrientation(LinearLayout.VERTICAL);
-        int sidePadding = (int) (24 * getResources().getDisplayMetrics().density + 0.5f);
-        form.setPadding(sidePadding, sidePadding / 3, sidePadding, 0);
-        form.addView(title);
-        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        messageParams.topMargin = sidePadding / 2;
-        form.addView(message, messageParams);
-
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("Start a conversation")
-                .setView(form)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Start chat", null)
-                .create();
-        dialog.setOnShowListener(ignored ->
-                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
-                        .setOnClickListener(button -> {
-                            String conversationTitle = title.getText().toString().trim();
-                            String firstMessage = message.getText().toString().trim();
-                            if (conversationTitle.isEmpty()) {
-                                title.setError("Add a conversation title");
-                                return;
-                            }
-                            if (firstMessage.isEmpty()) {
-                                message.setError("Add your first message");
-                                return;
-                            }
-                            android.widget.Button startButton =
-                                    dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
-                            startButton.setEnabled(false);
-                            ApiClient.api().createCommunityThread(
-                                    new Models.ThreadReq(conversationTitle, firstMessage))
-                                    .enqueue(new Callback<>() {
-                                        @Override
-                                        public void onResponse(@NonNull Call<Models.FeedItem> call,
-                                                               @NonNull Response<Models.FeedItem> response) {
-                                            if (!response.isSuccessful() || response.body() == null) {
-                                                startButton.setEnabled(true);
-                                                Ui.toast(RoomDetailActivity.this, ApiClient.errorMessage(response));
-                                                return;
-                                            }
-                                            dialog.dismiss();
-                                            startThread(RoomDetailActivity.this, response.body());
-                                        }
-
-                                        @Override
-                                        public void onFailure(@NonNull Call<Models.FeedItem> call,
-                                                              @NonNull Throwable t) {
-                                            startButton.setEnabled(true);
-                                            Ui.toast(RoomDetailActivity.this, ApiClient.connectionMessage(t));
-                                        }
-                                    });
-                        }));
-        dialog.show();
-    }
 }

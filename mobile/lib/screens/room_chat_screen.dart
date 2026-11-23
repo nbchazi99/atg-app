@@ -1,7 +1,13 @@
 import 'dart:async';
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../app_state.dart';
@@ -22,7 +28,6 @@ class RoomChatScreen extends StatefulWidget {
     this.threadTitle,
     this.threadOpen = true,
     this.canManageThread = false,
-    this.onStartThread,
   });
 
   final int roomId;
@@ -31,7 +36,6 @@ class RoomChatScreen extends StatefulWidget {
   final String? threadTitle;
   final bool threadOpen;
   final bool canManageThread;
-  final VoidCallback? onStartThread;
 
   @override
   State<RoomChatScreen> createState() => _RoomChatScreenState();
@@ -41,11 +45,16 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   final _focus = FocusNode();
+  final _recorder = AudioRecorder();
+  final _audioPlayer = AudioPlayer();
 
   List<RoomMessage> _messages = const [];
   bool _loading = true;
   bool _sending = false;
-  bool _uploadingImage = false;
+  bool _uploadingAttachment = false;
+  bool _recording = false;
+  String? _playingAudioUrl;
+  StreamSubscription<void>? _audioCompleteSubscription;
   late bool _threadOpen;
   bool _fetching = false;
   bool _reloadPending = false;
@@ -59,6 +68,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     super.initState();
     _threadOpen = widget.threadOpen;
     _load();
+    _audioCompleteSubscription = _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _playingAudioUrl = null);
+    });
     _unbind = realtime.bind({
       AtgScope.room(widget.roomId),
       AtgScope.rooms,
@@ -75,6 +87,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     _input.dispose();
     _scroll.dispose();
     _focus.dispose();
+    _audioCompleteSubscription?.cancel();
+    unawaited(_audioPlayer.dispose());
+    if (_recording) unawaited(_recorder.cancel());
+    unawaited(_recorder.dispose());
     super.dispose();
   }
 
@@ -151,7 +167,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     });
   }
 
-  Future<void> _send({String? attachmentUrl}) async {
+  Future<void> _send({String? attachmentUrl, String? attachmentType}) async {
     final text = _input.text.trim();
     if ((text.isEmpty && attachmentUrl == null) || _sending || !_threadOpen) {
       return;
@@ -163,6 +179,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         text,
         threadId: widget.threadId,
         attachmentUrl: attachmentUrl,
+        attachmentType: attachmentType,
       );
       if (!mounted) return;
       _input.clear();
@@ -182,24 +199,147 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     }
   }
 
-  Future<void> _pickAndSendImage() async {
-    if (_sending || _uploadingImage || !_threadOpen) return;
-    setState(() => _uploadingImage = true);
+  Future<void> _pickAndSendAttachment({bool imagesOnly = false}) async {
+    if (_sending || _uploadingAttachment || _recording || !_threadOpen) return;
+    setState(() => _uploadingAttachment = true);
     try {
-      final image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
+      final files = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: imagesOnly
+            ? const ['jpg', 'jpeg', 'png', 'webp', 'gif']
+            : const [
+                'jpg',
+                'jpeg',
+                'png',
+                'webp',
+                'gif',
+                'mp4',
+                'webm',
+                'mov',
+                'm4v',
+                'pdf',
+                'doc',
+                'docx',
+                'xls',
+                'xlsx',
+                'ppt',
+                'pptx',
+                'mp3',
+                'wav',
+                'm4a',
+                'aac',
+                'ogg',
+                'opus',
+                'flac',
+              ],
       );
-      if (image == null || !mounted) return;
-      final url = await api.uploadImage(image);
+      if (files.isEmpty || !mounted) return;
+      final url = await api.uploadRoomAttachment(widget.roomId, files.first);
       if (mounted) await _send(attachmentUrl: url);
     } on ApiException catch (e) {
       if (mounted) showToast(context, e.message);
     } catch (error, stackTrace) {
-      debugPrint('Could not attach a chat image: $error\n$stackTrace');
-      if (mounted) showToast(context, 'Could not attach the image. Try again.');
+      debugPrint('Could not attach a chat file: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not attach the file. Try again.');
     } finally {
-      if (mounted) setState(() => _uploadingImage = false);
+      if (mounted) setState(() => _uploadingAttachment = false);
+    }
+  }
+
+  Future<void> _toggleVoiceRecording() async {
+    if (_sending || _uploadingAttachment || !_threadOpen) return;
+    if (_recording) {
+      await _stopAndSendVoiceNote();
+      return;
+    }
+    try {
+      if (!await _recorder.hasPermission()) {
+        if (mounted) showToast(context, 'Microphone permission is required.');
+        return;
+      }
+      if (!mounted) return;
+      final filename =
+          'voice-${DateTime.now().millisecondsSinceEpoch}.${kIsWeb ? 'webm' : 'm4a'}';
+      var path = '';
+      if (!kIsWeb) {
+        final directory = await getTemporaryDirectory();
+        path = '${directory.path}/$filename';
+      }
+      await _recorder.start(
+        RecordConfig(encoder: kIsWeb ? AudioEncoder.opus : AudioEncoder.aacLc),
+        path: path,
+      );
+      if (mounted) setState(() => _recording = true);
+    } catch (error, stackTrace) {
+      debugPrint('Could not start voice recording: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not start recording.');
+    }
+  }
+
+  Future<void> _stopAndSendVoiceNote() async {
+    try {
+      final path = await _recorder.stop();
+      if (!mounted) return;
+      setState(() => _recording = false);
+      if (path == null || path.isEmpty) {
+        if (mounted) showToast(context, 'The voice note was empty.');
+        return;
+      }
+      final filename =
+          'voice-${DateTime.now().millisecondsSinceEpoch}.${kIsWeb ? 'webm' : 'm4a'}';
+      setState(() => _uploadingAttachment = true);
+      final file = XFile(path, name: filename);
+      final url = await api.uploadRoomRecording(widget.roomId, file);
+      if (mounted) {
+        await _send(attachmentUrl: url, attachmentType: 'AUDIO');
+      }
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not send voice note: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not send the voice note.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _recording = false;
+          _uploadingAttachment = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleAudio(String attachmentUrl) async {
+    try {
+      if (_playingAudioUrl == attachmentUrl) {
+        await _audioPlayer.stop();
+        if (mounted) setState(() => _playingAudioUrl = null);
+        return;
+      }
+      await _audioPlayer.stop();
+      if (!mounted) return;
+      setState(() => _playingAudioUrl = attachmentUrl);
+      await _audioPlayer.play(UrlSource(mediaUrl(attachmentUrl)));
+    } catch (error, stackTrace) {
+      debugPrint('Could not play chat audio: $error\n$stackTrace');
+      if (mounted) {
+        setState(() => _playingAudioUrl = null);
+        showToast(context, 'Could not play this audio file.');
+      }
+    }
+  }
+
+  Future<void> _openAttachment(String attachmentUrl) async {
+    try {
+      final opened = await launchUrl(
+        Uri.parse(mediaUrl(attachmentUrl)),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        showToast(context, 'No app is available to open this attachment.');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Could not open chat attachment: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not open this attachment.');
     }
   }
 
@@ -261,7 +401,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     final me = session.name;
 
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: PageBody(
           maxWidth: 900,
@@ -333,8 +473,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         children: const [
                           EmptyState(
                             title: 'The room is quiet',
-                            message:
-                                'Say hello. The desk and other traders see your message here.',
+                            message: 'Say hello. The desk and other traders see your message here.',
                             icon: Icons.forum_outlined,
                           ),
                         ],
@@ -354,25 +493,17 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                             message: message,
                             mine: mine,
                             canDelete: session.isAdmin,
+                            audioPlaying:
+                                _playingAudioUrl == message.attachmentUrl,
+                            onPlayAudio: () =>
+                                _toggleAudio(message.attachmentUrl!),
+                            onOpenAttachment: () =>
+                                _openAttachment(message.attachmentUrl!),
                             onDelete: () => _deleteMessage(message),
                           );
                         },
                       ),
               ),
-              if (_error == null &&
-                  widget.threadId == null &&
-                  widget.onStartThread != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: widget.onStartThread,
-                      icon: const Icon(Icons.add_comment_outlined),
-                      label: const Text('Start a new Community chat'),
-                    ),
-                  ),
-                ),
               if (_error == null)
                 _threadOpen ? _buildComposer() : _closedNotice(),
             ],
@@ -385,7 +516,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   Widget _buildComposer() {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AtgColors.surface,
         border: Border(top: BorderSide(color: AtgColors.stroke)),
       ),
@@ -394,8 +525,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         children: [
           IconButton(
             tooltip: 'Attach a photo',
-            onPressed: _sending || _uploadingImage ? null : _pickAndSendImage,
-            icon: _uploadingImage
+            onPressed: _sending || _uploadingAttachment || _recording
+                ? null
+                : () => _pickAndSendAttachment(imagesOnly: true),
+            icon: _uploadingAttachment
                 ? const SizedBox(
                     width: 18,
                     height: 18,
@@ -403,17 +536,36 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                   )
                 : const Icon(Icons.image_outlined),
           ),
+          IconButton(
+            tooltip: 'Attach a file',
+            onPressed: _sending || _uploadingAttachment || _recording
+                ? null
+                : _pickAndSendAttachment,
+            icon: const Icon(Icons.attach_file_rounded),
+          ),
+          IconButton(
+            tooltip: _recording
+                ? 'Stop and send voice note'
+                : 'Record voice note',
+            onPressed: _uploadingAttachment || _sending
+                ? null
+                : _toggleVoiceRecording,
+            icon: Icon(
+              _recording ? Icons.stop_circle_outlined : Icons.mic_none_rounded,
+              color: _recording ? AtgColors.redText : null,
+            ),
+          ),
           Expanded(
             child: TextField(
               controller: _input,
               focusNode: _focus,
-              enabled: !_sending && !_uploadingImage,
+              enabled: !_sending && !_uploadingAttachment,
               minLines: 1,
               maxLines: 4,
               textCapitalization: TextCapitalization.sentences,
               textInputAction: TextInputAction.send,
               onSubmitted: (_) => _send(),
-              style: const TextStyle(fontSize: 14, color: AtgColors.ink),
+              style: TextStyle(fontSize: 14, color: AtgColors.ink),
               decoration: atgInputDecoration(hint: 'Message or paste a link')
                   .copyWith(
                     contentPadding: const EdgeInsets.symmetric(
@@ -428,10 +580,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
             width: 46,
             height: 46,
             child: FilledButton(
-              onPressed: _sending || _uploadingImage ? null : _send,
+              onPressed: _sending || _uploadingAttachment || _recording
+                  ? null
+                  : _send,
               style: FilledButton.styleFrom(
                 backgroundColor: AtgColors.primary,
-                foregroundColor: AtgColors.ink,
+                foregroundColor: AtgColors.primaryForeground,
                 disabledBackgroundColor: AtgColors.primary.withValues(
                   alpha: 0.45,
                 ),
@@ -442,12 +596,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                 ),
               ),
               child: _sending
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AtgColors.ink,
+                        color: AtgColors.primaryForeground,
                       ),
                     )
                   : const Icon(Icons.send_rounded, size: 19),
@@ -462,7 +616,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AtgColors.surface,
         border: Border(top: BorderSide(color: AtgColors.stroke)),
       ),
@@ -480,12 +634,18 @@ class _Bubble extends StatelessWidget {
     required this.message,
     required this.mine,
     required this.canDelete,
+    required this.audioPlaying,
+    required this.onPlayAudio,
+    required this.onOpenAttachment,
     required this.onDelete,
   });
 
   final RoomMessage message;
   final bool mine;
   final bool canDelete;
+  final bool audioPlaying;
+  final VoidCallback onPlayAudio;
+  final VoidCallback onOpenAttachment;
   final VoidCallback onDelete;
 
   @override
@@ -529,7 +689,7 @@ class _Bubble extends StatelessWidget {
                                   ? message.author.substring(0, 1)
                                   : 'T')
                               .toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w800,
                             color: AtgColors.gold,
@@ -539,7 +699,7 @@ class _Bubble extends StatelessWidget {
                 const SizedBox(width: 7),
                 Text(
                   mine ? 'You' : message.author,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: AtgColors.gold,
@@ -552,7 +712,7 @@ class _Bubble extends StatelessWidget {
                 ),
                 if (mine) ...[
                   const SizedBox(width: 6),
-                  const Icon(
+                  Icon(
                     Icons.done_rounded,
                     size: 12,
                     color: AtgColors.greenText,
@@ -568,7 +728,7 @@ class _Bubble extends StatelessWidget {
                   InkWell(
                     onTap: onDelete,
                     borderRadius: BorderRadius.circular(12),
-                    child: const Padding(
+                    child: Padding(
                       padding: EdgeInsets.all(3),
                       child: Icon(
                         Icons.delete_outline_rounded,
@@ -582,43 +742,13 @@ class _Bubble extends StatelessWidget {
             ),
             const SizedBox(height: 3),
             if (message.attachmentUrl?.isNotEmpty == true) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(9),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 260,
-                    maxHeight: 260,
-                  ),
-                  child: Image.network(
-                    mediaUrl(message.attachmentUrl!),
-                    fit: BoxFit.contain,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const SizedBox(
-                        width: 220,
-                        height: 140,
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) =>
-                        const SizedBox(
-                          width: 220,
-                          height: 80,
-                          child: Center(
-                            child: Text('Image could not be loaded'),
-                          ),
-                        ),
-                  ),
-                ),
-              ),
+              _buildAttachment(message.attachmentUrl!),
               if (message.text.isNotEmpty) const SizedBox(height: 7),
             ],
             if (message.text.isNotEmpty)
               LinkedText(
                 message.text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   color: AtgColors.ink,
                   height: 1.4,
@@ -629,4 +759,96 @@ class _Bubble extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildAttachment(String url) {
+    final kind = _attachmentKind(url, message.attachmentType);
+    if (kind == 'image') {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(9),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260, maxHeight: 260),
+          child: Image.network(
+            mediaUrl(url),
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return const SizedBox(
+                width: 220,
+                height: 140,
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => const SizedBox(
+              width: 220,
+              height: 80,
+              child: Center(child: Text('Image could not be loaded')),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final audio = kind == 'audio';
+    return OutlinedButton.icon(
+      onPressed: audio ? onPlayAudio : onOpenAttachment,
+      icon: Icon(
+        audio
+            ? audioPlaying
+                  ? Icons.stop_circle_outlined
+                  : Icons.play_circle_outline_rounded
+            : kind == 'video'
+            ? Icons.video_file_outlined
+            : Icons.description_outlined,
+      ),
+      label: Text(
+        audio
+            ? audioPlaying
+                  ? 'Stop voice note'
+                  : 'Play voice note'
+            : '${kind == 'video' ? 'Open video' : 'Open file'} · ${_attachmentName(url)}',
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+String _attachmentKind(String url, String? type) {
+  switch (type?.toUpperCase()) {
+    case 'IMAGE':
+      return 'image';
+    case 'VIDEO':
+      return 'video';
+    case 'AUDIO':
+      return 'audio';
+    case 'FILE':
+      return 'file';
+  }
+  final uri = Uri.tryParse(url);
+  final path = (uri?.path ?? url).toLowerCase();
+  final dot = path.lastIndexOf('.');
+  final extension = dot < 0 ? '' : path.substring(dot);
+  if (const {'.jpg', '.jpeg', '.png', '.webp', '.gif'}.contains(extension)) {
+    return 'image';
+  }
+  if (const {
+    '.mp3',
+    '.wav',
+    '.m4a',
+    '.aac',
+    '.ogg',
+    '.opus',
+    '.flac',
+  }.contains(extension)) {
+    return 'audio';
+  }
+  if (const {'.mp4', '.webm', '.mov', '.m4v'}.contains(extension)) {
+    return 'video';
+  }
+  return 'file';
+}
+
+String _attachmentName(String url) {
+  final uri = Uri.tryParse(url);
+  final segments = uri?.pathSegments ?? const <String>[];
+  return segments.isEmpty ? 'Attachment' : segments.last;
 }

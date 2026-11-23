@@ -86,6 +86,15 @@ class WalletServiceLimitsTest {
     }
 
     @Test
+    void appliesTenPercentWithdrawalFee() {
+        WithdrawalRequest request = service.createWithdrawal(user, withdrawal("100"));
+
+        assertThat(request.getFeePct()).isEqualByComparingTo("10");
+        assertThat(request.getFee()).isEqualByComparingTo("10.00");
+        assertThat(request.getReceive()).isEqualByComparingTo("90.00");
+    }
+
+    @Test
     void acceptsOnlyConfiguredDepositAndWithdrawalMethods() {
         assertThat(service.createDeposit(user, deposit("5", "EcoCash"))).isNotNull();
         assertThat(service.createWithdrawal(user, withdrawal("5", "EcoCash"))).isNotNull();

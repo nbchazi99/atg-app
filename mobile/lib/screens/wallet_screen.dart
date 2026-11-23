@@ -61,9 +61,8 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _openProfile() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
   }
 
   @override
@@ -87,7 +86,7 @@ class _WalletScreenState extends State<WalletScreen> {
             Expanded(
               child: RefreshIndicator(
                 color: AtgColors.primary,
-                backgroundColor: AtgColors.surface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 onRefresh: _load,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -115,7 +114,8 @@ class _WalletScreenState extends State<WalletScreen> {
                                         _open(const DepositScreen()),
                                     style: FilledButton.styleFrom(
                                       backgroundColor: AtgColors.primary,
-                                      foregroundColor: AtgColors.ink,
+                                      foregroundColor:
+                                          AtgColors.primaryForeground,
                                       elevation: 0,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(13),
@@ -144,7 +144,7 @@ class _WalletScreenState extends State<WalletScreen> {
                             const SizedBox(height: 10),
                             Text(
                               '$pending request${pending == 1 ? '' : 's'} awaiting review',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                                 color: AtgColors.gold,
@@ -180,7 +180,7 @@ class _WalletScreenState extends State<WalletScreen> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AtgColors.ink,
                                 backgroundColor: AtgColors.surface,
-                                side: const BorderSide(color: AtgColors.stroke),
+                                side: BorderSide(color: AtgColors.stroke),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -195,7 +195,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ],
                       ),
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.fromLTRB(2, 20, 2, 8),
                       child: Text(
                         'Recent activity',
@@ -211,8 +211,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     else if (transactions.isEmpty)
                       const EmptyState(
                         title: 'Nothing yet',
-                        message:
-                            'Deposits and withdrawals show up here, from the app and the website.',
+                        message: 'Deposits and withdrawals show up here, from the app and the website.',
                         icon: Icons.receipt_long_outlined,
                       )
                     else
@@ -232,7 +231,7 @@ class _WalletScreenState extends State<WalletScreen> {
                         ),
                       ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'Requests are reviewed by the administrator. Approved deposits reach your broker wallet within '
                       'one working day.',
                       style: TextStyle(

@@ -218,7 +218,7 @@ public class WithdrawActivity extends AppCompatActivity {
 
     private void updateSummary() {
         double amount = Ui.parseAmount(text(etWithdrawAmount), 0);
-        double pct = settings == null ? 7 : settings.withdrawFeePct;
+        double pct = settings == null ? 10 : settings.withdrawFeePct;
         double min = settings == null ? 5 : settings.minWithdraw;
         double max = settings == null ? 454 : settings.maxWithdraw;
         double fee = Math.round(amount * pct) / 100.0;

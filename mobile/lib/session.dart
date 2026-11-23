@@ -23,6 +23,15 @@ class Session extends ChangeNotifier {
   String? get token => _prefs.getString('token');
 
   bool get isLoggedIn => token != null && token!.isNotEmpty;
+  bool get isDarkMode => _prefs.getBool('darkMode') ?? false;
+
+  Future<void> saveDarkMode(bool darkMode) async {
+    final saved = await _prefs.setBool('darkMode', darkMode);
+    if (!saved) {
+      throw StateError('Could not save the appearance preference.');
+    }
+    notifyListeners();
+  }
 
   Future<void> saveAuth(String token, AppUser user) async {
     await _prefs.setString('token', token);

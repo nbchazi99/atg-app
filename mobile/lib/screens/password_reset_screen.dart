@@ -55,7 +55,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         context,
         'Check your email',
         'If an account exists for this address, a reset code has been sent. '
-        'The code expires in 15 minutes.',
+            'The code expires in 15 minutes.',
       );
     } on ApiException catch (error) {
       if (mounted) {
@@ -104,7 +104,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: const Text('Password reset')),
       body: SafeArea(
         child: Center(
@@ -116,7 +116,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _codeSent ? 'Enter your reset code.' : 'Forgot your password?',
+                    _codeSent
+                        ? 'Enter your reset code.'
+                        : 'Forgot your password?',
                     style: AtgText.pageTitle.copyWith(fontSize: 28),
                   ),
                   const SizedBox(height: 8),

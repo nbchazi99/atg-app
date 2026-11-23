@@ -28,17 +28,6 @@
         android:text="Close conversation"
         android:visibility="gone" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnStartNewThread"
-        style="@style/Widget.ATG.Button.Small"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/screen_pad"
-        android:layout_marginEnd="@dimen/screen_pad"
-        android:layout_marginBottom="6dp"
-        android:text="Start a new chat"
-        android:visibility="gone" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMessages"
         android:layout_width="match_parent"
@@ -58,11 +47,27 @@
         android:paddingEnd="12dp"
         android:paddingBottom="8dp">
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAttach"
+            style="@style/Widget.ATG.Chip"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:text="File" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoice"
+            style="@style/Widget.ATG.Chip"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:layout_marginStart="4dp"
+            android:text="Voice" />
+
         <EditText
             android:id="@+id/etMessage"
             android:layout_width="0dp"
             android:layout_height="46dp"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
             android:background="@drawable/bg_chat_input"
             android:hint="Message the room"
             android:inputType="textCapSentences|textMultiLine"

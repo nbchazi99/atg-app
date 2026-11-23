@@ -154,7 +154,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     final detail = _detail;
 
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -227,7 +227,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.lock_outline_rounded,
                                       size: 18,
                                       color: AtgColors.gold,
@@ -288,7 +288,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               AtgPill(text: '${course.lessonsCount} LESSONS'),
               if (detail.enrolled) ...[
                 const SizedBox(width: 6),
-                const AtgPill(
+                AtgPill(
                   text: 'ENROLLED',
                   background: AtgColors.greenBg,
                   foreground: AtgColors.greenText,
@@ -316,7 +316,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               const Spacer(),
               Text(
                 course.price <= 0 ? 'Free' : money(course.price),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: AtgColors.ink,
@@ -388,14 +388,14 @@ class _LessonTile extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: completed
-                  ? const Icon(
+                  ? Icon(
                       Icons.check_rounded,
                       size: 18,
                       color: AtgColors.greenText,
                     )
                   : Text(
                       '${lesson.orderIndex + 1}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: AtgColors.gold,
@@ -424,11 +424,7 @@ class _LessonTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 20,
-              color: AtgColors.muted,
-            ),
+            Icon(Icons.chevron_right_rounded, size: 20, color: AtgColors.muted),
           ],
         ),
       ),

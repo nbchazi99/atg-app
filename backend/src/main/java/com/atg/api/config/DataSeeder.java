@@ -72,6 +72,14 @@ public class DataSeeder implements CommandLineRunner {
             currentSettings.setFinancialLimitsMigrated(true);
             saveSettings = true;
         }
+        if (!currentSettings.isWithdrawFeeMigrated()) {
+            if (currentSettings.getWithdrawFeePct() == null
+                    || currentSettings.getWithdrawFeePct().compareTo(BigDecimal.valueOf(7)) == 0) {
+                currentSettings.setWithdrawFeePct(BigDecimal.valueOf(10));
+            }
+            currentSettings.setWithdrawFeeMigrated(true);
+            saveSettings = true;
+        }
         if (saveSettings) settings.save(currentSettings);
 
         seedRooms();

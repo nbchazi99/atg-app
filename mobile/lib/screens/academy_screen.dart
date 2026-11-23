@@ -63,7 +63,7 @@ class _AcademyScreenState extends State<AcademyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -88,8 +88,7 @@ class _AcademyScreenState extends State<AcademyScreen> {
                           children: const [
                             EmptyState(
                               title: 'No courses yet',
-                              message:
-                                  'The desk is preparing the next course. Check back soon.',
+                              message: 'The desk is preparing the next course. Check back soon.',
                               icon: Icons.school_outlined,
                             ),
                           ],
@@ -148,7 +147,7 @@ class _CourseCard extends StatelessWidget {
               AtgPill(text: '${course.lessonsCount} LESSONS'),
               const Spacer(),
               if (row.enrolled)
-                const AtgPill(
+                AtgPill(
                   text: 'ENROLLED',
                   background: AtgColors.greenBg,
                   foreground: AtgColors.greenText,
@@ -156,7 +155,7 @@ class _CourseCard extends StatelessWidget {
               else
                 Text(
                   course.price <= 0 ? 'Free' : money(course.price),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AtgColors.ink,
@@ -204,7 +203,7 @@ class _CourseCard extends StatelessWidget {
                   style: AtgText.small.copyWith(color: AtgColors.gold),
                 ),
                 const Spacer(),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
                   color: AtgColors.muted,

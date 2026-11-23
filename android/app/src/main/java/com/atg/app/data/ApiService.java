@@ -73,6 +73,11 @@ public interface ApiService {
     @POST("api/uploads")
     Call<Models.UploadRes> upload(@Part MultipartBody.Part file);
 
+    @Multipart
+    @POST("api/rooms/{roomId}/attachments")
+    Call<Models.UploadRes> uploadRoomAttachment(
+            @Path("roomId") long roomId, @Part MultipartBody.Part file);
+
     @GET("api/courses")
     Call<List<Models.CourseRow>> courses();
 

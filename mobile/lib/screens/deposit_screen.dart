@@ -17,7 +17,7 @@ class DepositScreen extends StatefulWidget {
 }
 
 class _DepositScreenState extends State<DepositScreen> {
-  static const _brokers = [
+  static final _brokers = [
     OptionTile(
       title: 'Weltrade',
       subtitle: 'The broker ATG trades and posts every signal against',
@@ -65,7 +65,7 @@ class _DepositScreenState extends State<DepositScreen> {
       if (!mounted) return;
       setState(() {
         _settings = settings;
-        _wallets = settings.depositMethods.map(walletMethodOption).toList();
+        _wallets = [walletMethodOption('EcoCash')];
         _wallet = 0;
       });
     } on ApiException {
@@ -154,7 +154,7 @@ class _DepositScreenState extends State<DepositScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -171,11 +171,11 @@ class _DepositScreenState extends State<DepositScreen> {
                         Container(
                           width: 38,
                           height: 38,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AtgColors.primarySoft,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.south_west_rounded,
                             size: 19,
                             color: AtgColors.gold,
@@ -294,7 +294,7 @@ class _DepositScreenState extends State<DepositScreen> {
                     onPressed: _submit,
                   ),
                   const SizedBox(height: 10),
-                  const Text(
+                  Text(
                     'Requests are reviewed by the administrator before the funds move. You will see the decision in '
                     'your wallet history.',
                     style: TextStyle(

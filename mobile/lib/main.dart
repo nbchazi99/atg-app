@@ -21,16 +21,8 @@ Future<void> main() async {
   } catch (error) {
     debugPrint('ATG firebase init failed: $error');
   }
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      systemNavigationBarColor: AtgColors.bg,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
   state.session = await Session.load();
+  _setSystemUiOverlayStyle(state.session.isDarkMode);
   state.api = Api(state.session);
   state.realtime = Realtime(
     server: () => state.session.server,
@@ -49,6 +41,7 @@ class AtgApp extends StatefulWidget {
 
 class _AtgAppState extends State<AtgApp> {
   late bool _loggedIn = state.session.isLoggedIn;
+  late bool _darkMode = state.session.isDarkMode;
   bool _splash = true;
   Timer? _splashTimer;
 
@@ -85,8 +78,13 @@ class _AtgAppState extends State<AtgApp> {
 
   void _sessionChanged() {
     final loggedIn = state.session.isLoggedIn;
-    if (loggedIn != _loggedIn) {
-      setState(() => _loggedIn = loggedIn);
+    final darkMode = state.session.isDarkMode;
+    if (loggedIn != _loggedIn || darkMode != _darkMode) {
+      setState(() {
+        _loggedIn = loggedIn;
+        _darkMode = darkMode;
+      });
+      _setSystemUiOverlayStyle(darkMode);
       if (loggedIn) {
         PushService.start(state.session, state.api);
       }
@@ -98,7 +96,7 @@ class _AtgAppState extends State<AtgApp> {
     return MaterialApp(
       title: 'ATG',
       debugShowCheckedModeBanner: false,
-      theme: atgTheme(),
+      theme: atgTheme(darkMode: _darkMode),
       scrollBehavior: const AtgScrollBehavior(),
       home: AnimatedSwitcher(
         duration: const Duration(milliseconds: 420),
@@ -112,4 +110,20 @@ class _AtgAppState extends State<AtgApp> {
       ),
     );
   }
+}
+
+void _setSystemUiOverlayStyle(bool darkMode) {
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: darkMode ? Brightness.light : Brightness.dark,
+      statusBarBrightness: darkMode ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: darkMode
+          ? const Color(0xFF101216)
+          : const Color(0xFFF5F4EE),
+      systemNavigationBarIconBrightness: darkMode
+          ? Brightness.light
+          : Brightness.dark,
+    ),
+  );
 }

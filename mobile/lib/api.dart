@@ -30,6 +30,7 @@ class Api {
   Api(this.session);
 
   static const _maxCourseAssetBytes = 250 * 1024 * 1024;
+  static const _maxChatAttachmentBytes = 80 * 1024 * 1024;
   static const _courseAssetMimeTypes = <String, String>{
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
@@ -53,6 +54,7 @@ class Api {
     '.m4a': 'audio/mp4',
     '.aac': 'audio/aac',
     '.ogg': 'audio/ogg',
+    '.opus': 'audio/ogg',
     '.flac': 'audio/flac',
   };
 
@@ -274,12 +276,17 @@ class Api {
     String text, {
     int? threadId,
     String? attachmentUrl,
+    String? attachmentType,
   }) async {
     final data = await _send(
       'POST',
       'api/rooms/$roomId/messages',
       query: threadId == null ? null : {'threadId': '$threadId'},
-      body: {'text': text, 'attachmentUrl': ?attachmentUrl},
+      body: {
+        'text': text,
+        'attachmentUrl': ?attachmentUrl,
+        'attachmentType': ?attachmentType,
+      },
     );
     return RoomMessage.fromJson((data as Map).cast<String, dynamic>());
   }
@@ -343,6 +350,164 @@ class Api {
 
   Future<String> uploadVideo(XFile file) async {
     return _uploadMedia(file, video: true);
+  }
+
+  Future<String> uploadRoomAttachment(int roomId, PlatformFile file) async {
+    final size = await file.length();
+    if (size == null) {
+      throw const ApiException(
+        'Could not determine the selected file size. Please select it again.',
+      );
+    }
+    _validateChatAttachment(file.name, size);
+    final endpoint = Uri.parse(
+      '${session.server}api/rooms/$roomId/attachments',
+    );
+    if (kIsWeb) {
+      return _uploadChatAttachmentInBrowser(endpoint, file.uri, file.name);
+    }
+    return _uploadChatAttachmentStream(
+      endpoint,
+      file.name,
+      size,
+      file.readAsByteStream(),
+    );
+  }
+
+  Future<String> uploadRoomRecording(int roomId, XFile file) async {
+    final size = await file.length();
+    _validateChatAttachment(file.name, size);
+    final endpoint = Uri.parse(
+      '${session.server}api/rooms/$roomId/attachments',
+    );
+    if (kIsWeb) {
+      return _uploadChatAttachmentInBrowser(
+        endpoint,
+        Uri.parse(file.path),
+        file.name,
+      );
+    }
+    return _uploadChatAttachmentStream(
+      endpoint,
+      file.name,
+      size,
+      file.openRead(),
+    );
+  }
+
+  void _validateChatAttachment(String filename, int size) {
+    if (!_courseAssetMimeTypes.containsKey(_extension(filename))) {
+      throw const ApiException(
+        'Choose an image, video, PDF, Office document, or audio file.',
+      );
+    }
+    if (size <= 0) {
+      throw const ApiException('The selected file is empty.');
+    }
+    if (size > _maxChatAttachmentBytes) {
+      throw const ApiException('Chat files must be 80 MB or smaller.');
+    }
+  }
+
+  String _extension(String filename) {
+    final lower = filename.toLowerCase();
+    final dot = lower.lastIndexOf('.');
+    return dot < 0 ? '' : lower.substring(dot);
+  }
+
+  Future<String> _uploadChatAttachmentStream(
+    Uri endpoint,
+    String filename,
+    int size,
+    Stream<List<int>> stream,
+  ) async {
+    final token = session.token;
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Sign in to attach files to chat.');
+    }
+    final request = http.MultipartRequest('POST', endpoint)
+      ..headers['Authorization'] = 'Bearer $token';
+    try {
+      request.files.add(
+        http.MultipartFile(
+          'file',
+          stream,
+          size,
+          filename: filename,
+          contentType: MediaType.parse(
+            _courseAssetMimeTypes[_extension(filename)]!,
+          ),
+        ),
+      );
+      final streamed = await request.send().timeout(
+        const Duration(minutes: 15),
+      );
+      final response = await http.Response.fromStream(streamed);
+      return _uploadedChatAttachmentUrl(response.statusCode, response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(
+        'The upload timed out. Check your connection and try again.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('ATG chat-file upload failed: $error\n$stackTrace');
+      throw const ApiException(
+        'Could not upload the chat file. Check your connection and try again.',
+      );
+    }
+  }
+
+  Future<String> _uploadChatAttachmentInBrowser(
+    Uri endpoint,
+    Uri fileUri,
+    String filename,
+  ) async {
+    final token = session.token;
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Sign in to attach files to chat.');
+    }
+    try {
+      final response = await browser_upload.uploadCourseAssetInBrowser(
+        endpoint: endpoint,
+        token: token,
+        fileUri: fileUri,
+        filename: filename,
+      );
+      return _uploadedChatAttachmentUrl(response.statusCode, response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(
+        'The upload timed out. Check your connection and try again.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('ATG browser chat-file upload failed: $error\n$stackTrace');
+      throw const ApiException(
+        'Could not upload the chat file. Check your connection and try again.',
+      );
+    }
+  }
+
+  String _uploadedChatAttachmentUrl(int statusCode, String body) {
+    dynamic decoded;
+    try {
+      decoded = body.isEmpty ? null : jsonDecode(body);
+    } catch (_) {
+      decoded = null;
+    }
+    if (statusCode >= 200 &&
+        statusCode < 300 &&
+        decoded is Map &&
+        decoded['url'] is String) {
+      return decoded['url'] as String;
+    }
+    final message = decoded is Map && decoded['message'] is String
+        ? decoded['message'] as String
+        : decoded is Map && decoded['error'] is String
+        ? decoded['error'] as String
+        : 'Could not upload the chat file ($statusCode)';
+    throw ApiException(message, statusCode);
   }
 
   Future<String> uploadCourseAsset(XFile file) async {

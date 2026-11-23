@@ -8,13 +8,14 @@ public class AppSettings {
     private Long id = 1L;
 
     private BigDecimal adminFeePct = BigDecimal.valueOf(10);
-    private BigDecimal withdrawFeePct = BigDecimal.valueOf(7);
+    private BigDecimal withdrawFeePct = BigDecimal.valueOf(10);
     private BigDecimal minDeposit = BigDecimal.valueOf(5);
     private BigDecimal maxDeposit = BigDecimal.valueOf(454);
     private BigDecimal minWithdraw = BigDecimal.valueOf(5);
     private BigDecimal maxWithdraw = BigDecimal.valueOf(454);
     private boolean depositMinimumMigrated;
     private boolean financialLimitsMigrated;
+    private boolean withdrawFeeMigrated;
     private String fact = "";
     private String promotionTitle = "";
     private String promotionBody = "";
@@ -43,6 +44,10 @@ public class AppSettings {
     public boolean isFinancialLimitsMigrated() { return financialLimitsMigrated; }
     public void setFinancialLimitsMigrated(boolean financialLimitsMigrated) {
         this.financialLimitsMigrated = financialLimitsMigrated;
+    }
+    public boolean isWithdrawFeeMigrated() { return withdrawFeeMigrated; }
+    public void setWithdrawFeeMigrated(boolean withdrawFeeMigrated) {
+        this.withdrawFeeMigrated = withdrawFeeMigrated;
     }
     public String getFact() { return fact; }
     public void setFact(String fact) { this.fact = fact; }

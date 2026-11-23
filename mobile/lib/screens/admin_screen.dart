@@ -50,8 +50,6 @@ class _AdminScreenState extends State<AdminScreen> {
   List<Signal> _signals = const [];
   List<Room> _rooms = const [];
   List<Course> _courses = const [];
-  List<String> _depositMethods = ['EcoCash'];
-  List<String> _withdrawalMethods = ['EcoCash'];
   bool _savingSettings = false;
   bool _savingAccount = false;
   VoidCallback? _unbind;
@@ -171,27 +169,6 @@ class _AdminScreenState extends State<AdminScreen> {
     _fact.text = s.fact;
     _promoTitle.text = s.promotionTitle;
     _promoBody.text = s.promotionBody;
-    _depositMethods = List.of(s.depositMethods);
-    _withdrawalMethods = List.of(s.withdrawalMethods);
-  }
-
-  void _toggleWalletMethod({
-    required bool deposit,
-    required String method,
-    required bool enabled,
-  }) {
-    final methods = deposit ? _depositMethods : _withdrawalMethods;
-    if (!enabled && methods.length == 1) {
-      showToast(
-        context,
-        'Keep at least one ${deposit ? 'deposit' : 'withdrawal'} method enabled.',
-      );
-      return;
-    }
-    setState(() {
-      if (enabled && !methods.contains(method)) methods.add(method);
-      if (!enabled) methods.remove(method);
-    });
   }
 
   List<_AdminRequest> get _requestRows {
@@ -285,7 +262,7 @@ class _AdminScreenState extends State<AdminScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(
                 color: AtgColors.muted,
@@ -363,7 +340,7 @@ class _AdminScreenState extends State<AdminScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text(
+              child: Text(
                 'Cancel',
                 style: TextStyle(
                   color: AtgColors.muted,
@@ -373,7 +350,7 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text(
+              child: Text(
                 'Save',
                 style: TextStyle(
                   color: AtgColors.gold,
@@ -497,8 +474,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Delete ${course.title}?',
-      message:
-          'Lessons and course access are removed. Enrolled traders lose the course.',
+      message: 'Lessons and course access are removed. Enrolled traders lose the course.',
       confirmLabel: 'Delete',
       cancelLabel: 'Keep',
       destructive: true,
@@ -517,18 +493,11 @@ class _AdminScreenState extends State<AdminScreen> {
 
   Future<void> _saveSettings() async {
     if (_savingSettings) return;
-    if (_depositMethods.isEmpty || _withdrawalMethods.isEmpty) {
-      showToast(
-        context,
-        'Keep at least one method enabled for deposits and withdrawals.',
-      );
-      return;
-    }
     setState(() => _savingSettings = true);
     try {
       final settings = await api.updateSettings({
         'adminFeePct': parseAmount(_adminFee.text, 10),
-        'withdrawFeePct': parseAmount(_withdrawFee.text, 7),
+        'withdrawFeePct': parseAmount(_withdrawFee.text, 10),
         'minDeposit': parseAmount(_minDeposit.text, 5),
         'maxDeposit': parseAmount(_maxDeposit.text, 454),
         'minWithdraw': parseAmount(_minWithdraw.text, 5),
@@ -536,12 +505,8 @@ class _AdminScreenState extends State<AdminScreen> {
         'fact': _fact.text.trim(),
         'promotionTitle': _promoTitle.text.trim(),
         'promotionBody': _promoBody.text.trim(),
-        'depositMethods': walletPaymentMethods
-            .where(_depositMethods.contains)
-            .toList(),
-        'withdrawalMethods': walletPaymentMethods
-            .where(_withdrawalMethods.contains)
-            .toList(),
+        'depositMethods': ['EcoCash'],
+        'withdrawalMethods': ['EcoCash'],
       });
       if (!mounted) return;
       _fillSettings(settings);
@@ -603,7 +568,7 @@ class _AdminScreenState extends State<AdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AtgColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: PageBody(
@@ -711,7 +676,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     children: [
                       Text(
                         money(row.amount),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AtgColors.ink,
@@ -725,7 +690,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             onPressed: () => _decide(row, false),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AtgColors.redText,
-                              side: const BorderSide(color: AtgColors.stroke),
+                              side: BorderSide(color: AtgColors.stroke),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -744,7 +709,7 @@ class _AdminScreenState extends State<AdminScreen> {
                             onPressed: () => _decide(row, true),
                             style: FilledButton.styleFrom(
                               backgroundColor: AtgColors.primary,
-                              foregroundColor: AtgColors.ink,
+                              foregroundColor: AtgColors.primaryForeground,
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -812,7 +777,7 @@ class _AdminScreenState extends State<AdminScreen> {
                           ),
                           if (user.isAdmin) ...[
                             const SizedBox(width: 6),
-                            const AtgPill(
+                            AtgPill(
                               text: 'ADMIN',
                               background: AtgColors.primarySoft,
                               foreground: AtgColors.gold,
@@ -842,7 +807,7 @@ class _AdminScreenState extends State<AdminScreen> {
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 20,
                   color: AtgColors.muted,
@@ -875,7 +840,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   onPressed: _addSignal,
                   style: FilledButton.styleFrom(
                     backgroundColor: AtgColors.primary,
-                    foregroundColor: AtgColors.ink,
+                    foregroundColor: AtgColors.primaryForeground,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -933,7 +898,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                   onPressed: () => _deleteSignal(signal),
                                   tooltip: 'Delete signal',
                                   visualDensity: VisualDensity.compact,
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete_outline_rounded,
                                     size: 19,
                                     color: AtgColors.redText,
@@ -1001,7 +966,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   onPressed: _addRoom,
                   style: FilledButton.styleFrom(
                     backgroundColor: AtgColors.primary,
-                    foregroundColor: AtgColors.ink,
+                    foregroundColor: AtgColors.primaryForeground,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1024,8 +989,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   children: const [
                     EmptyState(
                       title: 'No chat rooms',
-                      message:
-                          'Create a room so traders have a place to start chatting.',
+                      message: 'Create a room so traders have a place to start chatting.',
                       icon: Icons.forum_outlined,
                     ),
                   ],
@@ -1085,7 +1049,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   onPressed: _addCourse,
                   style: FilledButton.styleFrom(
                     backgroundColor: AtgColors.primary,
-                    foregroundColor: AtgColors.ink,
+                    foregroundColor: AtgColors.primaryForeground,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1149,7 +1113,7 @@ class _AdminScreenState extends State<AdminScreen> {
                               onPressed: () => _deleteCourse(course),
                               tooltip: 'Delete course',
                               visualDensity: VisualDensity.compact,
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete_outline_rounded,
                                 size: 19,
                                 color: AtgColors.redText,
@@ -1262,13 +1226,30 @@ class _AdminScreenState extends State<AdminScreen> {
           minLines: 2,
         ),
         const SizedBox(height: 22),
-        const SectionLabel('DEPOSIT METHODS'),
+        const SectionLabel('DEPOSITS AND WITHDRAWALS'),
         const SizedBox(height: 10),
-        _walletMethodsCard(_depositMethods, deposit: true),
-        const SizedBox(height: 16),
-        const SectionLabel('WITHDRAWAL METHODS'),
-        const SizedBox(height: 10),
-        _walletMethodsCard(_withdrawalMethods, deposit: false),
+        SurfaceCard(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                color: AtgColors.gold,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('EcoCash', style: AtgText.h3),
+                    SizedBox(height: 2),
+                    Text('Only supported payment method', style: AtgText.small),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 18),
         PrimaryButton(
           label: 'Save settings',
@@ -1276,30 +1257,6 @@ class _AdminScreenState extends State<AdminScreen> {
           onPressed: _saveSettings,
         ),
       ],
-    );
-  }
-
-  Widget _walletMethodsCard(List<String> methods, {required bool deposit}) {
-    return SurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Column(
-        children: [
-          for (final method in walletPaymentMethods)
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: Text(method, style: AtgText.body),
-              value: methods.contains(method),
-              onChanged: _savingSettings
-                  ? null
-                  : (enabled) => _toggleWalletMethod(
-                      deposit: deposit,
-                      method: method,
-                      enabled: enabled ?? false,
-                    ),
-            ),
-        ],
-      ),
     );
   }
 
@@ -1336,7 +1293,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const AtgPill(
+              AtgPill(
                 text: 'ADMIN',
                 background: AtgColors.primarySoft,
                 foreground: AtgColors.gold,
@@ -1418,7 +1375,6 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
   final _title = TextEditingController();
   final _subtitle = TextEditingController();
   final _symbol = TextEditingController(text: 'EURUSD');
-  final _room = TextEditingController(text: 'OPEN FLOOR');
   final _entry = TextEditingController(text: 'At market, now');
   final _stop = TextEditingController(text: 'Not given');
   final _targets = TextEditingController(text: 'Not given');
@@ -1427,13 +1383,13 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
 
   String _side = 'BUY';
   String _status = 'LIVE';
+  String _roomLabel = 'OPEN FLOOR';
 
   @override
   void dispose() {
     _title.dispose();
     _subtitle.dispose();
     _symbol.dispose();
-    _room.dispose();
     _entry.dispose();
     _stop.dispose();
     _targets.dispose();
@@ -1455,7 +1411,7 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
         symbol: _symbol.text.trim().toUpperCase(),
         side: _side,
         status: _status,
-        roomLabel: _room.text.trim().isEmpty ? 'OPEN FLOOR' : _room.text.trim(),
+        roomLabel: _roomLabel,
         entry: _entry.text.trim(),
         stopLoss: _stop.text.trim(),
         targets: _targets.text.trim(),
@@ -1509,11 +1465,25 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
                   textCapitalization: TextCapitalization.characters,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: AtgField(controller: _room, label: 'Room label'),
-              ),
             ],
+          ),
+          const SizedBox(height: 10),
+          const SectionLabel('SIGNAL AUDIENCE'),
+          const SizedBox(height: 8),
+          AtgChipRow(
+            labels: const ['OPEN FLOOR', 'DERIV VIP', 'WELTRADE VIP'],
+            selected: const [
+              'OPEN FLOOR',
+              'DERIV VIP',
+              'WELTRADE VIP',
+            ].indexOf(_roomLabel),
+            onSelected: (index) => setState(
+              () => _roomLabel = const [
+                'OPEN FLOOR',
+                'DERIV VIP',
+                'WELTRADE VIP',
+              ][index],
+            ),
           ),
           const Padding(
             padding: EdgeInsets.only(top: 6),
@@ -1607,9 +1577,8 @@ class _RoomFormSheetState extends State<_RoomFormSheet> {
       showToast(context, 'Give the chat room a name');
       return;
     }
-    Navigator.of(
-      context,
-    ).pop(_RoomDraft(name: name, description: _description.text.trim()));
+    Navigator.of(context)
+        .pop(_RoomDraft(name: name, description: _description.text.trim()));
   }
 
   @override
