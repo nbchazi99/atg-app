@@ -19,7 +19,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+3
 
 environment:
-  sdk: ^3.13.7
+  # Was ^3.13.7 (Flutter 3.50.x); lowered to match the installed Flutter 3.47.5
+  # (Dart 3.13.4) so the project resolves locally. Raise it back when the SDK is upgraded.
+  sdk: ^3.13.4
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions

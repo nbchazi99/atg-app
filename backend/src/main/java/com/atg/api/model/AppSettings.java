@@ -20,6 +20,9 @@ public class AppSettings {
     private String promotionTitle = "";
     private String promotionBody = "";
     private int pointsPerReferral = 5;
+    private BigDecimal derivVipPrice = BigDecimal.valueOf(30);
+    private BigDecimal weltradeVipPrice = BigDecimal.valueOf(30);
+    private int vipExpiryDays = 30;
     private List<String> depositMethods = List.of("EcoCash");
     private List<String> withdrawalMethods = List.of("EcoCash");
 
@@ -57,6 +60,12 @@ public class AppSettings {
     public void setPromotionBody(String promotionBody) { this.promotionBody = promotionBody; }
     public int getPointsPerReferral() { return pointsPerReferral; }
     public void setPointsPerReferral(int pointsPerReferral) { this.pointsPerReferral = pointsPerReferral; }
+    public BigDecimal getDerivVipPrice() { return derivVipPrice; }
+    public void setDerivVipPrice(BigDecimal derivVipPrice) { this.derivVipPrice = derivVipPrice; }
+    public BigDecimal getWeltradeVipPrice() { return weltradeVipPrice; }
+    public void setWeltradeVipPrice(BigDecimal weltradeVipPrice) { this.weltradeVipPrice = weltradeVipPrice; }
+    public int getVipExpiryDays() { return vipExpiryDays; }
+    public void setVipExpiryDays(int vipExpiryDays) { this.vipExpiryDays = vipExpiryDays; }
     public List<String> getDepositMethods() { return depositMethods; }
     public void setDepositMethods(List<String> depositMethods) { this.depositMethods = depositMethods; }
     public List<String> getWithdrawalMethods() { return withdrawalMethods; }

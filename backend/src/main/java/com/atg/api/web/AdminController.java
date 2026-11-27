@@ -4,6 +4,7 @@ import com.atg.api.config.JwtService;
 import com.atg.api.model.*;
 import com.atg.api.realtime.RealtimeHub;
 import com.atg.api.repo.*;
+import com.atg.api.service.PaymentService;
 import com.atg.api.service.WalletService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +40,7 @@ public class AdminController extends BaseController {
     private final RealtimeHub realtime;
     private final JwtService jwt;
     private final PasswordEncoder encoder;
+    private final PaymentService paymentService;
 
     public AdminController(UserRepository users, WalletService wallet,
                            WalletTransactionRepository transactions, DepositRequestRepository deposits,
@@ -45,7 +48,8 @@ public class AdminController extends BaseController {
                            SignalRepository signals, RoomRepository rooms,
                            RoomMessageRepository roomMessages,
                            CourseRepository courses, LessonRepository lessons,
-                           RealtimeHub realtime, JwtService jwt, PasswordEncoder encoder) {
+                           RealtimeHub realtime, JwtService jwt, PasswordEncoder encoder,
+                           PaymentService paymentService) {
         super(users);
         this.wallet = wallet;
         this.transactions = transactions;
@@ -60,6 +64,7 @@ public class AdminController extends BaseController {
         this.realtime = realtime;
         this.jwt = jwt;
         this.encoder = encoder;
+        this.paymentService = paymentService;
     }
 
     @PutMapping("/account")
@@ -125,11 +130,38 @@ public class AdminController extends BaseController {
     @GetMapping("/requests")
     public Map<String, Object> requests() {
         Map<String, Object> res = new LinkedHashMap<>();
-        res.put("deposits", deposits.findAllByOrderByCreatedAtDesc());
+        Map<Long, User> usersById = new LinkedHashMap<>();
+        users.findAll().forEach(user -> usersById.put(user.getId(), user));
+        res.put("deposits", deposits.findAllByOrderByCreatedAtDesc().stream()
+                .map(deposit -> depositAdminView(deposit, usersById.get(deposit.getUserId())))
+                .toList());
         res.put("withdrawals", withdrawals.findAllByOrderByCreatedAtDesc());
         res.put("purchases", purchases.findAllByOrderByCreatedAtDesc());
         res.put("transactions", transactions.findAll());
         return res;
+    }
+
+    private Map<String, Object> depositAdminView(DepositRequest deposit, User user) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", deposit.getId());
+        row.put("userId", deposit.getUserId());
+        row.put("username", user == null ? null : user.getName());
+        row.put("weltradeId", deposit.getClientId());
+        row.put("phone", user == null ? null : user.getPhone());
+        row.put("broker", deposit.getBroker());
+        row.put("clientId", deposit.getClientId());
+        row.put("amount", deposit.getAmount());
+        row.put("feePct", deposit.getFeePct());
+        row.put("fee", deposit.getFee());
+        row.put("totalPaid", deposit.getTotalPaid());
+        row.put("wallet", deposit.getWallet());
+        row.put("mobile", deposit.getMobile());
+        row.put("status", deposit.getStatus());
+        row.put("transactionId", deposit.getTransactionId());
+        row.put("adminNote", deposit.getAdminNote());
+        row.put("createdAt", deposit.getCreatedAt());
+        row.put("reviewedAt", deposit.getReviewedAt());
+        return row;
     }
 
     @PostMapping("/deposits/{id}/decide")
@@ -154,6 +186,17 @@ public class AdminController extends BaseController {
         realtime.publish(RealtimeHub.ROOMS, Map.of("kind", "purchase"));
         realtime.publish(RealtimeHub.COURSES, Map.of("kind", "purchase"));
         return decided;
+    }
+
+    @GetMapping("/payments")
+    public List<PaymentTransaction> payments(@RequestParam(name = "status", required = false)
+                                             PaymentTransaction.Status status) {
+        return paymentService.adminList(status);
+    }
+
+    @PostMapping("/payments/{orderId}/refund")
+    public PaymentTransaction refund(@PathVariable String orderId, @RequestBody Dtos.RefundReq req) {
+        return paymentService.refund(orderId, req.note());
     }
 
     @GetMapping("/signals")
@@ -193,6 +236,7 @@ public class AdminController extends BaseController {
         Signal s = new Signal();
         apply(s, req);
         s.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        recordSignalUpdate(s, "Signal created");
         Signal saved = signals.save(s);
         realtime.publish(RealtimeHub.SIGNALS, Map.of("signalId", saved.getId(), "kind", "created"));
         realtime.publish(RealtimeHub.HOME, Map.of("kind", "signals"));
@@ -204,6 +248,7 @@ public class AdminController extends BaseController {
         Signal s = signals.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Signal not found"));
         apply(s, req);
+        recordSignalUpdate(s, "Signal updated");
         Signal saved = signals.save(s);
         realtime.publish(RealtimeHub.SIGNALS, Map.of("signalId", saved.getId(), "kind", "updated"));
         realtime.publish(RealtimeHub.HOME, Map.of("kind", "signals"));
@@ -219,6 +264,7 @@ public class AdminController extends BaseController {
     }
 
     private void apply(Signal s, Dtos.SignalReq req) {
+        Signal.Status previousStatus = s.getStatus();
         if (req.title() != null) s.setTitle(req.title());
         if (req.subtitle() != null) s.setSubtitle(req.subtitle());
         if (req.symbol() != null) s.setSymbol(req.symbol().toUpperCase(Locale.ROOT));
@@ -237,6 +283,46 @@ public class AdminController extends BaseController {
         if (req.targets() != null) s.setTargets(req.targets());
         if (req.ruleName() != null) s.setRuleName(req.ruleName());
         if (req.participants() != null) s.setParticipants(req.participants());
+        if (req.closingPrice() != null) s.setClosingPrice(blankToNull(req.closingPrice()));
+        if (req.closingUpdate() != null) s.setClosingUpdate(blankToNull(req.closingUpdate()));
+        if (s.getStatus() == Signal.Status.CLOSED) {
+            if (req.result() != null) s.setResult(normalizeSignalResult(req.result()));
+            else if (s.getResult() == null || s.getResult().isBlank()) s.setResult("MANUAL_CLOSE");
+            if (s.getClosedAt() == null || previousStatus != Signal.Status.CLOSED) {
+                s.setClosedAt(LocalDateTime.now(ZoneOffset.UTC));
+            }
+        } else if (previousStatus == Signal.Status.CLOSED) {
+            s.setResult(null);
+            s.setClosingPrice(null);
+            s.setClosingUpdate(null);
+            s.setClosedAt(null);
+        }
+    }
+
+    private static String normalizeSignalResult(String result) {
+        String normalized = result.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+        if (!List.of("TP_HIT", "SL_HIT", "MANUAL_CLOSE", "OTHER").contains(normalized)) {
+            throw bad("Choose TP Hit, SL Hit, Manual Close, or Other as the signal result");
+        }
+        return normalized;
+    }
+
+    private static String blankToNull(String value) {
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static void recordSignalUpdate(Signal signal, String description) {
+        List<String> history = new ArrayList<>(signal.getUpdateHistory());
+        StringBuilder update = new StringBuilder()
+                .append(LocalDateTime.now(ZoneOffset.UTC))
+                .append(" | ").append(description)
+                .append(" | status=").append(signal.getStatus());
+        if (signal.getResult() != null) update.append(" | result=").append(signal.getResult());
+        if (signal.getClosingPrice() != null) update.append(" | closingPrice=").append(signal.getClosingPrice());
+        if (signal.getClosingUpdate() != null) update.append(" | ").append(signal.getClosingUpdate());
+        history.add(update.toString());
+        signal.setUpdateHistory(history);
     }
 
     @PostMapping("/courses")
@@ -254,6 +340,7 @@ public class AdminController extends BaseController {
         c.setPrice(req.price());
         c.setLevel(req.level() == null ? "Beginner" : req.level());
         c.setImageUrl(req.imageUrl());
+        c.setReviewStatus(Course.ReviewStatus.PENDING);
         courses.save(c);
         if (req.lessons() != null) {
             int i = 0;
@@ -272,7 +359,47 @@ public class AdminController extends BaseController {
         }
         c.setLessonsCount((int) lessons.countByCourseId(c.getId()));
         Course saved = courses.save(c);
-        realtime.publish(RealtimeHub.COURSES, Map.of("courseId", saved.getId(), "kind", "created"));
+        realtime.publish(RealtimeHub.COURSES, Map.of("courseId", saved.getId(), "kind", "submitted"));
+        return saved;
+    }
+
+    @GetMapping("/courses")
+    public List<Course> adminCourses() {
+        return courses.findAll().stream()
+                .sorted((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()))
+                .toList();
+    }
+
+    @GetMapping("/courses/{id}")
+    public Map<String, Object> adminCourse(@PathVariable Long id) {
+        Course course = courses.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("course", course);
+        details.put("lessons", lessons.findByCourseIdOrderByOrderIndexAsc(id));
+        details.put("enrolled", false);
+        details.put("completedLessonIds", List.of());
+        return details;
+    }
+
+    @PostMapping("/courses/{id}/review")
+    public Course reviewCourse(@PathVariable Long id, @RequestBody Dtos.CourseReviewReq request) {
+        Course course = courses.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        if (course.getReviewStatus() != Course.ReviewStatus.PENDING) {
+            throw bad("This course has already been reviewed");
+        }
+        User admin = me();
+        course.setReviewStatus(request.approve()
+                ? Course.ReviewStatus.PUBLISHED : Course.ReviewStatus.REJECTED);
+        course.setReviewNote(request.note() == null || request.note().isBlank()
+                ? null : request.note().trim());
+        course.setReviewedBy(admin.getId());
+        course.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
+        Course saved = courses.save(course);
+        realtime.publish(RealtimeHub.COURSES, Map.of(
+                "courseId", saved.getId(),
+                "kind", request.approve() ? "published" : "rejected"));
         return saved;
     }
 

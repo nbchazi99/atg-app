@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -124,7 +125,7 @@ public class RoomController extends BaseController {
         post.setPreview(req.message().trim());
         post.setParticipants(1);
         post.setCreatedById(user.getId());
-        post.setCreatedByName(user.getName());
+        post.setCreatedByName(user.getDisplayName());
         post.setLastActivityAt(LocalDateTime.now(ZoneOffset.UTC));
         post = posts.save(post);
 
@@ -154,9 +155,27 @@ public class RoomController extends BaseController {
     public List<RoomMessage> messages(@PathVariable Long id, @RequestParam(required = false) Long threadId) {
         User user = me();
         requireAccessibleRoom(id, user);
-        if (threadId == null) return messages.findByRoomIdOrderByCreatedAtAsc(id);
-        requireThread(id, threadId);
-        return messages.findByRoomIdAndThreadIdOrderByCreatedAtAsc(id, threadId);
+        List<RoomMessage> rows;
+        if (threadId == null) {
+            rows = messages.findByRoomIdOrderByCreatedAtAsc(id);
+        } else {
+            requireThread(id, threadId);
+            rows = messages.findByRoomIdAndThreadIdOrderByCreatedAtAsc(id, threadId);
+        }
+        Map<Long, User> authors = new HashMap<>();
+        for (RoomMessage message : rows) {
+            Long authorId = message.getAuthorId();
+            if (authorId == null || authors.containsKey(authorId)) continue;
+            users.findById(authorId).ifPresent(author -> authors.put(authorId, author));
+        }
+        for (RoomMessage message : rows) {
+            User author = authors.get(message.getAuthorId());
+            if (author != null) {
+                message.setAuthor(author.getDisplayName());
+                message.setAuthorAvatarUrl(author.getAvatarUrl());
+            }
+        }
+        return rows;
     }
 
     @PostMapping("/{id}/messages")
@@ -213,7 +232,7 @@ public class RoomController extends BaseController {
         m.setRoomId(roomId);
         m.setThreadId(threadId);
         m.setAuthorId(user.getId());
-        m.setAuthor(user.getName());
+        m.setAuthor(user.getDisplayName());
         m.setAuthorAvatarUrl(user.getAvatarUrl());
         m.setText(text);
         m.setAttachmentUrl(attachmentUrl);
@@ -247,7 +266,10 @@ public class RoomController extends BaseController {
         m.put("participants", post.getParticipants());
         m.put("open", post.isOpen());
         m.put("createdById", post.getCreatedById());
-        m.put("createdByName", post.getCreatedByName());
+        User author = post.getCreatedById() == null
+                ? null : users.findById(post.getCreatedById()).orElse(null);
+        m.put("createdByName", author == null ? post.getCreatedByName() : author.getDisplayName());
+        m.put("createdByAvatarUrl", author == null ? null : author.getAvatarUrl());
         m.put("createdAt", post.getCreatedAt());
         m.put("lastActivityAt", post.getLastActivityAt());
         rooms.findById(post.getRoomId()).ifPresent(room -> m.put("roomName", room.getName()));

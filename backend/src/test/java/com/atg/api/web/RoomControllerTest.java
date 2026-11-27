@@ -329,6 +329,31 @@ class RoomControllerTest {
     }
 
     @Test
+    void showsTheAuthorsCurrentUsernameAndAvatarForExistingMessages() {
+        Room community = new Room();
+        community.setId(1L);
+        community.setName("Community");
+        member.setUsername("trader");
+        member.setAvatarUrl("https://storage.example/profile-avatars/7/avatar.jpg");
+        RoomMessage message = new RoomMessage();
+        message.setId(5L);
+        message.setRoomId(1L);
+        message.setAuthorId(member.getId());
+        message.setAuthor("Old name");
+        message.setAuthorAvatarUrl("https://storage.example/old-avatar.jpg");
+        when(rooms.findById(1L)).thenReturn(Optional.of(community));
+        when(messages.findByRoomIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(message));
+        when(users.findById(member.getId())).thenReturn(Optional.of(member));
+
+        List<RoomMessage> result = controller.messages(1L, null);
+
+        assertThat(result).containsExactly(message);
+        assertThat(message.getAuthor()).isEqualTo("trader");
+        assertThat(message.getAuthorAvatarUrl())
+                .isEqualTo("https://storage.example/profile-avatars/7/avatar.jpg");
+    }
+
+    @Test
     void ordinaryAndVipMembersShareCommunityMessages() {
         Room community = new Room();
         community.setId(1L);

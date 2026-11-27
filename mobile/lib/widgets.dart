@@ -256,7 +256,11 @@ class BrandHeader extends StatelessWidget {
             tooltip: 'Notifications',
           ),
           const SizedBox(width: 2),
-          AvatarCircle(text: session.initialsText, onTap: onAvatar),
+          AvatarCircle(
+            text: session.initialsText,
+            imageUrl: session.avatarUrl,
+            onTap: onAvatar,
+          ),
         ],
       ),
     );
@@ -307,7 +311,11 @@ class TabHeader extends StatelessWidget {
             tooltip: 'Notifications',
           ),
           const SizedBox(width: 2),
-          AvatarCircle(text: session.initialsText, onTap: onAvatar),
+          AvatarCircle(
+            text: session.initialsText,
+            imageUrl: session.avatarUrl,
+            onTap: onAvatar,
+          ),
         ],
       ),
     );
@@ -510,11 +518,17 @@ class LivePill extends StatelessWidget {
     case 'COMPLETED':
     case 'LIVE':
     case 'ACTIVE':
+    case 'SUCCESS':
+    case 'PAID':
       return (bg: colors.tertiaryContainer, fg: colors.onTertiaryContainer);
     case 'REJECTED':
     case 'SELL':
+    case 'FAILED':
+    case 'EXPIRED':
       return (bg: colors.errorContainer, fg: colors.onErrorContainer);
     case 'PENDING':
+    case 'PROCESSING':
+    case 'STARTED':
     case 'BUY':
     case 'OPEN':
       return (bg: colors.primaryContainer, fg: colors.onPrimaryContainer);
@@ -965,6 +979,10 @@ class SignalCard extends StatelessWidget {
               ),
             ],
           ),
+          if (signal.status == 'CLOSED') ...[
+            const SizedBox(height: 12),
+            SignalCloseDetails(signal: signal),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
@@ -979,6 +997,68 @@ class SignalCard extends StatelessWidget {
               Text(timeAgo(signal.createdAt), style: AtgText.small),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class SignalCloseDetails extends StatelessWidget {
+  const SignalCloseDetails({super.key, required this.signal});
+
+  final Signal signal;
+
+  @override
+  Widget build(BuildContext context) {
+    final result = switch (signal.result) {
+      'TP_HIT' => 'TP Hit',
+      'SL_HIT' => 'SL Hit',
+      'MANUAL_CLOSE' => 'Manual Close',
+      'OTHER' => 'Other',
+      _ => 'Closed',
+    };
+    final rawClosedAt = signal.closedAt?.trim() ?? '';
+    final hasTimezone = RegExp(r'(?:[zZ]|[+-]\d{2}:?\d{2})$')
+        .hasMatch(rawClosedAt);
+    final parsed = DateTime.tryParse(
+      rawClosedAt.isEmpty || hasTimezone ? rawClosedAt : '${rawClosedAt}Z',
+    );
+    final closedAt = parsed == null
+        ? rawClosedAt
+        : parsed.toLocal().toString().substring(0, 16);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AtgColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AtgColors.strokeSoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Final outcome · $result', style: AtgText.h3),
+          if (signal.closingPrice != null && signal.closingPrice!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(
+                'Closing price · ${signal.closingPrice}',
+                style: AtgText.small,
+              ),
+            ),
+          if (signal.closingUpdate != null && signal.closingUpdate!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(signal.closingUpdate!, style: AtgText.small),
+            ),
+          if (closedAt.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(
+                'Closed · $closedAt (local time)',
+                style: AtgText.tiny,
+              ),
+            ),
         ],
       ),
     );
@@ -1220,6 +1300,14 @@ class FeedRow extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
+                    if (item.createdByName.isNotEmpty) ...[
+                      AvatarCircle(
+                        text: initials(item.createdByName),
+                        size: 20,
+                        imageUrl: item.createdByAvatarUrl,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
                     Text(
                       item.createdByName.isEmpty
                           ? item.roomName

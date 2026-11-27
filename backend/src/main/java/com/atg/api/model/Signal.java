@@ -2,6 +2,8 @@ package com.atg.api.model;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Signal {
 
@@ -25,6 +27,11 @@ public class Signal {
     private String ruleName;
     private int participants = 0;
     private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
+    private String result;
+    private String closingPrice;
+    private String closingUpdate;
+    private LocalDateTime closedAt;
+    private List<String> updateHistory = new ArrayList<>();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -52,4 +59,16 @@ public class Signal {
     public void setParticipants(int participants) { this.participants = participants; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getResult() { return result; }
+    public void setResult(String result) { this.result = result; }
+    public String getClosingPrice() { return closingPrice; }
+    public void setClosingPrice(String closingPrice) { this.closingPrice = closingPrice; }
+    public String getClosingUpdate() { return closingUpdate; }
+    public void setClosingUpdate(String closingUpdate) { this.closingUpdate = closingUpdate; }
+    public LocalDateTime getClosedAt() { return closedAt; }
+    public void setClosedAt(LocalDateTime closedAt) { this.closedAt = closedAt; }
+    public List<String> getUpdateHistory() { return updateHistory; }
+    public void setUpdateHistory(List<String> updateHistory) {
+        this.updateHistory = updateHistory == null ? new ArrayList<>() : updateHistory;
+    }
 }

@@ -6,6 +6,8 @@ import java.time.ZoneOffset;
 
 public class Course {
 
+    public enum ReviewStatus { PENDING, PUBLISHED, REJECTED }
+
     private Long id;
 
     private String title;
@@ -16,6 +18,10 @@ public class Course {
     private String imageUrl;
     private int lessonsCount = 0;
     private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
+    private ReviewStatus reviewStatus = ReviewStatus.PUBLISHED;
+    private Long reviewedBy;
+    private LocalDateTime reviewedAt;
+    private String reviewNote;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -35,4 +41,12 @@ public class Course {
     public void setLessonsCount(int lessonsCount) { this.lessonsCount = lessonsCount; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public ReviewStatus getReviewStatus() { return reviewStatus; }
+    public void setReviewStatus(ReviewStatus reviewStatus) { this.reviewStatus = reviewStatus; }
+    public Long getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(Long reviewedBy) { this.reviewedBy = reviewedBy; }
+    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getReviewNote() { return reviewNote; }
+    public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
 }

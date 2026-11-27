@@ -21,6 +21,9 @@ public class PurchaseRequest {
 
     private Long transactionId;
 
+    /** Set when the purchase was settled through the payment gateway (Dischub order id). */
+    private String paymentOrderId;
+
     private String adminNote;
     private LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
     private LocalDateTime reviewedAt;
@@ -41,6 +44,8 @@ public class PurchaseRequest {
     public void setStatus(Status status) { this.status = status; }
     public Long getTransactionId() { return transactionId; }
     public void setTransactionId(Long transactionId) { this.transactionId = transactionId; }
+    public String getPaymentOrderId() { return paymentOrderId; }
+    public void setPaymentOrderId(String paymentOrderId) { this.paymentOrderId = paymentOrderId; }
     public String getAdminNote() { return adminNote; }
     public void setAdminNote(String adminNote) { this.adminNote = adminNote; }
     public LocalDateTime getCreatedAt() { return createdAt; }

@@ -14,8 +14,15 @@ class Session extends ChangeNotifier {
     return Session._(prefs);
   }
 
+  /// The API this build talks to.
+  ///
+  /// Defaults to the local backend (`http://localhost:8080/`) so a dev build works
+  /// against `gradle bootRun`. Override without editing code:
+  ///
+  ///   flutter run --dart-define=ATG_API=https://atg-api-5de3.onrender.com/
   static String get defaultServer {
-    return 'https://atg-api-5de3.onrender.com/';
+    const fromEnv = String.fromEnvironment('ATG_API');
+    return fromEnv.isEmpty ? 'http://localhost:8080/' : fromEnv;
   }
 
   String get server => defaultServer;
@@ -47,6 +54,16 @@ class Session extends ChangeNotifier {
   Future<void> _saveUser(AppUser user) async {
     await _prefs.setInt('id', user.id);
     await _prefs.setString('name', user.name);
+    if (user.username == null || user.username!.isEmpty) {
+      await _prefs.remove('username');
+    } else {
+      await _prefs.setString('username', user.username!);
+    }
+    if (user.country == null || user.country!.isEmpty) {
+      await _prefs.remove('country');
+    } else {
+      await _prefs.setString('country', user.country!);
+    }
     await _prefs.setString('email', user.email);
     await _prefs.setString('phone', user.phone);
     await _prefs.setString('role', user.role);
@@ -68,6 +85,8 @@ class Session extends ChangeNotifier {
     await _prefs.remove('token');
     await _prefs.remove('id');
     await _prefs.remove('name');
+    await _prefs.remove('username');
+    await _prefs.remove('country');
     await _prefs.remove('email');
     await _prefs.remove('phone');
     await _prefs.remove('role');
@@ -80,6 +99,8 @@ class Session extends ChangeNotifier {
   int get id => _prefs.getInt('id') ?? 0;
 
   String get name => _prefs.getString('name') ?? 'Trader';
+  String get username => _prefs.getString('username') ?? '';
+  String get country => _prefs.getString('country') ?? '';
   String get email => _prefs.getString('email') ?? '';
   String get phone => _prefs.getString('phone') ?? '';
   String get role => _prefs.getString('role') ?? 'USER';

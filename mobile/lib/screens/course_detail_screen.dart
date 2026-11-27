@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../api.dart';
 import '../app_state.dart';
@@ -12,6 +11,7 @@ import '../theme.dart';
 import '../widgets.dart';
 import '../widgets/academy_discussion.dart';
 import 'lesson_screen.dart';
+import 'payment_checkout_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   const CourseDetailScreen({super.key, required this.courseId});
@@ -62,55 +62,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   Future<void> _buy(Course course) async {
     if (_buying) return;
-    final proceed = await confirmAction(
-      context,
-      title: 'Buy ${course.title}',
-      message:
-          'Pay ${money(course.price)} to the ATG desk, then attach a screenshot of the payment. '
-          'The administrator unlocks the course after reviewing it.',
-      confirmLabel: 'Choose screenshot',
-    );
-    if (!proceed || !mounted) return;
-
-    XFile? proof;
-    try {
-      proof = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
-      );
-    } catch (_) {
-      if (mounted) {
-        showMessage(
-          context,
-          'Could not open the gallery',
-          'Allow photo access for ATG and try again.',
-        );
-      }
-      return;
-    }
-    if (proof == null || !mounted) return;
-
     setState(() => _buying = true);
     try {
-      final url = await api.uploadImage(proof);
-      final purchase = await api.purchase(
-        'COURSE',
-        courseId: course.id,
-        proofUrl: url,
+      final paid = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PaymentCheckoutScreen(
+            type: 'COURSE',
+            courseId: course.id,
+            serviceName: course.title,
+            amount: course.price,
+            prefillPhone: session.phone,
+          ),
+        ),
       );
       if (!mounted) return;
       setState(() => _buying = false);
-      await showMessage(
-        context,
-        'Purchase filed',
-        'Reference P-${purchase.id}. The administrator reviews proofs manually; once approved the lessons unlock here.',
-        action: 'Done',
-      );
-      if (mounted) await _load();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _buying = false);
-      showMessage(context, 'Could not file the purchase', e.message);
+      if (paid == true) {
+        showToast(context, 'Payment confirmed — ${course.title} unlocked');
+        await _load();
+      }
+    } finally {
+      if (mounted && _buying) setState(() => _buying = false);
     }
   }
 
@@ -235,8 +207,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                                     const SizedBox(width: 8),
                                     const Expanded(
                                       child: Text(
-                                        'Lessons unlock after the administrator approves your payment proof. '
-                                        'You will see the decision in your profile.',
+                                        'This course is available to all signed-in users. '
+                                        'Pay by EcoCash; lessons unlock automatically after payment is confirmed.',
                                         style: AtgText.small,
                                       ),
                                     ),

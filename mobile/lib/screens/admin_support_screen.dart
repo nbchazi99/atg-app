@@ -66,7 +66,7 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Delete knowledge entry?',
-      message: '“${entry.title}” will no longer be used by the AI assistant.',
+      message: '“${entry.title}” will no longer be used by the support engine.',
       confirmLabel: 'Delete',
       destructive: true,
     );
@@ -197,7 +197,7 @@ class _AdminSupportScreenState extends State<AdminSupportScreen> {
           child: _knowledge.isEmpty
               ? const EmptyState(
                   title: 'Knowledge base is empty',
-                  message: 'Add approved ATG information for the assistant to use.',
+                  message: 'Add verified ATG solutions for the support engine to use.',
                   icon: Icons.menu_book_outlined,
                 )
               : ListView(
@@ -674,7 +674,7 @@ class _KnowledgeEntryDialogState extends State<_KnowledgeEntryDialog> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _active,
-                  title: const Text('Available to the AI assistant'),
+                  title: const Text('Available to the support engine'),
                   onChanged: (value) => setState(() => _active = value),
                 ),
               ],

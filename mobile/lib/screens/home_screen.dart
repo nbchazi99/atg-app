@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('ATG AI Help Desk', style: AtgText.h3),
+                            Text('ATG Help Desk', style: AtgText.h3),
                             const SizedBox(height: 2),
                             Text(
                               'Ask a question or get help with your account.',

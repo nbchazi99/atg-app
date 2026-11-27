@@ -34,13 +34,15 @@ public class CourseController extends BaseController {
     @GetMapping
     public List<Map<String, Object>> list() {
         Long userId = me().getId();
-        return courses.findAll().stream().map(c -> {
+        return courses.findAll().stream()
+                .filter(CourseController::isPublished)
+                .map(c -> {
             var enrollment = enrollments.findByUserIdAndCourseId(userId, c.getId());
             List<Lesson> courseLessons = lessons.findByCourseIdOrderByOrderIndexAsc(c.getId());
             long completed = enrollment.map(e -> parseIds(e.getCompletedLessonIds()).stream()
                     .filter(id -> courseLessons.stream().anyMatch(l -> l.getId().equals(id))).count()).orElse(0L);
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("course", c);
+            m.put("course", Dtos.CourseView.of(c));
             m.put("enrolled", enrollment.isPresent());
             m.put("completedLessons", completed);
             m.put("totalLessons", courseLessons.size());
@@ -53,9 +55,10 @@ public class CourseController extends BaseController {
     public Map<String, Object> detail(@PathVariable Long id) {
         Course course = courses.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        requirePublished(course);
         var enrollment = enrollments.findByUserIdAndCourseId(me().getId(), id);
         Map<String, Object> res = new LinkedHashMap<>();
-        res.put("course", course);
+        res.put("course", Dtos.CourseView.of(course));
         List<Lesson> courseLessons = lessons.findByCourseIdOrderByOrderIndexAsc(id);
         res.put("lessons", enrollment.isPresent()
                 ? courseLessons
@@ -69,6 +72,7 @@ public class CourseController extends BaseController {
     public Map<String, Object> enroll(@PathVariable Long id) {
         Course course = courses.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+        requirePublished(course);
         if (course.getPrice().signum() != 0) {
             throw bad("Only free courses can be joined without payment");
         }
@@ -99,6 +103,17 @@ public class CourseController extends BaseController {
         enrollments.save(e);
         realtime.publish(RealtimeHub.COURSES, Map.of("courseId", id, "kind", "progress"));
         return Map.of("completedLessonIds", ids);
+    }
+
+    static boolean isPublished(Course course) {
+        return course.getReviewStatus() == null
+                || course.getReviewStatus() == Course.ReviewStatus.PUBLISHED;
+    }
+
+    private static void requirePublished(Course course) {
+        if (!isPublished(course)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
+        }
     }
 
     private static Lesson lessonPreview(Lesson lesson) {

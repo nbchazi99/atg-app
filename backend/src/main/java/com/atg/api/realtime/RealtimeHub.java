@@ -64,6 +64,10 @@ public class RealtimeHub extends TextWebSocketHandler {
         return HOME + ":" + userId;
     }
 
+    public static String userScope(Long userId) {
+        return "user:" + userId;
+    }
+
     public static String supportScope(Long userId) {
         return SUPPORT + ":" + userId;
     }

@@ -30,6 +30,8 @@ class Api {
   Api(this.session);
 
   static const _maxCourseAssetBytes = 250 * 1024 * 1024;
+  static const _maxCourseCoverBytes = 10 * 1024 * 1024;
+  static const _courseCoverExtensions = {'.jpg', '.jpeg', '.png', '.webp'};
   static const _maxChatAttachmentBytes = 80 * 1024 * 1024;
   static const _courseAssetMimeTypes = <String, String>{
     '.jpg': 'image/jpeg',
@@ -176,17 +178,104 @@ class Api {
     return AppUser.fromJson((data as Map).cast<String, dynamic>());
   }
 
-  Future<AppUser> updateProfile({
+  Future<AuthResult> updateProfile({
     String? name,
+    String? username,
     String? phone,
-    String? avatarUrl,
+    String? country,
+    String? email,
+    String? currentPassword,
   }) async {
-    final body = <String, String>{};
+    final body = <String, dynamic>{};
     if (name != null) body['name'] = name;
+    if (username != null) body['username'] = username;
     if (phone != null) body['phone'] = phone;
-    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
+    if (country != null) body['country'] = country;
+    if (email != null) body['email'] = email;
+    if (currentPassword != null) body['currentPassword'] = currentPassword;
     final data = await _send('PUT', 'api/me', body: body);
+    return AuthResult.fromProfileUpdateJson(
+      (data as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<AppUser> removeProfileAvatar() async {
+    final data = await _send('DELETE', 'api/me/avatar');
     return AppUser.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<AppUser> uploadProfileAvatar(XFile file) async {
+    final size = await file.length();
+    final extension = _extension(file.name);
+    if (!_courseCoverExtensions.contains(extension)) {
+      throw const ApiException('Choose a JPG, PNG, or WebP profile photo.');
+    }
+    if (size <= 0) {
+      throw const ApiException('The selected profile photo is empty.');
+    }
+    if (size > 5 * 1024 * 1024) {
+      throw const ApiException('Profile photos must be 5 MB or smaller.');
+    }
+    final mime = _courseAssetMimeTypes[extension]!;
+    final endpoint = Uri.parse('${session.server}api/me/avatar');
+    final token = session.token;
+    if (token == null || token.isEmpty) {
+      throw const ApiException('Sign in to update your profile photo.');
+    }
+    try {
+      if (kIsWeb) {
+        final response = await browser_upload.uploadCourseAssetInBrowser(
+          endpoint: endpoint,
+          token: token,
+          fileUri: Uri.parse(file.path),
+          filename: file.name,
+        );
+        return _uploadedProfileAvatar(response.statusCode, response.body);
+      }
+      final request = http.MultipartRequest('POST', endpoint)
+        ..headers['Authorization'] = 'Bearer $token'
+        ..files.add(
+          http.MultipartFile(
+            'file',
+            file.openRead(),
+            size,
+            filename: file.name,
+            contentType: MediaType.parse(mime),
+          ),
+        );
+      final streamed = await request.send().timeout(const Duration(minutes: 5));
+      final response = await http.Response.fromStream(streamed);
+      return _uploadedProfileAvatar(response.statusCode, response.body);
+    } on ApiException {
+      rethrow;
+    } on TimeoutException {
+      throw const ApiException(
+        'The profile photo upload timed out. Check your connection and try again.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('ATG profile photo upload failed: $error\n$stackTrace');
+      throw const ApiException(
+        'Could not upload the profile photo. Check your connection and try again.',
+      );
+    }
+  }
+
+  AppUser _uploadedProfileAvatar(int statusCode, String body) {
+    dynamic decoded;
+    try {
+      decoded = body.isEmpty ? null : jsonDecode(body);
+    } catch (_) {
+      decoded = null;
+    }
+    if (statusCode >= 200 && statusCode < 300 && decoded is Map) {
+      return AppUser.fromJson(decoded.cast<String, dynamic>());
+    }
+    final message = decoded is Map && decoded['message'] is String
+        ? decoded['message'] as String
+        : decoded is Map && decoded['error'] is String
+        ? decoded['error'] as String
+        : 'Could not upload the profile photo ($statusCode)';
+    throw ApiException(message, statusCode);
   }
 
   Future<HomeData> home() async {
@@ -518,6 +607,33 @@ class Api {
     return _uploadCourseAssetStream(file.name, size, file.openRead());
   }
 
+  Future<String> uploadCourseCover(XFile file) async {
+    final size = await file.length();
+    final lower = file.name.toLowerCase();
+    final dot = lower.lastIndexOf('.');
+    final extension = dot < 0 ? '' : lower.substring(dot);
+    if (!_courseCoverExtensions.contains(extension)) {
+      throw const ApiException('Choose a JPG, PNG, or WebP course cover.');
+    }
+    _validateCourseAssetSize(size, maxBytes: _maxCourseCoverBytes);
+    if (kIsWeb) {
+      return _uploadCourseAssetInBrowser(
+        Uri.parse(file.path),
+        file.name,
+        size,
+        endpoint: 'api/admin/course-covers',
+        maxBytes: _maxCourseCoverBytes,
+      );
+    }
+    return _uploadCourseAssetStream(
+      file.name,
+      size,
+      file.openRead(),
+      endpoint: 'api/admin/course-covers',
+      maxBytes: _maxCourseCoverBytes,
+    );
+  }
+
   Future<String> uploadCourseMaterial(PlatformFile file) async {
     final size = await file.length();
     if (size == null) {
@@ -534,12 +650,14 @@ class Api {
   Future<String> _uploadCourseAssetStream(
     String filename,
     int size,
-    Stream<List<int>> stream,
-  ) async {
+    Stream<List<int>> stream, {
+    String endpoint = 'api/admin/course-assets',
+    int maxBytes = _maxCourseAssetBytes,
+  }) async {
     final mime = _courseAssetMimeType(filename);
-    _validateCourseAssetSize(size);
+    _validateCourseAssetSize(size, maxBytes: maxBytes);
 
-    final uri = Uri.parse('${session.server}api/admin/course-assets');
+    final uri = Uri.parse('${session.server}$endpoint');
     final request = http.MultipartRequest('POST', uri);
     final token = session.token;
     if (token != null && token.isNotEmpty) {
@@ -578,17 +696,19 @@ class Api {
   Future<String> _uploadCourseAssetInBrowser(
     Uri fileUri,
     String filename,
-    int size,
-  ) async {
+    int size, {
+    String endpoint = 'api/admin/course-assets',
+    int maxBytes = _maxCourseAssetBytes,
+  }) async {
     _courseAssetMimeType(filename);
-    _validateCourseAssetSize(size);
+    _validateCourseAssetSize(size, maxBytes: maxBytes);
     final token = session.token;
     if (token == null || token.isEmpty) {
       throw const ApiException('Sign in as an admin to upload course files.');
     }
     try {
       final response = await browser_upload.uploadCourseAssetInBrowser(
-        endpoint: Uri.parse('${session.server}api/admin/course-assets'),
+        endpoint: Uri.parse('${session.server}$endpoint'),
         token: token,
         fileUri: fileUri,
         filename: filename,
@@ -621,12 +741,19 @@ class Api {
     return mime;
   }
 
-  void _validateCourseAssetSize(int size) {
+  void _validateCourseAssetSize(
+    int size, {
+    int maxBytes = _maxCourseAssetBytes,
+  }) {
     if (size <= 0) {
       throw const ApiException('The selected file is empty.');
     }
-    if (size > _maxCourseAssetBytes) {
-      throw const ApiException('Course files must be 250 MB or smaller.');
+    if (size > maxBytes) {
+      throw ApiException(
+        maxBytes == _maxCourseCoverBytes
+            ? 'Course cover images must be 10 MB or smaller.'
+            : 'Course files must be 250 MB or smaller.',
+      );
     }
   }
 
@@ -778,6 +905,56 @@ class Api {
     return Purchase.fromJson((data as Map).cast<String, dynamic>());
   }
 
+  /// Creates a gateway order; an EcoCash payment prompt is pushed to the
+  /// customer's phone ([ecocashStatus] is Dischub's prompt state).
+  Future<({PaymentTx order, String ecocashStatus})> createPaymentIntent({
+    required String type,
+    int? courseId,
+    required String senderPhone,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/payments/intents',
+      body: {'type': type, 'courseId': ?courseId, 'senderPhone': senderPhone},
+    );
+    final map = (data as Map).cast<String, dynamic>();
+    return (
+      order: PaymentTx.fromJson((map['order'] as Map).cast<String, dynamic>()),
+      ecocashStatus: map['ecocashStatus'] == null
+          ? ''
+          : '${map['ecocashStatus']}',
+    );
+  }
+
+  /// Server-side verified status; the backend re-queries the gateway on read.
+  Future<PaymentTx> paymentStatus(String orderId) async {
+    final data = await _send('GET', 'api/payments/$orderId');
+    return PaymentTx.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<PaymentTx>> paymentHistory() async {
+    final data = await _send('GET', 'api/payments/history');
+    return _parseList(data, PaymentTx.fromJson);
+  }
+
+  Future<List<PaymentTx>> adminPayments({String? status}) async {
+    final data = await _send(
+      'GET',
+      'api/admin/payments',
+      query: {if (status != null && status.isNotEmpty) 'status': status},
+    );
+    return _parseList(data, PaymentTx.fromJson);
+  }
+
+  Future<PaymentTx> refundPayment(String orderId, String note) async {
+    final data = await _send(
+      'POST',
+      'api/admin/payments/$orderId/refund',
+      body: {'note': note},
+    );
+    return PaymentTx.fromJson((data as Map).cast<String, dynamic>());
+  }
+
   Future<List<AppUser>> adminUsers() async {
     final data = await _send('GET', 'api/admin/users');
     return _parseList(data, AppUser.fromJson);
@@ -820,22 +997,36 @@ class Api {
     final data = await _send(
       'POST',
       'api/admin/signals',
-      body: {
-        'title': signal.title,
-        'subtitle': signal.subtitle,
-        'symbol': signal.symbol,
-        'side': signal.side,
-        'status': signal.status,
-        'roomLabel': signal.roomLabel,
-        'entry': signal.entry,
-        'stopLoss': signal.stopLoss,
-        'targets': signal.targets,
-        'ruleName': signal.ruleName,
-        'participants': signal.participants,
-      },
+      body: _signalBody(signal),
     );
     return Signal.fromJson((data as Map).cast<String, dynamic>());
   }
+
+  Future<Signal> updateSignal(Signal signal) async {
+    final data = await _send(
+      'PUT',
+      'api/admin/signals/${signal.id}',
+      body: _signalBody(signal),
+    );
+    return Signal.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Map<String, Object?> _signalBody(Signal signal) => {
+    'title': signal.title,
+    'subtitle': signal.subtitle,
+    'symbol': signal.symbol,
+    'side': signal.side,
+    'status': signal.status,
+    'roomLabel': signal.roomLabel,
+    'entry': signal.entry,
+    'stopLoss': signal.stopLoss,
+    'targets': signal.targets,
+    'ruleName': signal.ruleName,
+    'participants': signal.participants,
+    'result': signal.result,
+    'closingPrice': signal.closingPrice,
+    'closingUpdate': signal.closingUpdate,
+  };
 
   Future<void> deleteSignal(int id) async {
     await _send('DELETE', 'api/admin/signals/$id');
@@ -862,6 +1053,29 @@ class Api {
         'imageUrl': imageUrl,
         'lessons': lessons,
       },
+    );
+    return Course.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<List<Course>> adminCourses() async {
+    final data = await _send('GET', 'api/admin/courses');
+    return _parseList(data, Course.fromJson);
+  }
+
+  Future<CourseDetail> adminCourseDetail(int id) async {
+    final data = await _send('GET', 'api/admin/courses/$id');
+    return CourseDetail.fromJson((data as Map).cast<String, dynamic>());
+  }
+
+  Future<Course> reviewCourse(
+    int id, {
+    required bool approve,
+    String? note,
+  }) async {
+    final data = await _send(
+      'POST',
+      'api/admin/courses/$id/review',
+      body: {'approve': approve, 'note': note},
     );
     return Course.fromJson((data as Map).cast<String, dynamic>());
   }
@@ -1004,10 +1218,10 @@ class Api {
       'PATCH',
       'api/admin/support/tickets/$id',
       body: {
-        if (status != null) 'status': status,
-        if (assignedAdminId != null) 'assignedAdminId': assignedAdminId,
+        'status': ?status,
+        'assignedAdminId': ?assignedAdminId,
         'clearAssignedAdmin': clearAssignedAdmin,
-        if (priority != null) 'priority': priority,
+        'priority': ?priority,
       },
     );
     return SupportTicket.fromJson((data as Map).cast<String, dynamic>());

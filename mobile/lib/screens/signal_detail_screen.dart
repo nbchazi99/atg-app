@@ -224,6 +224,10 @@ class _SignalDetailScreenState extends State<SignalDetailScreen> {
                         ],
                       ),
                     ),
+                    if (signal.status == 'CLOSED') ...[
+                      const SizedBox(height: 14),
+                      SignalCloseDetails(signal: signal),
+                    ],
                     const SizedBox(height: 14),
                     SurfaceCard(
                       child: Column(

@@ -90,6 +90,20 @@ public class WalletService {
         if (req.withdrawalMethods() != null) {
             s.setWithdrawalMethods(normalizePaymentMethods(req.withdrawalMethods(), "withdrawal"));
         }
+        if (req.derivVipPrice() != null) {
+            if (req.derivVipPrice().signum() <= 0) throw bad("Deriv VIP price must be greater than 0");
+            s.setDerivVipPrice(scale(req.derivVipPrice()));
+        }
+        if (req.weltradeVipPrice() != null) {
+            if (req.weltradeVipPrice().signum() <= 0) throw bad("Weltrade VIP price must be greater than 0");
+            s.setWeltradeVipPrice(scale(req.weltradeVipPrice()));
+        }
+        if (req.vipExpiryDays() != null) {
+            if (req.vipExpiryDays() < 1 || req.vipExpiryDays() > 3650) {
+                throw bad("VIP expiry must be between 1 and 3650 days");
+            }
+            s.setVipExpiryDays(req.vipExpiryDays());
+        }
         return settingsRepo.save(s);
     }
 
@@ -183,6 +197,10 @@ public class WalletService {
             if (req.courseId() == null) throw bad("Course is required");
             Course course = courses.findById(req.courseId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+            if (course.getReviewStatus() != null
+                    && course.getReviewStatus() != Course.ReviewStatus.PUBLISHED) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
+            }
             if (course.getPrice().signum() == 0) {
                 throw bad("This course is free. Enroll directly from its course page.");
             }
@@ -190,7 +208,8 @@ public class WalletService {
             courseId = course.getId();
             description = "Course: " + course.getTitle();
         } else {
-            amount = BigDecimal.valueOf(30.00);
+            AppSettings s = settings();
+            amount = type == PurchaseRequest.Type.VIP_DERIV ? s.getDerivVipPrice() : s.getWeltradeVipPrice();
             description = type == PurchaseRequest.Type.VIP_DERIV ? "Deriv VIP membership" : "Weltrade VIP membership";
         }
         if (req.proofUrl() == null || req.proofUrl().isBlank()) {
@@ -249,26 +268,80 @@ public class WalletService {
         purchases.save(p);
 
         if (approve) {
-            User user = users.findById(p.getUserId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-            if (p.getType() == PurchaseRequest.Type.COURSE) {
-                Enrollment e = enrollments.findByUserIdAndCourseId(user.getId(), p.getCourseId())
-                        .orElseGet(Enrollment::new);
-                if (e.getId() == null) {
-                    e.setUserId(user.getId());
-                    e.setCourseId(p.getCourseId());
-                    enrollments.save(e);
-                }
-            } else if (p.getType() == PurchaseRequest.Type.VIP_DERIV) {
-                user.setMembership(User.Membership.DERIV_VIP);
-                users.save(user);
-            } else {
-                user.setMembership(User.Membership.WELTRADE_VIP);
-                users.save(user);
-            }
+            applyApprovedPurchase(p);
         }
         settle(p.getTransactionId(), approve);
         return p;
+    }
+
+    /**
+     * Applies an approved purchase: enrols the course or grants the VIP
+     * membership with an expiry. Used by both the admin decision path and the
+     * payment gateway settlement path so entitlement rules live in one place.
+     */
+    public void applyApprovedPurchase(PurchaseRequest p) {
+        User user = users.findById(p.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (p.getType() == PurchaseRequest.Type.COURSE) {
+            Enrollment e = enrollments.findByUserIdAndCourseId(user.getId(), p.getCourseId())
+                    .orElseGet(Enrollment::new);
+            if (e.getId() == null) {
+                e.setUserId(user.getId());
+                e.setCourseId(p.getCourseId());
+                enrollments.save(e);
+            }
+        } else if (p.getType() == PurchaseRequest.Type.VIP_DERIV) {
+            user.setMembership(User.Membership.DERIV_VIP);
+            user.setMembershipExpiresAt(vipExpiryDate());
+            users.save(user);
+        } else {
+            user.setMembership(User.Membership.WELTRADE_VIP);
+            user.setMembershipExpiresAt(vipExpiryDate());
+            users.save(user);
+        }
+    }
+
+    /**
+     * Settles a gateway-verified purchase: writes the purchase record as
+     * already approved, settles its wallet transaction and applies the
+     * entitlement. Idempotent per gateway order id.
+     */
+    public PurchaseRequest recordSettledGatewayPurchase(User user, PurchaseRequest.Type type,
+                                                        Long courseId, BigDecimal amount, String orderId) {
+        var existing = purchases.findByPaymentOrderId(orderId);
+        if (existing.isPresent()) return existing.get();
+
+        WalletTransaction tx = new WalletTransaction();
+        tx.setUserId(user.getId());
+        tx.setType(WalletTransaction.Type.PURCHASE);
+        tx.setDescription(type == PurchaseRequest.Type.COURSE
+                ? "Course purchase"
+                : (type == PurchaseRequest.Type.VIP_DERIV ? "Deriv VIP membership" : "Weltrade VIP membership"));
+        tx.setAmount(amount);
+        tx.setStatus(WalletTransaction.Status.COMPLETED);
+        transactions.save(tx);
+
+        PurchaseRequest p = new PurchaseRequest();
+        p.setUserId(user.getId());
+        p.setType(type);
+        p.setCourseId(courseId);
+        p.setAmount(amount);
+        p.setProofUrl("dischub:" + orderId);
+        p.setStatus(PurchaseRequest.Status.APPROVED);
+        p.setTransactionId(tx.getId());
+        p.setPaymentOrderId(orderId);
+        p.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
+        p.setAdminNote("Paid via Dischub order " + orderId);
+        p = purchases.save(p);
+
+        applyApprovedPurchase(p);
+        return p;
+    }
+
+    private LocalDateTime vipExpiryDate() {
+        AppSettings s = settings();
+        int days = s.getVipExpiryDays() > 0 ? s.getVipExpiryDays() : 30;
+        return LocalDateTime.now(ZoneOffset.UTC).plusDays(days);
     }
 
     private void settle(Long transactionId, boolean approve) {

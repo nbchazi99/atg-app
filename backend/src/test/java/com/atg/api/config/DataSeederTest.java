@@ -6,6 +6,7 @@ import com.atg.api.repo.AppSettingsRepository;
 import com.atg.api.repo.RoomRepository;
 import com.atg.api.repo.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
@@ -59,6 +60,6 @@ class DataSeederTest {
         RoomRepository rooms = mock(RoomRepository.class);
         when(rooms.findAll()).thenReturn(List.of());
         when(rooms.save(any(Room.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        return new DataSeeder(users, settings, rooms, mock(PasswordEncoder.class));
+        return new DataSeeder(users, settings, rooms, mock(PasswordEncoder.class), mock(Environment.class));
     }
 }

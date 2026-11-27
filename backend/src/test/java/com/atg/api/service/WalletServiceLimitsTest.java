@@ -155,7 +155,7 @@ class WalletServiceLimitsTest {
             List<String> depositMethods, List<String> withdrawalMethods) {
         return new Dtos.SettingsReq(
                 null, null, null, null, null, null, null, null, null,
-                depositMethods, withdrawalMethods);
+                depositMethods, withdrawalMethods, null, null, null);
     }
 
     private static Dtos.DepositReq deposit(String amount) {

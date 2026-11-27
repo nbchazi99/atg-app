@@ -4,6 +4,7 @@ import com.atg.api.config.JwtService;
 import com.atg.api.model.User;
 import com.atg.api.realtime.RealtimeHub;
 import com.atg.api.repo.*;
+import com.atg.api.service.PaymentService;
 import com.atg.api.service.WalletService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +59,8 @@ class AdminControllerAccountTest {
                 mock(LessonRepository.class),
                 realtime,
                 jwt,
-                encoder);
+                encoder,
+                mock(PaymentService.class));
     }
 
     @AfterEach

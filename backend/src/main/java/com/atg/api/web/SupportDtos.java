@@ -33,7 +33,8 @@ public final class SupportDtos {
             String message,
             boolean needsHuman,
             String category,
-            String priority) {}
+            String priority,
+            double confidence) {}
 
     public record MessageView(
             Long id, Long conversationId, Long ticketId, Long authorId,
@@ -48,7 +49,8 @@ public final class SupportDtos {
 
     public record ChatResult(
             ConversationView conversation, MessageView userMessage,
-            MessageView assistantMessage, boolean needsHuman, TicketView ticket) {}
+            MessageView assistantMessage, boolean needsHuman, double confidence,
+            TicketView ticket) {}
 
     public record ConversationDetail(
             ConversationView conversation, List<MessageView> messages) {}

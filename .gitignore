@@ -35,3 +35,10 @@ backend/keys/
 
 # Firebase CLI deployment cache
 .firebase/
+
+# Firebase service account keys (secrets - never commit)
+*firebase-adminsdk*.json
+
+# Local environment files (secrets - never commit)
+.env
+backend/.env

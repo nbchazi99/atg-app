@@ -73,6 +73,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     });
     _unbind = realtime.bind({
       AtgScope.room(widget.roomId),
+      AtgScope.user(session.id),
       AtgScope.rooms,
     }, () => _load(silent: true));
     _fallbackPoll = Timer.periodic(const Duration(seconds: 5), (_) {

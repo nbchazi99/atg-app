@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../api.dart';
 import '../app_state.dart';
@@ -29,6 +32,7 @@ class _AdminScreenState extends State<AdminScreen> {
     'Settings',
     'Account',
     'Support',
+    'Payments',
   ];
 
   final _adminFee = TextEditingController();
@@ -40,6 +44,9 @@ class _AdminScreenState extends State<AdminScreen> {
   final _fact = TextEditingController();
   final _promoTitle = TextEditingController();
   final _promoBody = TextEditingController();
+  final _derivVipPrice = TextEditingController();
+  final _weltradeVipPrice = TextEditingController();
+  final _vipExpiryDays = TextEditingController();
   final _currentPassword = TextEditingController();
   final _accountName = TextEditingController();
   final _accountPhone = TextEditingController();
@@ -48,12 +55,15 @@ class _AdminScreenState extends State<AdminScreen> {
   final _confirmPassword = TextEditingController();
 
   int _tab = 0;
+  int _courseFilter = 0;
   bool _loading = true;
   AdminRequests? _requests;
   List<AppUser> _users = const [];
   List<Signal> _signals = const [];
   List<Room> _rooms = const [];
   List<Course> _courses = const [];
+  List<PaymentTx> _payments = const [];
+  String _paymentFilter = 'ALL';
   bool _savingSettings = false;
   bool _savingAccount = false;
   VoidCallback? _unbind;
@@ -92,6 +102,9 @@ class _AdminScreenState extends State<AdminScreen> {
     _fact.dispose();
     _promoTitle.dispose();
     _promoBody.dispose();
+    _derivVipPrice.dispose();
+    _weltradeVipPrice.dispose();
+    _vipExpiryDays.dispose();
     _currentPassword.dispose();
     _accountName.dispose();
     _accountPhone.dispose();
@@ -136,10 +149,10 @@ class _AdminScreenState extends State<AdminScreen> {
           });
           break;
         case 4:
-          final rows = await api.courses();
+          final courses = await api.adminCourses();
           if (!mounted) return;
           setState(() {
-            _courses = rows.map((r) => r.course).toList();
+            _courses = courses;
             _loading = false;
           });
           break;
@@ -152,6 +165,14 @@ class _AdminScreenState extends State<AdminScreen> {
         case 6:
           if (!mounted) return;
           setState(() => _loading = false);
+          break;
+        case 8:
+          final payments = await api.adminPayments();
+          if (!mounted) return;
+          setState(() {
+            _payments = payments;
+            _loading = false;
+          });
           break;
         case 7:
           if (!mounted) return;
@@ -182,6 +203,9 @@ class _AdminScreenState extends State<AdminScreen> {
     _fact.text = s.fact;
     _promoTitle.text = s.promotionTitle;
     _promoBody.text = s.promotionBody;
+    _derivVipPrice.text = trimNumber(s.derivVipPrice);
+    _weltradeVipPrice.text = trimNumber(s.weltradeVipPrice);
+    _vipExpiryDays.text = '${s.vipExpiryDays}';
   }
 
   List<_AdminRequest> get _requestRows {
@@ -195,7 +219,10 @@ class _AdminScreenState extends State<AdminScreen> {
           id: d.id,
           title: 'Deposit · ${_safe(d.broker)}',
           meta:
-              'Client ${_safe(d.clientId)} · ${_safe(d.wallet)} · ${_safe(d.mobile)}',
+              'Username ${_safe(d.username ?? '')} · '
+              'Weltrade ID ${_safe(d.weltradeId ?? d.clientId)} · '
+              'Phone Number ${_safe(d.phone ?? '')} · '
+              '${_safe(d.wallet)} · Contact ${_safe(d.mobile)}',
           amount: d.totalPaid,
           status: d.status,
         ),
@@ -416,6 +443,10 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _addSignal() async {
+    await _editSignal();
+  }
+
+  Future<void> _editSignal([Signal? existing]) async {
     final signal = await showModalBottomSheet<Signal>(
       context: context,
       isScrollControlled: true,
@@ -423,17 +454,24 @@ class _AdminScreenState extends State<AdminScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      builder: (_) => const _SignalFormSheet(),
+      builder: (_) => _SignalFormSheet(signal: existing),
     );
     if (signal == null || !mounted) return;
     try {
-      await api.createSignal(signal);
+      if (existing == null) {
+        await api.createSignal(signal);
+      } else {
+        await api.updateSignal(signal);
+      }
       if (!mounted) return;
-      showToast(context, 'Signal published');
+      showToast(
+        context,
+        existing == null ? 'Signal published' : 'Signal updated',
+      );
       await _loadTab();
     } on ApiException catch (e) {
       if (!mounted) return;
-      showMessage(context, 'Could not publish the signal', e.message);
+      showMessage(context, 'Could not save the signal', e.message);
     }
   }
 
@@ -480,7 +518,7 @@ class _AdminScreenState extends State<AdminScreen> {
         lessons: draft.lessons,
       );
       if (!mounted) return;
-      showToast(context, 'Course created');
+      showToast(context, 'Course submitted for approval');
       await _loadTab();
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -531,6 +569,129 @@ class _AdminScreenState extends State<AdminScreen> {
     }
   }
 
+  Future<void> _reviewCourse(Course course, bool approve) async {
+    try {
+      await api.reviewCourse(course.id, approve: approve);
+      if (!mounted) return;
+      showToast(
+        context,
+        approve ? 'Course published to Academy' : 'Course rejected',
+      );
+      await _loadTab();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      showMessage(context, 'Could not review the course', error.message);
+    }
+  }
+
+  Future<void> _previewCourse(Course course) async {
+    try {
+      final detail = await api.adminCourseDetail(course.id);
+      if (!mounted) return;
+      final review = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: AtgColors.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(course.title, style: AtgText.h1),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (course.imageUrl.isNotEmpty) ...[
+                    CourseCover(url: course.imageUrl),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(course.subtitle, style: AtgText.h3),
+                  const SizedBox(height: 6),
+                  Text(course.description, style: AtgText.bodySmall),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${course.level} · ${money(course.price)} · '
+                    '${detail.lessons.length} lessons',
+                    style: AtgText.small,
+                  ),
+                  const Divider(height: 24),
+                  for (final lesson in detail.lessons) ...[
+                    Text(lesson.title, style: AtgText.h3),
+                    if (lesson.content.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(lesson.content, style: AtgText.bodySmall),
+                    ],
+                    if (lesson.imageUrl != null &&
+                        lesson.imageUrl!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      CourseCover(url: lesson.imageUrl!),
+                    ],
+                    if (lesson.videoUrl.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: () => _openCourseAsset(lesson.videoUrl),
+                        icon: const Icon(Icons.play_circle_outline),
+                        label: const Text('Preview uploaded video'),
+                      ),
+                    if (lesson.materialUrl != null &&
+                        lesson.materialUrl!.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: () => _openCourseAsset(lesson.materialUrl!),
+                        icon: const Icon(Icons.open_in_new),
+                        label: const Text('Open uploaded learning material'),
+                      ),
+                    const Divider(height: 20),
+                  ],
+                  if (course.reviewNote != null &&
+                      course.reviewNote!.isNotEmpty)
+                    Text(
+                      'Review note: ${course.reviewNote}',
+                      style: AtgText.small,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+            if (course.reviewStatus == 'PENDING') ...[
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: Text(
+                  'Reject',
+                  style: TextStyle(color: AtgColors.redText),
+                ),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Approve & publish'),
+              ),
+            ],
+          ],
+        ),
+      );
+      if (review != null && mounted) await _reviewCourse(course, review);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      showMessage(context, 'Could not load course preview', error.message);
+    }
+  }
+
+  Future<void> _openCourseAsset(String url) async {
+    final uri = Uri.tryParse(url);
+    try {
+      if (uri == null ||
+          !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) showToast(context, 'Could not open this course file');
+      }
+    } catch (error, stackTrace) {
+      debugPrint('Could not open course material: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not open this course file');
+    }
+  }
+
   Future<void> _saveSettings() async {
     if (_savingSettings) return;
     setState(() => _savingSettings = true);
@@ -547,6 +708,15 @@ class _AdminScreenState extends State<AdminScreen> {
         'promotionBody': _promoBody.text.trim(),
         'depositMethods': ['EcoCash'],
         'withdrawalMethods': ['EcoCash'],
+        'derivVipPrice': _derivVipPrice.text.trim().isEmpty
+            ? null
+            : parseAmount(_derivVipPrice.text, 30),
+        'weltradeVipPrice': _weltradeVipPrice.text.trim().isEmpty
+            ? null
+            : parseAmount(_weltradeVipPrice.text, 30),
+        'vipExpiryDays': _vipExpiryDays.text.trim().isEmpty
+            ? null
+            : int.tryParse(_vipExpiryDays.text.trim()),
       });
       if (!mounted) return;
       _fillSettings(settings);
@@ -658,6 +828,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         5 => _settingsView(),
                         6 => _accountView(),
                         7 => const AdminSupportScreen(),
+                        8 => _paymentsView(),
                         _ => _requestsView(),
                       },
               ),
@@ -717,7 +888,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   const SizedBox(height: 4),
                   Text(
                     row.meta,
-                    maxLines: 2,
+                    maxLines: row.kind == 'DEPOSIT' ? 3 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: AtgText.small,
                   ),
@@ -784,6 +955,357 @@ class _AdminScreenState extends State<AdminScreen> {
     );
   }
 
+  Widget _paymentsView() {
+    if (_payments.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.only(top: 20),
+        children: const [
+          EmptyState(
+            title: 'No gateway payments',
+            message: 'Course and VIP purchases paid through Dischub appear here with receipts and refund controls.',
+            icon: Icons.receipt_long_outlined,
+          ),
+        ],
+      );
+    }
+
+    final paid = _payments.where((p) => p.isPaid).toList();
+    final collected = paid.fold<double>(
+      0,
+      (sum, p) => sum + (p.paidAmount ?? p.amount),
+    );
+    final openCount = _payments.where((p) => p.isOpen).length;
+    final failedCount = _payments
+        .where((p) => p.status == 'FAILED' || p.status == 'EXPIRED')
+        .length;
+    final refundedCount = _payments.where((p) => p.status == 'REFUNDED').length;
+    final filtered = _paymentFilter == 'ALL'
+        ? _payments
+        : _payments
+              .where(
+                (p) => _paymentFilter == 'FAILED'
+                    ? (p.status == 'FAILED' || p.status == 'EXPIRED')
+                    : p.status == _paymentFilter,
+              )
+              .toList();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+          child: SurfaceCard(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Collected',
+                            style: AtgText.small.copyWith(
+                              color: AtgColors.muted,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(money(collected), style: AtgText.h2),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      '${paid.length} paid · $openCount pending · '
+                      '$failedCount failed'
+                      '${refundedCount > 0 ? ' · $refundedCount refunded' : ''}',
+                      style: AtgText.tiny.copyWith(color: AtgColors.muted),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                AtgChipRow(
+                  labels: const ['All', 'Paid', 'Pending', 'Failed'],
+                  selected: switch (_paymentFilter) {
+                    'SUCCESS' => 1,
+                    'PROCESSING' => 2,
+                    'FAILED' => 3,
+                    _ => 0,
+                  },
+                  onSelected: (i) => setState(
+                    () => _paymentFilter = const [
+                      'ALL',
+                      'SUCCESS',
+                      'PROCESSING',
+                      'FAILED',
+                    ][i],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: RefreshIndicator(
+            color: AtgColors.primary,
+            backgroundColor: AtgColors.surface,
+            onRefresh: _loadTab,
+            child: filtered.isEmpty
+                ? ListView(
+                    padding: const EdgeInsets.only(top: 24),
+                    children: const [
+                      EmptyState(
+                        title: 'Nothing with that status',
+                        message: 'Pick another filter above.',
+                        icon: Icons.filter_list_off_outlined,
+                      ),
+                    ],
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) =>
+                        _paymentRow(filtered[index]),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _paymentRow(PaymentTx payment) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SurfaceCard(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    payment.serviceName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AtgText.h3,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                StatusPill(payment.statusLabel),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'User #${payment.userId} · Ref ${payment.orderId}'
+              '${payment.sender == null ? '' : ' · ${payment.sender}'}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AtgText.small,
+            ),
+            if (payment.paidAmount != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                payment.charges > 0.005
+                    ? 'Paid ${money(payment.paidAmount!)} '
+                          '(price ${money(payment.amount)} + ${money(payment.charges)} charges)'
+                    : 'Paid ${money(payment.paidAmount!)}',
+                style: AtgText.tiny.copyWith(color: AtgColors.greenText),
+              ),
+            ],
+            if (payment.paymentMethod != null ||
+                payment.gatewayTimestamp != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                [
+                  if (payment.paymentMethod != null &&
+                      payment.paymentMethod!.isNotEmpty)
+                    'Method ${payment.paymentMethod}',
+                  if (payment.gatewayTimestamp != null)
+                    'Gateway ${payment.gatewayTimestamp}',
+                ].join(' · '),
+                style: AtgText.tiny.copyWith(color: AtgColors.muted),
+              ),
+            ],
+            if (payment.gatewayResponse != null) ...[
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () => _showGatewayResponse(payment),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.data_object_rounded,
+                      size: 13,
+                      color: AtgColors.gold,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'View Dischub response',
+                      style: AtgText.tiny.copyWith(
+                        color: AtgColors.goldDark,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AtgColors.goldDark,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (payment.ecocashStatus != null &&
+                payment.ecocashStatus!.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                'EcoCash ${payment.ecocashStatus}',
+                style: AtgText.tiny.copyWith(color: AtgColors.muted),
+              ),
+            ],
+            if (payment.statusReason != null &&
+                payment.statusReason!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                payment.statusReason!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AtgText.tiny.copyWith(color: AtgColors.redText),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text(
+                  money(payment.amount),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AtgColors.ink,
+                  ),
+                ),
+                const Spacer(),
+                if (payment.receiptNo != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      payment.receiptNo!,
+                      style: AtgText.tiny.copyWith(color: AtgColors.muted),
+                    ),
+                  ),
+                if (payment.status == 'SUCCESS')
+                  SizedBox(
+                    height: 34,
+                    child: OutlinedButton(
+                      onPressed: () => _refundPayment(payment),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AtgColors.redText,
+                        side: BorderSide(color: AtgColors.stroke),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      child: const Text('Refund'),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _refundPayment(PaymentTx payment) async {
+    final note = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: Text('Record refund · ${money(payment.amount)}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This records the refund of ${payment.serviceName} (ref ${payment.orderId}). '
+                'Dischub has no refund API — send the money back outside the app and note how.',
+                style: AtgText.small,
+              ),
+              const SizedBox(height: 12),
+              AtgField(
+                controller: controller,
+                label: 'Note (optional)',
+                hint: 'e.g. EcoCash reversal done manually',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text.trim()),
+              style: FilledButton.styleFrom(
+                backgroundColor: AtgColors.redText,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Record refund'),
+            ),
+          ],
+        );
+      },
+    );
+    if (note == null || !mounted) return;
+    try {
+      await api.refundPayment(payment.orderId, note);
+      if (!mounted) return;
+      showToast(context, 'Refund recorded');
+      await _loadTab();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      showMessage(context, 'Could not record the refund', e.message);
+    }
+  }
+
+  /// Shows exactly what Dischub returned for this order — the raw payload the
+  /// backend recorded on the last status check.
+  void _showGatewayResponse(PaymentTx payment) {
+    String pretty;
+    try {
+      pretty = const JsonEncoder.withIndent('  ')
+          .convert(jsonDecode(payment.gatewayResponse!));
+    } catch (_) {
+      pretty = payment.gatewayResponse!;
+    }
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Dischub response · ${payment.orderId}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              pretty,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12.5),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _usersView() {
     if (_users.isEmpty) {
       return ListView(
@@ -809,7 +1331,11 @@ class _AdminScreenState extends State<AdminScreen> {
             onTap: () => _manageMembership(user),
             child: Row(
               children: [
-                AvatarCircle(text: initials(user.name), size: 40),
+                AvatarCircle(
+                  text: initials(user.name),
+                  size: 40,
+                  imageUrl: user.avatarUrl,
+                ),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Column(
@@ -952,6 +1478,15 @@ class _AdminScreenState extends State<AdminScreen> {
                                 const SizedBox(width: 5),
                                 StatusPill(signal.status, fontSize: 9),
                                 IconButton(
+                                  onPressed: () => _editSignal(signal),
+                                  tooltip: 'Edit or close signal',
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 19,
+                                  ),
+                                ),
+                                IconButton(
                                   onPressed: () => _deleteSignal(signal),
                                   tooltip: 'Delete signal',
                                   visualDensity: VisualDensity.compact,
@@ -970,6 +1505,10 @@ class _AdminScreenState extends State<AdminScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: AtgText.small,
                               ),
+                            if (signal.status == 'CLOSED') ...[
+                              const SizedBox(height: 8),
+                              SignalCloseDetails(signal: signal),
+                            ],
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -1087,6 +1626,24 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Widget _coursesView() {
+    final pendingCount = _courses
+        .where((course) => course.reviewStatus == 'PENDING')
+        .length;
+    final publishedCount = _courses
+        .where((course) => course.reviewStatus == 'PUBLISHED')
+        .length;
+    final rejectedCount = _courses
+        .where((course) => course.reviewStatus == 'REJECTED')
+        .length;
+    final filters = [
+      'Pending ($pendingCount)',
+      'Published ($publishedCount)',
+      'Rejected ($rejectedCount)',
+    ];
+    final statuses = ['PENDING', 'PUBLISHED', 'REJECTED'];
+    final visibleCourses = _courses
+        .where((course) => course.reviewStatus == statuses[_courseFilter])
+        .toList();
     return Column(
       children: [
         Padding(
@@ -1094,9 +1651,7 @@ class _AdminScreenState extends State<AdminScreen> {
           child: Row(
             children: [
               Text(
-                _courses.isEmpty
-                    ? 'No courses yet'
-                    : '${_courses.length} courses',
+                '${visibleCourses.length} ${statuses[_courseFilter].toLowerCase()} courses',
                 style: AtgText.small,
               ),
               const Spacer(),
@@ -1122,58 +1677,113 @@ class _AdminScreenState extends State<AdminScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: AtgChipRow(
+            labels: filters,
+            selected: _courseFilter,
+            onSelected: (index) => setState(() => _courseFilter = index),
+          ),
+        ),
         Expanded(
           child: _courses.isEmpty
               ? ListView(
                   padding: const EdgeInsets.only(top: 20),
                   children: const [
                     EmptyState(
-                      title: 'No courses',
-                      message: 'Create the first course for the Academy.',
+                      title: 'No courses submitted',
+                      message: 'Create a course to submit it for administrator approval.',
+                      icon: Icons.school_outlined,
+                    ),
+                  ],
+                )
+              : visibleCourses.isEmpty
+              ? ListView(
+                  padding: const EdgeInsets.only(top: 20),
+                  children: [
+                    EmptyState(
+                      title:
+                          'No ${statuses[_courseFilter].toLowerCase()} courses',
+                      message:
+                          'Choose another course status or submit a course.',
                       icon: Icons.school_outlined,
                     ),
                   ],
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-                  itemCount: _courses.length,
+                  itemCount: visibleCourses.length,
                   itemBuilder: (context, index) {
-                    final course = _courses[index];
+                    final course = visibleCourses[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: SurfaceCard(
                         padding: const EdgeInsets.all(13),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    course.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AtgText.h3,
+                            Row(
+                              children: [
+                                if (course.imageUrl.isNotEmpty) ...[
+                                  SizedBox(
+                                    width: 84,
+                                    child: CourseCover(url: course.imageUrl),
                                   ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${course.level} · ${course.lessonsCount} lessons · '
-                                    '${course.price <= 0 ? 'Free' : money(course.price)}',
-                                    style: AtgText.small.copyWith(
-                                      fontSize: 11.5,
-                                    ),
-                                  ),
+                                  const SizedBox(width: 10),
                                 ],
-                              ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        course.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AtgText.h3,
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        '${course.level} · ${course.lessonsCount} lessons · '
+                                        '${course.price <= 0 ? 'Free' : money(course.price)}',
+                                        style: AtgText.small.copyWith(
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        course.reviewStatus,
+                                        style: AtgText.tiny,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: () => _deleteCourse(course),
+                                  tooltip: 'Delete course',
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 19,
+                                    color: AtgColors.redText,
+                                  ),
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              onPressed: () => _deleteCourse(course),
-                              tooltip: 'Delete course',
-                              visualDensity: VisualDensity.compact,
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 19,
-                                color: AtgColors.redText,
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _previewCourse(course),
+                                icon: const Icon(
+                                  Icons.visibility_outlined,
+                                  size: 17,
+                                ),
+                                label: Text(
+                                  course.reviewStatus == 'PENDING'
+                                      ? 'Preview & review'
+                                      : 'Preview course',
+                                ),
                               ),
                             ),
                           ],
@@ -1265,6 +1875,38 @@ class _AdminScreenState extends State<AdminScreen> {
           ],
         ),
         const SizedBox(height: 22),
+        const SectionLabel('VIP PACKAGES'),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: AtgField(
+                controller: _derivVipPrice,
+                label: 'Deriv VIP price (USD)',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: AtgField(
+                controller: _weltradeVipPrice,
+                label: 'Weltrade VIP price (USD)',
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        AtgField(
+          controller: _vipExpiryDays,
+          label: 'VIP access lasts (days)',
+          keyboardType: TextInputType.number,
+        ),
+        const SizedBox(height: 22),
         const SectionLabel('HOME CONTENT'),
         const SizedBox(height: 10),
         AtgField(
@@ -1327,7 +1969,11 @@ class _AdminScreenState extends State<AdminScreen> {
           padding: const EdgeInsets.all(13),
           child: Row(
             children: [
-              AvatarCircle(text: initials(session.name), size: 40),
+              AvatarCircle(
+                text: initials(session.name),
+                size: 40,
+                imageUrl: session.avatarUrl,
+              ),
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
@@ -1430,7 +2076,9 @@ class _AdminRequest {
 }
 
 class _SignalFormSheet extends StatefulWidget {
-  const _SignalFormSheet();
+  const _SignalFormSheet({this.signal});
+
+  final Signal? signal;
 
   @override
   State<_SignalFormSheet> createState() => _SignalFormSheetState();
@@ -1445,10 +2093,34 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
   final _targets = TextEditingController(text: 'Not given');
   final _rule = TextEditingController(text: 'M10 rule');
   final _participants = TextEditingController(text: '1');
+  final _closingPrice = TextEditingController();
+  final _closingUpdate = TextEditingController();
 
   String _side = 'BUY';
   String _status = 'LIVE';
   String _roomLabel = 'OPEN FLOOR';
+  String _result = 'MANUAL_CLOSE';
+
+  @override
+  void initState() {
+    super.initState();
+    final signal = widget.signal;
+    if (signal == null) return;
+    _title.text = signal.title;
+    _subtitle.text = signal.subtitle;
+    _symbol.text = signal.symbol;
+    _entry.text = signal.entry;
+    _stop.text = signal.stopLoss;
+    _targets.text = signal.targets;
+    _rule.text = signal.ruleName;
+    _participants.text = '${signal.participants}';
+    _closingPrice.text = signal.closingPrice ?? '';
+    _closingUpdate.text = signal.closingUpdate ?? '';
+    _side = signal.side;
+    _status = signal.status;
+    _roomLabel = signal.roomLabel;
+    _result = signal.result ?? 'MANUAL_CLOSE';
+  }
 
   @override
   void dispose() {
@@ -1460,6 +2132,8 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
     _targets.dispose();
     _rule.dispose();
     _participants.dispose();
+    _closingPrice.dispose();
+    _closingUpdate.dispose();
     super.dispose();
   }
 
@@ -1470,7 +2144,7 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
     }
     Navigator.of(context).pop(
       Signal(
-        id: 0,
+        id: widget.signal?.id ?? 0,
         title: _title.text.trim(),
         subtitle: _subtitle.text.trim(),
         symbol: _symbol.text.trim().toUpperCase(),
@@ -1482,6 +2156,12 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
         targets: _targets.text.trim(),
         ruleName: _rule.text.trim(),
         participants: parseAmount(_participants.text, 1).round(),
+        result: _status == 'CLOSED' ? _result : null,
+        closingPrice: _status == 'CLOSED' ? _closingPrice.text.trim() : null,
+        closingUpdate: _status == 'CLOSED' ? _closingUpdate.text.trim() : null,
+        createdAt: widget.signal?.createdAt,
+        closedAt: widget.signal?.closedAt,
+        updateHistory: widget.signal?.updateHistory ?? const [],
       ),
     );
   }
@@ -1507,7 +2187,10 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text('New signal', style: AtgText.pageTitle),
+          Text(
+            widget.signal == null ? 'New signal' : 'Edit signal',
+            style: AtgText.pageTitle,
+          ),
           const SizedBox(height: 14),
           AtgField(
             controller: _title,
@@ -1587,6 +2270,44 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
           AtgField(controller: _stop, label: 'Stop loss'),
           const SizedBox(height: 10),
           AtgField(controller: _targets, label: 'Targets'),
+          if (_status == 'CLOSED') ...[
+            const SizedBox(height: 14),
+            const SectionLabel('CLOSING RESULT'),
+            const SizedBox(height: 8),
+            AtgChipRow(
+              labels: const ['TP Hit', 'SL Hit', 'Manual Close', 'Other'],
+              selected: const [
+                'TP_HIT',
+                'SL_HIT',
+                'MANUAL_CLOSE',
+                'OTHER',
+              ].indexOf(_result),
+              onSelected: (index) => setState(
+                () => _result = const [
+                  'TP_HIT',
+                  'SL_HIT',
+                  'MANUAL_CLOSE',
+                  'OTHER',
+                ][index],
+              ),
+            ),
+            const SizedBox(height: 10),
+            AtgField(
+              controller: _closingPrice,
+              label: 'Closing price (optional)',
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            AtgField(
+              controller: _closingUpdate,
+              label: 'Closing update (optional)',
+              maxLines: 3,
+              minLines: 2,
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [
@@ -1604,7 +2325,10 @@ class _SignalFormSheetState extends State<_SignalFormSheet> {
             ],
           ),
           const SizedBox(height: 18),
-          PrimaryButton(label: 'Publish', onPressed: _publish),
+          PrimaryButton(
+            label: widget.signal == null ? 'Publish' : 'Save changes',
+            onPressed: _publish,
+          ),
         ],
       ),
     );
@@ -1770,7 +2494,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
       );
       if (file == null || !mounted) return;
       setState(() => lesson.uploadingImage = true);
-      final url = await api.uploadCourseAsset(file);
+      final url = await api.uploadCourseCover(file);
       if (!mounted) return;
       setState(() {
         lesson.imageUrl = url;
@@ -1895,7 +2619,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
 
     setState(() => _uploadingCover = true);
     try {
-      final url = await api.uploadCourseAsset(file);
+      final url = await api.uploadCourseCover(file);
       if (!mounted) return;
       setState(() {
         _imageUrl = url;
@@ -2078,7 +2802,7 @@ class _CourseFormSheetState extends State<_CourseFormSheet> {
           ],
           const SizedBox(height: 6),
           Text(
-            'JPG or PNG. It shows on the Academy card and the course page.',
+            'JPG, PNG, or WebP (10 MB max). It shows on Academy cards and the course page.',
             style: AtgText.small.copyWith(fontSize: 11.5),
           ),
           const SizedBox(height: 14),

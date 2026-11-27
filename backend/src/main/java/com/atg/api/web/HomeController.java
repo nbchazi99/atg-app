@@ -58,6 +58,9 @@ public class HomeController extends BaseController {
         res.put("pointsPerReferral", s.getPointsPerReferral());
         res.put("depositMethods", s.getDepositMethods());
         res.put("withdrawalMethods", s.getWithdrawalMethods());
+        res.put("derivVipPrice", s.getDerivVipPrice());
+        res.put("weltradeVipPrice", s.getWeltradeVipPrice());
+        res.put("vipExpiryDays", s.getVipExpiryDays());
         return res;
     }
 }

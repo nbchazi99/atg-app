@@ -23,6 +23,9 @@ class AppUser {
     required this.points,
     this.createdAt,
     this.avatarUrl,
+    this.membershipExpiresAt,
+    this.username,
+    this.country,
   });
 
   final int id;
@@ -34,8 +37,19 @@ class AppUser {
   final int points;
   final String? createdAt;
   final String? avatarUrl;
+  final String? membershipExpiresAt;
+  final String? username;
+  final String? country;
 
   bool get isAdmin => role == 'ADMIN';
+
+  bool get membershipExpired {
+    final raw = membershipExpiresAt;
+    if (raw == null || raw.isEmpty) return false;
+    final at = DateTime.tryParse(raw)?.toLocal();
+    if (at == null) return false;
+    return at.isBefore(DateTime.now());
+  }
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
     id: _i(json['id']),
@@ -47,6 +61,9 @@ class AppUser {
     points: _i(json['points']),
     createdAt: _s(json['createdAt']),
     avatarUrl: _s(json['avatarUrl']),
+    membershipExpiresAt: _s(json['membershipExpiresAt']),
+    username: _s(json['username']),
+    country: _s(json['country']),
   );
 }
 
@@ -59,6 +76,9 @@ class AuthResult {
     _s(json['token']) ?? '',
     AppUser.fromJson((json['user'] as Map).cast<String, dynamic>()),
   );
+
+  factory AuthResult.fromProfileUpdateJson(Map<String, dynamic> json) =>
+      AuthResult(_s(json['token']) ?? '', AppUser.fromJson(json));
 }
 
 class Signal {
@@ -76,6 +96,11 @@ class Signal {
     required this.ruleName,
     required this.participants,
     this.createdAt,
+    this.result,
+    this.closingPrice,
+    this.closingUpdate,
+    this.closedAt,
+    this.updateHistory = const [],
   });
 
   final int id;
@@ -91,6 +116,11 @@ class Signal {
   final String ruleName;
   final int participants;
   final String? createdAt;
+  final String? result;
+  final String? closingPrice;
+  final String? closingUpdate;
+  final String? closedAt;
+  final List<String> updateHistory;
 
   bool get isBuy => side == 'BUY';
   bool get isLive => status == 'LIVE';
@@ -109,6 +139,11 @@ class Signal {
     ruleName: _s(json['ruleName']) ?? '',
     participants: _i(json['participants']),
     createdAt: _s(json['createdAt']),
+    result: _s(json['result']),
+    closingPrice: _s(json['closingPrice']),
+    closingUpdate: _s(json['closingUpdate']),
+    closedAt: _s(json['closedAt']),
+    updateHistory: _l(json['updateHistory']).map((item) => '$item').toList(),
   );
 }
 
@@ -188,6 +223,7 @@ class FeedItem {
     required this.open,
     this.createdById,
     this.createdByName = '',
+    this.createdByAvatarUrl,
     this.createdAt,
     this.lastActivityAt,
   });
@@ -203,6 +239,7 @@ class FeedItem {
   final bool open;
   final int? createdById;
   final String createdByName;
+  final String? createdByAvatarUrl;
   final String? createdAt;
   final String? lastActivityAt;
 
@@ -220,6 +257,7 @@ class FeedItem {
     open: json['open'] == true,
     createdById: json['createdById'] == null ? null : _i(json['createdById']),
     createdByName: _s(json['createdByName']) ?? '',
+    createdByAvatarUrl: _s(json['createdByAvatarUrl']),
     createdAt: _s(json['createdAt']),
     lastActivityAt: _s(json['lastActivityAt']),
   );
@@ -324,6 +362,9 @@ class DepositResult {
     required this.totalPaid,
     this.adminNote,
     this.createdAt,
+    this.username,
+    this.weltradeId,
+    this.phone,
   });
 
   final int id;
@@ -338,6 +379,9 @@ class DepositResult {
   final double totalPaid;
   final String? adminNote;
   final String? createdAt;
+  final String? username;
+  final String? weltradeId;
+  final String? phone;
 
   factory DepositResult.fromJson(Map<String, dynamic> json) => DepositResult(
     id: _i(json['id']),
@@ -352,6 +396,9 @@ class DepositResult {
     totalPaid: _d(json['totalPaid']),
     adminNote: _s(json['adminNote']),
     createdAt: _s(json['createdAt']),
+    username: _s(json['username']),
+    weltradeId: _s(json['weltradeId']) ?? _s(json['clientId']),
+    phone: _s(json['phone']),
   );
 }
 
@@ -447,6 +494,9 @@ class Course {
     required this.lessonsCount,
     this.imageUrl = '',
     this.createdAt,
+    this.reviewStatus = 'PUBLISHED',
+    this.reviewNote,
+    this.reviewedAt,
   });
 
   final int id;
@@ -458,6 +508,9 @@ class Course {
   final int lessonsCount;
   final String imageUrl;
   final String? createdAt;
+  final String reviewStatus;
+  final String? reviewNote;
+  final String? reviewedAt;
 
   factory Course.fromJson(Map<String, dynamic> json) => Course(
     id: _i(json['id']),
@@ -469,6 +522,9 @@ class Course {
     lessonsCount: _i(json['lessonsCount']),
     imageUrl: _s(json['imageUrl']) ?? '',
     createdAt: _s(json['createdAt']),
+    reviewStatus: _s(json['reviewStatus']) ?? 'PUBLISHED',
+    reviewNote: _s(json['reviewNote']),
+    reviewedAt: _s(json['reviewedAt']),
   );
 }
 
@@ -599,6 +655,9 @@ class Settings {
     required this.pointsPerReferral,
     required this.depositMethods,
     required this.withdrawalMethods,
+    required this.derivVipPrice,
+    required this.weltradeVipPrice,
+    required this.vipExpiryDays,
   });
 
   final double adminFeePct;
@@ -613,6 +672,9 @@ class Settings {
   final int pointsPerReferral;
   final List<String> depositMethods;
   final List<String> withdrawalMethods;
+  final double derivVipPrice;
+  final double weltradeVipPrice;
+  final int vipExpiryDays;
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
     adminFeePct: _d(json['adminFeePct']),
@@ -629,6 +691,15 @@ class Settings {
     pointsPerReferral: _i(json['pointsPerReferral']),
     depositMethods: const ['EcoCash'],
     withdrawalMethods: const ['EcoCash'],
+    derivVipPrice: json['derivVipPrice'] == null
+        ? 30
+        : _d(json['derivVipPrice']),
+    weltradeVipPrice: json['weltradeVipPrice'] == null
+        ? 30
+        : _d(json['weltradeVipPrice']),
+    vipExpiryDays: json['vipExpiryDays'] == null
+        ? 30
+        : _i(json['vipExpiryDays']),
   );
 }
 
@@ -742,8 +813,9 @@ class SupportConversationDetail {
         ),
         messages: _l(json['messages'])
             .map(
-              (item) =>
-                  SupportMessage.fromJson((item as Map).cast<String, dynamic>()),
+              (item) => SupportMessage.fromJson(
+                (item as Map).cast<String, dynamic>(),
+              ),
             )
             .toList(),
       );
@@ -755,6 +827,7 @@ class SupportChatResult {
     required this.userMessage,
     required this.assistantMessage,
     required this.needsHuman,
+    this.confidence = 0,
     this.ticket,
   });
 
@@ -762,6 +835,7 @@ class SupportChatResult {
   final SupportMessage userMessage;
   final SupportMessage assistantMessage;
   final bool needsHuman;
+  final double confidence;
   final SupportTicket? ticket;
 
   factory SupportChatResult.fromJson(Map<String, dynamic> json) =>
@@ -776,6 +850,9 @@ class SupportChatResult {
           (json['assistantMessage'] as Map).cast<String, dynamic>(),
         ),
         needsHuman: json['needsHuman'] == true,
+        confidence: (json['confidence'] is num)
+            ? (json['confidence'] as num).toDouble()
+            : 0,
         ticket: json['ticket'] is Map
             ? SupportTicket.fromJson(
                 (json['ticket'] as Map).cast<String, dynamic>(),
@@ -862,8 +939,9 @@ class SupportTicketDetail {
         ),
         messages: _l(json['messages'])
             .map(
-              (item) =>
-                  SupportMessage.fromJson((item as Map).cast<String, dynamic>()),
+              (item) => SupportMessage.fromJson(
+                (item as Map).cast<String, dynamic>(),
+              ),
             )
             .toList(),
       );
@@ -904,4 +982,108 @@ class SupportKnowledgeEntry {
         createdAt: _s(json['createdAt']),
         updatedAt: _s(json['updatedAt']),
       );
+}
+
+/// One payment attempt through the Dischub gateway.
+class PaymentTx {
+  const PaymentTx({
+    required this.id,
+    required this.orderId,
+    required this.userId,
+    required this.type,
+    required this.serviceName,
+    required this.amount,
+    required this.currency,
+    required this.status,
+    required this.provider,
+    this.courseId,
+    this.sender,
+    this.statusReason,
+    this.receiptNo,
+    this.purchaseRequestId,
+    this.paidAmount,
+    this.paymentMethod,
+    this.gatewayTimestamp,
+    this.gatewayResponse,
+    this.ecocashStatus,
+    this.refundNote,
+    this.createdAt,
+    this.paidAt,
+    this.refundedAt,
+  });
+
+  final int id;
+  final String orderId;
+  final int userId;
+  final String type;
+  final String serviceName;
+  final double amount;
+  final String currency;
+  final String status;
+  final String provider;
+  final int? courseId;
+  final String? sender;
+  final String? statusReason;
+  final String? receiptNo;
+  final int? purchaseRequestId;
+
+  /// Gross the customer actually paid (price + gateway charges), when settled.
+  final double? paidAmount;
+  final String? paymentMethod;
+  final String? gatewayTimestamp;
+
+  /// Raw JSON Dischub returned on the last status check.
+  final String? gatewayResponse;
+
+  /// Dischub's EcoCash prompt state at creation (e.g. PENDING SUBSCRIBER VALIDATION).
+  final String? ecocashStatus;
+
+  final String? refundNote;
+  final String? createdAt;
+  final String? paidAt;
+  final String? refundedAt;
+
+  bool get isOpen => status == 'CREATED' || status == 'PROCESSING';
+  bool get isPaid => status == 'SUCCESS';
+
+  /// Charges the customer covered on top of the price, if any.
+  double get charges => paidAmount == null ? 0 : (paidAmount! - amount);
+
+  String get statusLabel => switch (status) {
+    'SUCCESS' => 'PAID',
+    'CREATED' => 'STARTED',
+    'PROCESSING' => 'PENDING',
+    'FAILED' => 'FAILED',
+    'EXPIRED' => 'EXPIRED',
+    'REFUNDED' => 'REFUNDED',
+    _ => status,
+  };
+
+  factory PaymentTx.fromJson(Map<String, dynamic> json) => PaymentTx(
+    id: _i(json['id']),
+    orderId: _s(json['orderId']) ?? '',
+    userId: _i(json['userId']),
+    type: _s(json['type']) ?? '',
+    serviceName: _s(json['serviceName']) ?? '',
+    amount: _d(json['amount']),
+    currency: _s(json['currency']) ?? 'USD',
+    status: _s(json['status']) ?? 'CREATED',
+    provider: _s(json['provider']) ?? 'dischub',
+    courseId: json['courseId'] == null ? null : _i(json['courseId']),
+    sender: _s(json['sender']),
+    statusReason: _s(json['statusReason']),
+    receiptNo: _s(json['receiptNo']),
+    purchaseRequestId: json['purchaseRequestId'] == null
+        ? null
+        : _i(json['purchaseRequestId']),
+    paidAmount: json['paidAmount'] == null ? null : _d(json['paidAmount']),
+    paymentMethod: _s(json['paymentMethod']),
+    gatewayTimestamp: _s(json['gatewayTimestamp']),
+    gatewayResponse: _s(json['gatewayResponse']),
+    ecocashStatus: _s(json['ecocashStatus']),
+    refundNote: _s(json['refundNote']),
+    createdAt: _s(json['createdAt']),
+    paidAt: _s(json['paidAt']),
+    refundedAt: _s(json['refundedAt']),
+  );
 }

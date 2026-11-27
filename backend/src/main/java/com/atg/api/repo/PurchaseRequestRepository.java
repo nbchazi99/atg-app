@@ -27,4 +27,10 @@ public class PurchaseRequestRepository extends AbstractFirestoreStore<PurchaseRe
         requests.sort(Comparator.comparing(PurchaseRequest::getCreatedAt).reversed());
         return requests;
     }
+
+    /** Duplicate-payment guard: at most one purchase record per gateway order. */
+    public java.util.Optional<PurchaseRequest> findByPaymentOrderId(String orderId) {
+        if (orderId == null || orderId.isBlank()) return java.util.Optional.empty();
+        return queryWhere("paymentOrderId", orderId).stream().findFirst();
+    }
 }

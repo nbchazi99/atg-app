@@ -9,6 +9,7 @@ import 'app_state.dart' as state;
 import 'push.dart';
 import 'realtime.dart';
 import 'screens/auth_screen.dart';
+import 'screens/payment_checkout_screen.dart';
 import 'screens/shell.dart';
 import 'screens/splash_screen.dart';
 import 'session.dart';
@@ -42,8 +43,13 @@ class AtgApp extends StatefulWidget {
 class _AtgAppState extends State<AtgApp> {
   late bool _loggedIn = state.session.isLoggedIn;
   late bool _darkMode = state.session.isDarkMode;
+  late String _profileSnapshot = _currentProfileSnapshot;
   bool _splash = true;
   Timer? _splashTimer;
+
+  /// Set when Dischub redirects the browser back to the app with
+  /// `?order=PMT…`; opened once the splash finishes.
+  String? _pendingPaymentOrder = Uri.base.queryParameters['order'];
 
   @override
   void initState() {
@@ -54,7 +60,23 @@ class _AtgAppState extends State<AtgApp> {
       PushService.start(state.session, state.api);
     }
     _splashTimer = Timer(const Duration(milliseconds: 2200), () {
-      if (mounted) setState(() => _splash = false);
+      if (!mounted) return;
+      setState(() => _splash = false);
+      _openPendingPayment();
+    });
+  }
+
+  void _openPendingPayment() {
+    final orderId = _pendingPaymentOrder;
+    if (orderId == null || orderId.isEmpty) return;
+    _pendingPaymentOrder = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PaymentResultScreen(orderId: orderId),
+        ),
+      );
     });
   }
 
@@ -79,10 +101,14 @@ class _AtgAppState extends State<AtgApp> {
   void _sessionChanged() {
     final loggedIn = state.session.isLoggedIn;
     final darkMode = state.session.isDarkMode;
-    if (loggedIn != _loggedIn || darkMode != _darkMode) {
+    final profileSnapshot = _currentProfileSnapshot;
+    if (loggedIn != _loggedIn ||
+        darkMode != _darkMode ||
+        profileSnapshot != _profileSnapshot) {
       setState(() {
         _loggedIn = loggedIn;
         _darkMode = darkMode;
+        _profileSnapshot = profileSnapshot;
       });
       _setSystemUiOverlayStyle(darkMode);
       if (loggedIn) {
@@ -90,6 +116,19 @@ class _AtgAppState extends State<AtgApp> {
       }
     }
   }
+
+  String get _currentProfileSnapshot => [
+    state.session.id,
+    state.session.name,
+    state.session.username,
+    state.session.country,
+    state.session.email,
+    state.session.phone,
+    state.session.avatarUrl ?? '',
+    state.session.role,
+    state.session.membership,
+    state.session.points,
+  ].join('\u0000');
 
   @override
   Widget build(BuildContext context) {

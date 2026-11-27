@@ -4,7 +4,6 @@ import '../api.dart';
 import '../app_state.dart';
 import '../models.dart';
 import '../responsive.dart';
-import '../session.dart';
 import '../theme.dart';
 import '../widgets.dart';
 
@@ -219,7 +218,7 @@ class _SupportScreenState extends State<SupportScreen> {
             const EmptyState(
               title: 'How can we help?',
               message:
-                  'Start a conversation with ATG AI, or file a ticket for the support team.',
+                  'Start a conversation with the ATG support engine, or file a ticket for the support team.',
               icon: Icons.support_agent_rounded,
             ),
             const SizedBox(height: 14),
@@ -300,7 +299,7 @@ class _SupportScreenState extends State<SupportScreen> {
               Expanded(
                 child: Text(
                   conversation.topic.isEmpty
-                      ? 'ATG AI Help Desk'
+                      ? 'ATG Help Desk'
                       : conversation.topic,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

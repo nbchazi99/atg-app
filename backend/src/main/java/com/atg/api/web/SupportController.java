@@ -136,6 +136,7 @@ public class SupportController extends BaseController {
                 MessageView.of(turn.userMessage()),
                 MessageView.of(turn.assistantMessage()),
                 turn.needsHuman(),
+                turn.confidence(),
                 turn.ticket() == null ? null : TicketView.of(turn.ticket()));
     }
 

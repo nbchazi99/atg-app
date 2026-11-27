@@ -47,8 +47,7 @@ public class SupportService {
     private final SupportMessageRepository messages;
     private final SupportKnowledgeRepository knowledge;
     private final UserRepository users;
-    private final OpenAiSupportAi ai;
-    private final SupportKnowledgeService knowledgeService;
+    private final LocalSupportEngine supportEngine;
     private final RealtimeHub realtime;
     private final PushTokenRepository pushTokens;
     private final PushService push;
@@ -60,19 +59,17 @@ public class SupportService {
             SupportMessageRepository messages,
             SupportKnowledgeRepository knowledge,
             UserRepository users,
-            OpenAiSupportAi ai,
-            SupportKnowledgeService knowledgeService,
+            LocalSupportEngine supportEngine,
             RealtimeHub realtime,
             PushTokenRepository pushTokens,
             PushService push,
-            @Value("${FIREBASE_STORAGE_BUCKET:atg-app-6908e.firebasestorage.app}") String storageBucket) {
+            @Value("${FIREBASE_STORAGE_BUCKET:}") String storageBucket) {
         this.conversations = conversations;
         this.tickets = tickets;
         this.messages = messages;
         this.knowledge = knowledge;
         this.users = users;
-        this.ai = ai;
-        this.knowledgeService = knowledgeService;
+        this.supportEngine = supportEngine;
         this.realtime = realtime;
         this.pushTokens = pushTokens;
         this.push = push;
@@ -134,16 +131,15 @@ public class SupportService {
         List<SupportMessage> history =
                 new ArrayList<>(messages.findByConversationIdOrderByCreatedAtAsc(conversationId));
         history.add(userMessage);
-        SupportDtos.AiReply answer = ai.answer(
+        SupportDtos.AiReply answer = supportEngine.answer(
                 history.stream()
                         .filter(row -> !row.isInternalNote())
-                        .toList(),
-                knowledgeService.findRelevant(text));
+                        .toList());
 
         messages.save(userMessage);
         SupportMessage assistantMessage = new SupportMessage();
         assistantMessage.setConversationId(conversationId);
-        assistantMessage.setAuthorName("ATG AI");
+        assistantMessage.setAuthorName("ATG Support");
         assistantMessage.setAuthorType(SupportMessage.AuthorType.AI);
         assistantMessage.setText(answer.message());
         messages.save(assistantMessage);
@@ -159,11 +155,14 @@ public class SupportService {
         conversations.save(conversation);
 
         SupportTicket ticket = null;
-        if (answer.needsHuman() && user != null && hasContactDetails(user)) {
-            ticket = createEscalationTicket(conversation, user, answer, text);
+        if (answer.needsHuman()) {
+            ticket = user == null
+                    ? createGuestEscalationTicket(conversation, answer, text)
+                    : createEscalationTicket(conversation, user, answer, text);
         }
         publishChange(conversation, "message");
-        return new ChatTurn(conversation, userMessage, assistantMessage, answer.needsHuman(), ticket);
+        return new ChatTurn(conversation, userMessage, assistantMessage,
+                answer.needsHuman(), answer.confidence(), ticket);
     }
 
     public SupportTicket createTicket(
@@ -195,7 +194,6 @@ public class SupportService {
         conversation.setUpdatedAt(now());
         conversations.save(conversation);
         publishChange(conversation, "ticket-created");
-        notifyTicketCreated(saved);
         notifyTicketCreated(saved);
         return saved;
     }
@@ -421,7 +419,30 @@ public class SupportService {
         ticket.setPreferredContact("IN_APP");
         ticket.setCategory(normalizeCategory(answer.category()));
         ticket.setSubject(topicFrom(text));
-        ticket.setDescription("The AI assistant escalated this conversation for administrator follow-up.");
+        ticket.setDescription("The support engine escalated this conversation for administrator follow-up.");
+        ticket.setPriority(parsePriority(answer.priority()));
+        ticket.setTicketNumber(ticketNumber());
+        ticket.setCreatedAt(now());
+        ticket.setUpdatedAt(ticket.getCreatedAt());
+        SupportTicket saved = tickets.save(ticket);
+        publishChange(conversation, "ticket-created");
+        notifyTicketCreated(saved);
+        return saved;
+    }
+
+    private SupportTicket createGuestEscalationTicket(
+            SupportConversation conversation, SupportDtos.AiReply answer, String text) {
+        SupportTicket existing = tickets.findByConversationId(conversation.getId());
+        if (existing != null) return existing;
+        SupportTicket ticket = new SupportTicket();
+        ticket.setConversationId(conversation.getId());
+        ticket.setGuestTokenHash(conversation.getGuestTokenHash());
+        ticket.setContactName("Guest");
+        ticket.setPreferredContact("IN_APP");
+        ticket.setCategory(normalizeCategory(answer.category()));
+        ticket.setSubject(topicFrom(text));
+        ticket.setDescription("The support engine could not solve this issue with enough confidence. "
+                + "The complete conversation is attached to this ticket.");
         ticket.setPriority(parsePriority(answer.priority()));
         ticket.setTicketNumber(ticketNumber());
         ticket.setCreatedAt(now());
@@ -587,5 +608,6 @@ public class SupportService {
     public record GuestConversation(SupportConversation conversation, String token) {}
     public record ChatTurn(
             SupportConversation conversation, SupportMessage userMessage,
-            SupportMessage assistantMessage, boolean needsHuman, SupportTicket ticket) {}
+            SupportMessage assistantMessage, boolean needsHuman, double confidence,
+            SupportTicket ticket) {}
 }

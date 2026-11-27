@@ -10,6 +10,8 @@ import '../responsive.dart';
 import '../theme.dart';
 import '../widgets.dart';
 import 'admin_screen.dart';
+import 'payment_checkout_screen.dart';
+import 'payment_history_screen.dart';
 import 'settings_screen.dart';
 import 'support_screen.dart';
 
@@ -22,13 +24,16 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   List<Purchase> _purchases = const [];
+  Settings? _settings;
+  AppUser? _me;
   List<WalletTx> _transactions = const [];
   bool _loading = true;
   bool _ordering = false;
-  String? _pendingType;
+  bool _avatarUpdating = false;
   VoidCallback? _unbind;
 
   Future<void> _changeAvatar() async {
+    if (_avatarUpdating) return;
     XFile? image;
     try {
       image = await ImagePicker().pickImage(
@@ -46,15 +51,245 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     if (image == null || !mounted) return;
+    setState(() => _avatarUpdating = true);
     try {
-      final url = await api.uploadImage(image);
-      final user = await api.updateProfile(avatarUrl: url);
+      final user = await api.uploadProfileAvatar(image);
       await session.saveUser(user);
-      if (mounted) await _load();
+      if (mounted) {
+        setState(() => _me = user);
+        showToast(context, 'Profile photo updated.');
+      }
     } on ApiException catch (e) {
       if (mounted) showToast(context, e.message);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Could not upload profile photo: $error\n$stackTrace');
       if (mounted) showToast(context, 'Could not update profile picture');
+    } finally {
+      if (mounted) setState(() => _avatarUpdating = false);
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    if (_avatarUpdating || session.avatarUrl == null) return;
+    final confirmed = await confirmAction(
+      context,
+      title: 'Remove profile photo?',
+      message: 'Your account will return to its initials avatar.',
+      confirmLabel: 'Remove photo',
+      cancelLabel: 'Keep photo',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _avatarUpdating = true);
+    try {
+      final user = await api.removeProfileAvatar();
+      await session.saveUser(user);
+      if (mounted) {
+        setState(() => _me = user);
+        showToast(context, 'Profile photo removed.');
+      }
+    } on ApiException catch (e) {
+      if (mounted) showToast(context, e.message);
+    } catch (error, stackTrace) {
+      debugPrint('Could not remove profile photo: $error\n$stackTrace');
+      if (mounted) showToast(context, 'Could not remove profile picture');
+    } finally {
+      if (mounted) setState(() => _avatarUpdating = false);
+    }
+  }
+
+  Future<void> _editProfile() async {
+    final user = _me;
+    if (user == null) return;
+    final formKey = GlobalKey<FormState>();
+    final name = TextEditingController(text: user.name);
+    final username = TextEditingController(text: user.username ?? '');
+    final phone = TextEditingController(text: user.phone);
+    final country = TextEditingController(text: user.country ?? '');
+    final email = TextEditingController(text: user.email);
+    final currentPassword = TextEditingController();
+    var saving = false;
+    var errorMessage = '';
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit profile'),
+          content: SizedBox(
+            width: 440,
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: name,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(labelText: 'Full name'),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Enter your full name.'
+                          : value.trim().length > 120
+                          ? 'Use 120 characters or fewer.'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: username,
+                      textCapitalization: TextCapitalization.none,
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                        hintText: '3-32 letters, numbers, . _ or -',
+                      ),
+                      validator: (value) {
+                        final valueTrimmed = value?.trim() ?? '';
+                        if (valueTrimmed.isEmpty) return null;
+                        if (!RegExp(r'^[A-Za-z0-9._-]{3,32}$')
+                            .hasMatch(valueTrimmed)) {
+                          return 'Use 3-32 letters, numbers, dots, underscores or hyphens.';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: phone,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone number',
+                      ),
+                      validator: (value) => (value?.length ?? 0) > 32
+                          ? 'Use 32 characters or fewer.'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: country,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(labelText: 'Country'),
+                      validator: (value) => (value?.length ?? 0) > 80
+                          ? 'Use 80 characters or fewer.'
+                          : null,
+                    ),
+                    TextFormField(
+                      controller: email,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      onChanged: (_) => setDialogState(() {}),
+                      validator: (value) {
+                        final valueTrimmed = value?.trim() ?? '';
+                        if (valueTrimmed.isEmpty) return 'Enter your email.';
+                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                            .hasMatch(valueTrimmed)) {
+                          return 'Enter a valid email address.';
+                        }
+                        return null;
+                      },
+                    ),
+                    if (email.text.trim().toLowerCase() !=
+                        user.email.toLowerCase())
+                      TextFormField(
+                        controller: currentPassword,
+                        obscureText: true,
+                        autofillHints: const [AutofillHints.password],
+                        decoration: const InputDecoration(
+                          labelText:
+                              'Current password (required to change email)',
+                        ),
+                        validator: (value) =>
+                            email.text.trim().toLowerCase() !=
+                                    user.email.toLowerCase() &&
+                                (value == null || value.isEmpty)
+                            ? 'Enter your current password.'
+                            : null,
+                      ),
+                    if (errorMessage.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Text(
+                          errorMessage,
+                          style: TextStyle(color: AtgColors.redText),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() {
+                        saving = true;
+                        errorMessage = '';
+                      });
+                      try {
+                        final result = await api.updateProfile(
+                          name: name.text.trim(),
+                          username: username.text.trim(),
+                          phone: phone.text.trim(),
+                          country: country.text.trim(),
+                          email: email.text.trim(),
+                          currentPassword: currentPassword.text.isEmpty
+                              ? null
+                              : currentPassword.text,
+                        );
+                        if (result.token.isEmpty) {
+                          throw const ApiException(
+                            'The server did not return an updated sign-in session.',
+                          );
+                        }
+                        await session.saveAuth(result.token, result.user);
+                        if (!mounted || !dialogContext.mounted) return;
+                        setState(() => _me = result.user);
+                        Navigator.pop(dialogContext, true);
+                      } on ApiException catch (e) {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => errorMessage = e.message);
+                        }
+                      } catch (error, stackTrace) {
+                        debugPrint(
+                          'Could not save profile: $error\n$stackTrace',
+                        );
+                        if (dialogContext.mounted) {
+                          setDialogState(
+                            () => errorMessage =
+                                'Could not save profile. Try again.',
+                          );
+                        }
+                      } finally {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => saving = false);
+                        }
+                      }
+                    },
+              child: saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+    name.dispose();
+    username.dispose();
+    phone.dispose();
+    country.dispose();
+    email.dispose();
+    currentPassword.dispose();
+    if (changed == true && mounted) {
+      showToast(context, 'Profile updated.');
     }
   }
 
@@ -65,8 +300,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _unbind = realtime.bind({
       AtgScope.myHome(session.id),
       AtgScope.wallet(session.id),
+      AtgScope.user(session.id),
       AtgScope.rooms,
       AtgScope.courses,
+      AtgScope.settings,
     }, _load);
   }
 
@@ -82,14 +319,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         api.me(),
         api.purchases(),
         api.wallet(),
+        api.settings(),
       ]);
       if (!mounted) return;
       final user = results[0] as AppUser;
       await session.saveUser(user);
       if (!mounted) return;
       setState(() {
+        _me = user;
         _purchases = results[1] as List<Purchase>;
         _transactions = (results[2] as WalletData).transactions;
+        _settings = results[3] as Settings;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -102,60 +342,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _join(String type) async {
     if (_ordering) return;
     final label = type == 'VIP_DERIV' ? 'Deriv VIP' : 'Weltrade VIP';
-    final proceed = await confirmAction(
-      context,
-      title: 'Join $label',
-      message:
-          'Pay \$30.00 to the ATG desk, then attach a screenshot of the payment. '
-          'The administrator reviews proofs manually and unlocks the room once approved.',
-      confirmLabel: 'Choose screenshot',
-    );
-    if (!proceed || !mounted) return;
-
-    XFile? proof;
+    final price = type == 'VIP_DERIV'
+        ? (_settings?.derivVipPrice ?? 30)
+        : (_settings?.weltradeVipPrice ?? 30);
+    setState(() => _ordering = true);
     try {
-      proof = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 85,
+      final paid = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => PaymentCheckoutScreen(
+            type: type,
+            serviceName: '$label membership',
+            amount: price,
+            prefillPhone: session.phone,
+          ),
+        ),
       );
-    } catch (_) {
-      if (mounted) {
-        showMessage(
-          context,
-          'Could not open the gallery',
-          'Allow photo access for ATG and try again.',
-        );
+      if (!mounted) return;
+      setState(() => _ordering = false);
+      if (paid == true) {
+        showToast(context, '$label unlocked');
+        await _load();
       }
-      return;
-    }
-    if (proof == null || !mounted) return;
-
-    setState(() {
-      _ordering = true;
-      _pendingType = type;
-    });
-    try {
-      final url = await api.uploadImage(proof);
-      final purchase = await api.purchase(type, proofUrl: url);
-      if (!mounted) return;
-      setState(() {
-        _ordering = false;
-        _pendingType = null;
-      });
-      await showMessage(
-        context,
-        'Request filed',
-        'Reference P-${purchase.id}. $label unlocks here once the administrator approves the proof.',
-        action: 'Done',
-      );
-      if (mounted) await _load();
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _ordering = false;
-        _pendingType = null;
-      });
-      showMessage(context, 'Could not file the purchase', e.message);
+    } finally {
+      if (mounted && _ordering) setState(() => _ordering = false);
     }
   }
 
@@ -218,38 +427,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          SurfaceCard(
-                            padding: const EdgeInsets.all(14),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const SupportScreen(),
-                              ),
-                            ),
-                            child: Row(
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: AtgColors.muted,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SurfaceCard(
+                      padding: const EdgeInsets.all(14),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SupportScreen(),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.support_agent_rounded,
+                            color: AtgColors.gold,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.support_agent_rounded,
-                                  color: AtgColors.gold,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Help & Support', style: AtgText.h3),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Chat with ATG AI or follow a support ticket.',
-                                        style: AtgText.small,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  color: AtgColors.muted,
+                                Text('Help & Support', style: AtgText.h3),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Chat with the ATG support engine or follow a support ticket.',
+                                  style: AtgText.small,
                                 ),
                               ],
                             ),
@@ -357,6 +566,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(2, 18, 2, 8),
+                      child: SectionLabel('PAYMENTS'),
+                    ),
+                    SurfaceCard(
+                      padding: const EdgeInsets.all(14),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const PaymentHistoryScreen(),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.receipt_long_outlined,
+                            color: AtgColors.gold,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Payment history', style: AtgText.h3),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Receipts for courses and VIP purchases.',
+                                  style: AtgText.small,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: AtgColors.muted,
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 22),
                     OutlineButton(
                       label: 'Sign out',
@@ -384,11 +632,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return SurfaceCard(
       child: Row(
         children: [
-          AvatarCircle(
-            text: session.initialsText,
-            size: 60,
-            imageUrl: session.avatarUrl,
-            onTap: _changeAvatar,
+          Tooltip(
+            message: 'Change profile photo',
+            child: GestureDetector(
+              onTap: _avatarUpdating ? null : _changeAvatar,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  AvatarCircle(
+                    text: session.initialsText,
+                    size: 60,
+                    imageUrl: session.avatarUrl,
+                  ),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: AtgColors.gold,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.surface,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt_rounded,
+                      size: 12,
+                      color: AtgColors.primary,
+                    ),
+                  ),
+                  if (_avatarUpdating)
+                    Positioned.fill(
+                      child: ClipOval(
+                        child: ColoredBox(
+                          color: Colors.black45,
+                          child: Center(
+                            child: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AtgColors.gold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -397,10 +690,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(session.name, style: AtgText.h1),
                 const SizedBox(height: 2),
+                if ((session.username).isNotEmpty)
+                  Text('@${session.username}', style: AtgText.small),
                 Text(session.email, style: AtgText.small),
                 if (session.phone.isNotEmpty)
                   Text(
                     session.phone,
+                    style: AtgText.small.copyWith(fontSize: 11.5),
+                  ),
+                if (session.country.isNotEmpty)
+                  Text(
+                    session.country,
                     style: AtgText.small.copyWith(fontSize: 11.5),
                   ),
                 const SizedBox(height: 8),
@@ -437,9 +737,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
+          IconButton(
+            tooltip: 'Remove profile photo',
+            onPressed: _avatarUpdating || session.avatarUrl == null
+                ? null
+                : _removeAvatar,
+            icon: Icon(Icons.delete_outline_rounded, color: AtgColors.redText),
+          ),
+          IconButton(
+            tooltip: 'Edit profile',
+            onPressed: _editProfile,
+            icon: Icon(Icons.edit_outlined, color: AtgColors.gold),
+          ),
         ],
       ),
     );
+  }
+
+  String? _expiryText() {
+    final raw = _me?.membershipExpiresAt;
+    if (raw == null || raw.isEmpty) return null;
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return null;
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final date = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    return _me!.membershipExpired
+        ? 'VIP access expired on $date'
+        : 'VIP access until $date';
   }
 
   Widget _membershipCard() {
@@ -465,11 +802,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
-            'VIP rooms are included with Deriv VIP or Weltrade VIP. Pay \$30.00 to the desk, attach the proof, and '
-            'the rooms open after the administrator approves it.',
+          Text(
+            'VIP rooms are included with Deriv VIP or Weltrade VIP. Pay '
+            '${money(_settings?.derivVipPrice ?? 30)} securely through the payment '
+            'gateway and the rooms open automatically once the payment is confirmed.',
             style: AtgText.bodySmall,
           ),
+          if (_expiryText() != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 14, color: AtgColors.muted),
+                const SizedBox(width: 6),
+                Text(
+                  _expiryText()!,
+                  style: AtgText.small.copyWith(color: AtgColors.muted),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
@@ -478,7 +829,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'Deriv VIP',
                   badge: 'D',
                   active: derivActive,
-                  busy: _pendingType == 'VIP_DERIV',
+                  busy: _ordering,
                   onTap: derivActive ? null : () => _join('VIP_DERIV'),
                 ),
               ),
@@ -488,7 +839,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: 'Weltrade VIP',
                   badge: 'W',
                   active: weltradeActive,
-                  busy: _pendingType == 'VIP_WELTRADE',
+                  busy: _ordering,
                   onTap: weltradeActive ? null : () => _join('VIP_WELTRADE'),
                 ),
               ),
@@ -507,7 +858,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 SizedBox(width: 8),
-                Text('Filing your proof…', style: AtgText.small),
+                Text('Opening checkout…', style: AtgText.small),
               ],
             ),
           ],

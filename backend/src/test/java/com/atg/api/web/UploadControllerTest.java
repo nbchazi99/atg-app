@@ -6,6 +6,7 @@ import com.atg.api.model.Room;
 import com.atg.api.model.User;
 import com.atg.api.service.FirebaseCourseAssetStorage;
 import com.atg.api.service.SupportService;
+import com.atg.api.realtime.RealtimeHub;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,9 @@ class UploadControllerTest {
     private final RoomRepository rooms = mock(RoomRepository.class);
     private final FirebaseCourseAssetStorage storage = mock(FirebaseCourseAssetStorage.class);
     private final SupportService support = mock(SupportService.class);
-    private final UploadController controller = new UploadController(users, rooms, storage, support);
+    private final RealtimeHub realtime = mock(RealtimeHub.class);
+    private final UploadController controller =
+            new UploadController(users, rooms, storage, support, realtime);
     private final User member = new User();
 
     @BeforeEach
@@ -88,6 +91,93 @@ class UploadControllerTest {
                 .extracting(error -> ((ResponseStatusException) error).getStatusCode())
                 .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
 
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void storesCourseCoversPersistentlyAndRejectsUnsupportedCoverFiles() {
+        MockMultipartFile cover = new MockMultipartFile(
+                "file", "academy-cover.PNG", "image/png", new byte[]{1, 2, 3});
+        when(storage.store(cover, ".png", "image/png"))
+                .thenReturn("https://storage.example/course-cover");
+
+        assertThat(controller.uploadCourseCover(cover))
+                .containsEntry("url", "https://storage.example/course-cover");
+        verify(storage).store(cover, ".png", "image/png");
+
+        MockMultipartFile pdf = new MockMultipartFile(
+                "file", "cover.pdf", "application/pdf", new byte[]{1});
+        assertThatThrownBy(() -> controller.uploadCourseCover(pdf))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Choose a JPG, PNG, or WebP course cover");
+    }
+
+    @Test
+    void rejectsCourseCoversLargerThan10Mb() {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("cover.jpg");
+        when(file.getSize()).thenReturn(10L * 1024 * 1024 + 1);
+
+        assertThatThrownBy(() -> controller.uploadCourseCover(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(error -> ((ResponseStatusException) error).getStatusCode())
+                .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
+
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void storesValidProfileImagesInUserScopedFirebaseStorage() {
+        byte[] jpeg = {(byte) 0xff, (byte) 0xd8, (byte) 0xff, 0x01};
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.jpg", "image/jpeg", jpeg);
+        when(storage.storeProfileAvatar(file, member.getId(), ".jpg", "image/jpeg"))
+                .thenReturn("https://storage.example/profile-avatars/7/photo.jpg");
+
+        assertThat(controller.uploadProfileAvatar(file).avatarUrl())
+                .isEqualTo("https://storage.example/profile-avatars/7/photo.jpg");
+        assertThat(member.getAvatarUrl())
+                .isEqualTo("https://storage.example/profile-avatars/7/photo.jpg");
+        verify(storage).storeProfileAvatar(file, 7L, ".jpg", "image/jpeg");
+        verify(users).save(member);
+    }
+
+    @Test
+    void rejectsInvalidProfileImagesBeforeStorage() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.jpg", "image/jpeg", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> controller.uploadProfileAvatar(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("not a valid JPG, PNG, or WebP image");
+
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void requiresAuthenticationBeforeStoringAProfileImage() {
+        SecurityContextHolder.clearContext();
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "profile.jpg", "image/jpeg",
+                new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff});
+
+        assertThatThrownBy(() -> controller.uploadProfileAvatar(file))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(error -> ((ResponseStatusException) error).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        verifyNoInteractions(storage);
+    }
+
+    @Test
+    void removesOnlyTheAuthenticatedUsersProfilePhoto() {
+        member.setAvatarUrl("https://storage.example/profile-avatars/7/photo.jpg");
+
+        assertThat(controller.removeProfileAvatar().avatarUrl()).isNull();
+
+        assertThat(member.getAvatarUrl()).isNull();
+        verify(users).save(member);
         verifyNoInteractions(storage);
     }
 

@@ -50,6 +50,77 @@ void main() {
     expect(session.isDarkMode, isTrue);
   });
 
+  test(
+    'profile updates persist username and country in the local session',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final session = await Session.load();
+      final result = AuthResult.fromProfileUpdateJson({
+        'token': 'renewed-token',
+        'id': 12,
+        'name': 'Trader Name',
+        'username': 'trader_name',
+        'country': 'Kenya',
+        'email': 'trader@example.com',
+        'phone': '+254700000000',
+        'role': 'USER',
+        'membership': 'NONE',
+        'points': 5,
+      });
+
+      await session.saveAuth(result.token, result.user);
+      final restored = await Session.load();
+
+      expect(restored.token, 'renewed-token');
+      expect(restored.username, 'trader_name');
+      expect(restored.country, 'Kenya');
+      expect(restored.email, 'trader@example.com');
+      await restored.logout();
+
+      final loggedOut = await Session.load();
+      expect(loggedOut.username, isEmpty);
+      expect(loggedOut.country, isEmpty);
+    },
+  );
+
+  test(
+    'legacy profile payloads remain readable without username or country',
+    () {
+      final user = AppUser.fromJson({
+        'id': 4,
+        'name': 'Legacy user',
+        'email': 'legacy@example.com',
+        'phone': '',
+        'role': 'USER',
+        'membership': 'NONE',
+      });
+
+      expect(user.username, isNull);
+      expect(user.country, isNull);
+    },
+  );
+
+  test('community feed reads the current author profile photo', () {
+    final item = FeedItem.fromJson({
+      'id': 42,
+      'roomId': 3,
+      'badge': 'CHAT',
+      'title': 'Topic',
+      'side': 'BUY',
+      'preview': 'Message',
+      'roomName': 'Community',
+      'participants': 1,
+      'open': true,
+      'createdByName': 'trader',
+      'createdByAvatarUrl': 'https://storage.example/profile/avatar.jpg',
+    });
+
+    expect(
+      item.createdByAvatarUrl,
+      'https://storage.example/profile/avatar.jpg',
+    );
+  });
+
   test('settings keep EcoCash as the only supported payment method', () {
     final settings = Settings.fromJson(const {});
 
@@ -71,6 +142,51 @@ void main() {
 
     expect(settings.depositMethods, ['EcoCash']);
     expect(settings.withdrawalMethods, ['EcoCash']);
+  });
+
+  test('signal model reads persisted close result and timestamp fields', () {
+    final signal = Signal.fromJson({
+      'id': 42,
+      'title': 'EURUSD buy',
+      'status': 'CLOSED',
+      'result': 'TP_HIT',
+      'closingPrice': '1.0920',
+      'closingUpdate': 'Target reached',
+      'closedAt': '2026-11-27T12:30:00',
+      'updateHistory': ['created', 'closed'],
+    });
+
+    expect(signal.result, 'TP_HIT');
+    expect(signal.closingPrice, '1.0920');
+    expect(signal.closingUpdate, 'Target reached');
+    expect(signal.closedAt, '2026-11-27T12:30:00');
+    expect(signal.updateHistory, ['created', 'closed']);
+  });
+
+  test(
+    'deposit model reads admin identity fields without changing old payloads',
+    () {
+      final enriched = DepositResult.fromJson({
+        'id': 4,
+        'clientId': 'WT-1234',
+        'username': 'Trader',
+        'weltradeId': 'WT-1234',
+        'phone': '+263770000000',
+      });
+      final legacy = DepositResult.fromJson({'id': 5, 'clientId': 'WT-5678'});
+
+      expect(enriched.username, 'Trader');
+      expect(enriched.weltradeId, 'WT-1234');
+      expect(enriched.phone, '+263770000000');
+      expect(legacy.weltradeId, 'WT-5678');
+      expect(legacy.username, isNull);
+    },
+  );
+
+  test('legacy courses remain published when the review state is absent', () {
+    final course = Course.fromJson({'id': 7, 'title': 'Existing course'});
+
+    expect(course.reviewStatus, 'PUBLISHED');
   });
 
   test('money groups thousands and keeps two decimals', () {
