@@ -15,7 +15,7 @@ class Session extends ChangeNotifier {
   }
 
   static String get defaultServer {
-    return 'https://atg-api-5de3.onrender.com/';
+    return 'https://atgtraders.co.zw/';
   }
 
   String get server => defaultServer;

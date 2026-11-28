@@ -29,7 +29,7 @@ flutter run -d ios              # on a Mac, with the iOS simulator
 ```
 
 The API base URL is pinned in `lib/session.dart` to the hosted production server,
-`https://atg-api-5de3.onrender.com/`. There is no in-app server editor; to point the app somewhere
+`https://atgtraders.co.zw/`. There is no in-app server editor; to point the app somewhere
 else, change that constant and rebuild.
 
 Traffic is HTTPS only — Android has no `usesCleartextTraffic` flag and iOS has no ATS exception.

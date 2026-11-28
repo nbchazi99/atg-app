@@ -18,7 +18,7 @@ jobs:
         run: |
           for attempt in 1 2 3; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 120 \
-              https://atg-api-5de3.onrender.com/api/markets/ping || echo 000)
+              https://atgtraders.co.zw/api/settings/public || echo 000)
             echo "attempt=$attempt http=$code"
             if [ "$code" = "200" ]; then exit 0; fi
             sleep 20
